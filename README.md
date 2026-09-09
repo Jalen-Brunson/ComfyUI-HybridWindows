@@ -2,8 +2,10 @@
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes**.
 
-**Use plain `euler` with `simple` in both samplers.** Other samplers are
-unsupported; other schedulers have not been verified for this H3/PDD setup.
+**Use plain `euler` in both samplers.** The supplied PDD examples use `simple`.
+Hybrid sampling is not inherently PDD-only: non-PDD DMD Turbo runs have also
+completed with `simple` and `beta57` in the earlier MMH3 hybrid implementation.
+See the compatibility table below for the implementation and test scope.
 
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
@@ -16,14 +18,33 @@ native PDD LoRA loading, native AV decoding, optional color stabilization and Sa
 Hybrid sampling supports H3. The decoded-frame color node can be used with other
 models and samplers.
 
-## Supported samplers and schedulers
+## Speed LoRA, sampler and scheduler compatibility
 
-| Setting | Support |
-|---|---|
-| **Sampler: `euler`** | The only supported sampler in both stages. Use plain Euler without churn or additional random inpaint noise. |
-| **Other samplers** | Unsupported and rejected by the adapter, including `euler_ancestral`, Heun, DPM++ and UniPC. |
-| **Scheduler: `simple`** | The verified scheduler for the supplied H3/PDD workflows. Select it in both KSampler Advanced nodes. |
-| **Other schedulers** | Not verified for this setup. The adapter does not block them, but their presence in ComfyUI's dropdown does not establish compatibility. |
+“Completed” means the combination produced output in a recorded test. It does
+not establish the best visual quality, long-video stability, or compatibility
+with every H3 conditioning mode. The native adapter does not require a PDD
+LoRA, but it does require **plain Euler without churn or random inpaint noise**.
+
+| Speed LoRA / setup | Sampler | Scheduler | Steps / split | Evidence and scope |
+|---|---|---|---|---|
+| `MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors` (PDD) | `euler` | `simple` | 8 / 6+2 | Supplied and tested native Ref2VA workflow. CFG 1; video/audio shifts 12/3. |
+| `MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors` (PDD) | `euler` | `simple` | 8 / 6+2 | Supplied and tested native FL2VA workflow. CFG 1; video/audio shifts 12/3. |
+| `minimax_h3_dmd_8step_turbo.safetensors` (non-PDD) | `euler` | `simple` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, Ref2VA base, LoRA strength 1, CFG 1 and shifts 12/3. Not yet verified in this pack's native adapter. |
+| `minimax_h3_dmd_8step_turbo.safetensors` (non-PDD) | `euler` | `beta57` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, using the same base, strength, CFG and shifts. Not yet verified in this pack's native adapter. |
+| Other speed LoRAs or scheduler combinations | `euler` | LoRA-specific | LoRA-specific | Not verified. Use the LoRA's intended base model, schedule, step count and CFG; an available dropdown entry is not compatibility evidence. |
+| Any LoRA | `euler_ancestral`, Heun, DPM++, UniPC or other non-Euler solvers | Any | Any | Unsupported by this adapter. Its warmup state handling is specific to plain Euler. |
+
+The non-PDD results above were recorded on 2026-09-09. A single-window run
+checks the LoRA, scheduler and 6+2 handoff, but does **not** test inter-window
+fusion or long-video continuity. The earlier MMH3 sampler supports accepted
+prefixes; this standalone native pack does not. Do not transfer a compatibility
+claim between those implementations without testing it.
+
+`beta57` comes from **RES4LYF** in the tested installation. It calls ComfyUI's
+beta scheduler with alpha **0.5** and beta **0.7**; it is not the stock `beta`
+scheduler's default parameterization. Install a provider of that scheduler
+before selecting it. Keep the supplied `simple` recipe when reproducing the
+native PDD examples.
 
 **Both samplers must use the same scheduler, total step count and model sigma
 shifts.** The first sampler's `end_at_step` must equal the second sampler's
@@ -35,6 +56,31 @@ nodes, with video/audio sigma shifts **12 / 3**. The default split is **6 + 2**;
 splits from **1 + 7 through 7 + 1** are supported. The first sampler adds noise
 and returns leftover noise; the second continues that latent with add noise
 disabled and finishes denoising.
+
+### Why the last displayed sigma can be nonzero
+
+An eight-step schedule has **nine boundaries**, including its terminal zero.
+The first six steps intentionally stop above zero; the final two continue
+from that same boundary to zero. For the tested `beta57` schedule with video
+shift 12, the values are approximately:
+
+```text
+Full:   1.000000 → 0.989805 → 0.968610 → 0.932715 → 0.871939
+                 → 0.763505 → 0.563135 → 0.235294 → 0.000000
+Warmup: first six transitions, ending at 0.563135
+Finish: 0.563135 → 0.235294 → 0.000000
+```
+
+Euler evaluates the model at **0.235294** for the last step, then updates the
+latent to **sigma 0**. A preview or callback showing 0.235294 therefore does not
+mean the output stopped with leftover noise. Inspect the final element of the
+complete SIGMAS array, not just the last model-evaluation value.
+
+The earlier `MMH3HybridWindowSampler` explicitly rejects full schedules that
+do not end at zero. In this pack's native two-sampler recipe, keep
+**return_with_leftover_noise enabled on warmup and disabled on the finish**,
+with the finish ending at the total step count. The nonzero warmup endpoint
+is required for the handoff; a nonzero terminal endpoint is a different case.
 
 ## Included custom nodes
 
