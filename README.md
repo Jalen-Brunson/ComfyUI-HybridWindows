@@ -1,14 +1,11 @@
 # Hybrid Windows for ComfyUI
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes**.
-Independent of MMH3Tools, VLM packs and custom PDD loaders. Requires a ComfyUI
-with native H3, PDD LoRA, Fun Control MODEL_PATCH and V3 Autogrow support.
 
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
-The diagram illustrates the shared hybrid concept. Its accepted-prefix resume
-note refers to the earlier MMH3 workflow; this standalone pack does not include
-resume functionality.
+The diagram illustrates the hybrid concept. Resuming from a finished portion
+of a video is not supported in this version.
 
 The example has three native prompt text boxes, reference-image conditioning,
 motion control, native PDD LoRA loading, native AV decoding and Save Video.
@@ -20,9 +17,7 @@ Only two node types come from this pack:
   correct source-frame offset for each window. Its encoded-control cache lasts
   only for one sampling call. Use native **Add Noise to Image** upstream.
 
-There are no prompt files, chunk files, saved `.pt` latents, resume masters,
-rerolls or generated-output filters. Other video-model families are not
-implemented yet. Existing MMH3Tools workflows are independent of this pack.
+This version supports H3. Other video-model families are not implemented yet.
 
 ## Installation
 
@@ -51,8 +46,7 @@ Default model chain:
 3. Native H3 video/audio sigma shifts **12 / 3**.
 4. Window ControlNet, then Hybrid Windows.
 
-Use the unbaked base with this LoRA. The baked checkpoint from some older local
-workflows already contains PDD changes and is not the example's base.
+Use an unbaked base with this LoRA to avoid applying the PDD changes twice.
 
 | Setting | Sequential KSampler Advanced | Joint KSampler Advanced |
 |---|---|---|
@@ -101,11 +95,9 @@ clean predictions are combined using core's pyramid weights, separately on the
 video and audio temporal axes. The native sampler then takes **one global Euler
 step**. Overlap can change in this stage. No pixels are blended after decoding.
 
-This version uses one native noise draw for the complete timeline, sliced into
-windows. The older MMH3 hybrid used seed-plus-window noise draws, so multi-window
-outputs will not reproduce that implementation seed-for-seed. Native float32
-LATENT chaining also introduces small scaling round-off; single-window tests
-compare within 1e-6 absolute / 2e-6 relative tolerance. Reduced mottling remains
+Sampling uses one native noise draw for the complete timeline, sliced into
+windows. Native float32 LATENT chaining introduces small scaling round-off;
+single-window tests compare within 1e-6 absolute / 2e-6 relative tolerance. Reduced mottling remains
 an empirical question for real renders, not a guarantee of this implementation.
 
 ## Validation
