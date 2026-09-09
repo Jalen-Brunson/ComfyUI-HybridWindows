@@ -39,6 +39,7 @@ async def validate(mode):
                    and rect[1]+rect[3] <= g["bounding"][1]+g["bounding"][3]
                    for g in graph["groups"]), f"Node {node_id} escapes its group"
     types = [n["type"] for n in graph["nodes"]]
+    assert types.count("MarkdownNote") == 1
     assert types.count("KSamplerAdvanced") == 2
     assert types.count("PrimitiveStringMultiline") == 3
     loaders = [n for n in graph["nodes"] if n["type"] == "LoadImage"]
@@ -56,11 +57,14 @@ async def validate(mode):
         assert len(conds) == 3
         assert all(c["inputs"]["ref_images.ref_image_0"] == [str(loaders[0]["id"]), 0] for c in conds)
     custom = {"H3HybridWindows", "H3HybridControlNet"}
-    assert set(types)-set(builder.nodes.NODE_CLASS_MAPPINGS) == set()
-    for name in set(types)-custom:
+    frontend = {"MarkdownNote"}
+    assert set(types)-frontend-set(builder.nodes.NODE_CLASS_MAPPINGS) == set()
+    assert not any(n["class_type"] in frontend for n in api.values())
+    for name in set(types)-custom-frontend:
         cls = builder.nodes.NODE_CLASS_MAPPINGS[name]
         assert cls.__module__ == "nodes" or cls.__module__.startswith("comfy_extras."), (name, cls.__module__)
-    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(types)-2,
+    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-2,
+              "frontend_notes": types.count("MarkdownNote"),
               "custom_node_types": sorted(custom), "links": len(graph["links"]),
               "node_and_group_overlap": False, "gpu_render": "not run"}
     print(json.dumps(report, indent=2))

@@ -34,6 +34,8 @@ Restart ComfyUI, then open either example:
 
 This pack uses ComfyUI's existing Python dependencies. Model weights and test
 media are supplied separately through the native loader nodes.
+Each workflow includes a **READ ME** note with model download links, installation
+folders, image/control setup, sampler settings and instructions for adding windows.
 
 ## Examples
 

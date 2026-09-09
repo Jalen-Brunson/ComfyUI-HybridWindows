@@ -16,6 +16,83 @@ import nodes
 from comfy_extras import nodes_audio, nodes_images, nodes_minimax_h3, nodes_model_patch, nodes_primitive, nodes_video
 
 
+def workflow_notes(mode):
+    variant = "FL2VA" if mode == "fl2va" else "Ref2VA"
+    official = "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main"
+    kijai = "https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main"
+    base = f"minimax_h3_{mode}_int8_convrot.safetensors"
+    pdd = f"MiniMax-H3-{variant}-Acc-8Step_comfy.safetensors"
+    encoder = "qwen3vl_32b_minimax_h3_int8_convrot.safetensors"
+    video_vae = "minimax_h3_video_vae_int8_convrot.safetensors"
+    audio_vae = "minimax_h3_audio_vae_fp32.safetensors"
+    control = "minimax_h3_fun_controlnet_union_pruned_bf16.safetensors"
+    images = (
+        "Upload a first image and a last image in the two **Load Image** nodes. "
+        "The first guides the beginning of the whole video; the last guides its end. "
+        "Only windows 1 and 3 receive these images. For first-image-only generation, "
+        "disconnect `last_frame` on window 3."
+        if mode == "fl2va" else
+        "Upload your image in **Load reference image**. It is already connected to all "
+        "three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. "
+        "It guides appearance throughout the video rather than fixing the opening pose."
+    )
+    extend = (
+        "Keep the first-frame connection on window 1 and move the last-frame connection "
+        "to the new final window."
+        if mode == "fl2va" else
+        "Connect the same reference image to each added conditioning node."
+    )
+    return f"""# {variant} Hybrid - start here
+
+Build one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.
+
+## Install and download
+
+Install [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.
+
+- **{variant} base:** [{base}]({official}/diffusion_models/{base})
+  Save in `models/diffusion_models/`.
+- **Matching native PDD LoRA:** [{pdd}]({kijai}/loras/{pdd})
+  Save in `models/loras/minimax/`.
+- **Text encoder:** [{encoder}]({official}/text_encoders/{encoder})
+  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.
+- **Video VAE:** [{video_vae}]({kijai}/{video_vae})
+  Save in `models/vae/`.
+- **Audio VAE:** [{audio_vae}]({official}/vae/{audio_vae})
+  Save in `models/vae/`.
+- **Fun Control model:** [{control}]({official}/model_patches/{control})
+  Save in `models/model_patches/` and select it in **Native Fun Control model**.
+
+The control loader's preset `minimax_h3_fun_controlnet_union.safetensors` is a locally converted filename. For a new install, choose the public control file linked above. Refresh the model lists after downloading and select your files in the loaders.
+
+Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.
+
+## Run the flow
+
+1. {images}
+2. Upload your **24 fps control video** in **24 fps motion-control video**. The example media filenames are placeholders; supply your own files. Confirm the selected take, start time and duration. Output FPS does not resample the control input.
+3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.
+4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
+5. Leave **Read first 30 seconds** long enough to cover the output. A short control holds its final frame. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
+
+## Keep the two samplers paired
+
+- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.
+- **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.
+- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.
+- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.
+- **Control strength = 0.5**, **control noise = 0.1** are the starting settings. For a new generation, set the same new noise seed in both samplers.
+
+## Longer videos and optional control
+
+Window/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).
+
+To add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. {extend} Extend the control trim to cover the new total duration.
+
+To generate without motion control, connect **Native video/audio shifts** MODEL directly to **Hybrid windows** MODEL. Each queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).
+"""
+
+
 async def build(mode="ref2va"):
     assert mode in ("ref2va", "fl2va")
     fl2va = mode == "fl2va"
@@ -191,12 +268,26 @@ async def build(mode="ref2va"):
         ("Two native samplers", [2400, 0, 870, 1280]), ("Native output", [3320, 0, 500, 1280]),
         ("Motion control - adjust trim duration for longer runs", [0, 1420, 2380, 520]),
     ]
+    # Leave a full column for the notes without changing the layout within groups.
+    for node in graph_nodes:
+        node["pos"][0] += 1160
+    for _, bounds in groups:
+        bounds[0] += 1160
+    note = workflow_notes(mode)
+    graph_nodes.append({
+        "id": len(graph_nodes)+1, "type": "MarkdownNote", "pos": [40, 100], "size": [1040, 2320],
+        "flags": {}, "order": len(graph_nodes), "mode": 0, "inputs": [], "outputs": [],
+        "title": "READ ME - model downloads and usage", "properties": {},
+        "widgets_values": [note], "widgets_values_named": {"text": note},
+        "color": "#234", "bgcolor": "#345",
+    })
+    groups.append(("Start here - downloads and instructions", [0, 0, 1120, 2480]))
     graph = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/{mode}")),
              "revision": 0, "last_node_id": len(graph_nodes),
              "last_link_id": len(links), "nodes": graph_nodes, "links": links,
              "groups": [{"id": i+1, "title": title, "bounding": bounds, "color": "#3f789e", "font_size": 24}
                         for i, (title, bounds) in enumerate(groups)], "config": {}, "version": .4,
-             "extra": {"ds": {"scale": .37, "offset": [50, 100]}, "VHS_latentpreview": False}}
+             "extra": {"ds": {"scale": .29, "offset": [50, 100]}, "VHS_latentpreview": False}}
     folder = ROOT / "example_workflows"
     folder.mkdir(exist_ok=True)
     name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid - native KSampler Advanced"
