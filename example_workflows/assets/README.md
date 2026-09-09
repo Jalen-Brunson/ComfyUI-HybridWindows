@@ -1,14 +1,15 @@
 # Example images
 
-Copy these three images into `ComfyUI/input/hybrid_windows/`. Both example
-workflows already select those paths. Alternatively, upload the images through
+Copy these three images into `ComfyUI/input/hybrid_windows/`. The example
+workflows already select those paths. The main FL2VA flow uses only the first image;
+the recurring-end variant also uses the last image. Alternatively, upload the images through
 the native Load Image nodes and select the uploaded filenames.
 
 | File | Used by | Source |
 |---|---|---|
 | [ref2va_stock_portrait.jpg](ref2va_stock_portrait.jpg) | Ref2VA reference, shared by all three windows | [Nadine Ginzel, Pexels photo 31428197](https://www.pexels.com/photo/portrait-of-a-young-man-in-black-shirt-31428197/) |
 | [fl2va_stock_first.png](fl2va_stock_first.png) | FL2VA first image, window 1 | [Kampus Production, Pexels video 8189169](https://www.pexels.com/video/man-wearing-black-long-sleeve-polo-8189169/), at 0.5 seconds |
-| [fl2va_stock_last.png](fl2va_stock_last.png) | FL2VA last image, window 3 | Same clip, at 8 seconds |
+| [fl2va_stock_last.png](fl2va_stock_last.png) | Optional FL2VA recurring ending guide, all three windows in that variant | Same clip, at 8 seconds |
 
 The portrait is a 1536-pixel-wide JPEG downloaded from Pexels. The FL2VA frames
 were extracted from the stock clip and resized to 720×1280. The full video is

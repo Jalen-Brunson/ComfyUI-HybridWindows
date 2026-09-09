@@ -123,7 +123,7 @@
   "13": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "A single uninterrupted studio portrait take of the man in <Picture 1>. The fixed camera tightly frames his head and shoulders against a plain white wall. His face stays the same size and position in the frame, with the top of his hair near the upper edge and only his shoulders and black shirt collar at the bottom. He has short light brown hair brushed forward into a fringe, a moustache and short goatee. Soft daylight stays constant. He gently glances a little to his left, then slowly returns his eyes toward the lens. Subtle natural blinking and breathing. The camera remains completely still for the entire take."
     },
     "_meta": {
       "title": "Prompt 1"
@@ -169,7 +169,7 @@
   "15": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he slowly glances a little to his right and settles, with subtle natural blinking and breathing. Only his eyes and a small gentle head turn move within the established framing. The camera remains completely still."
     },
     "_meta": {
       "title": "Prompt 2"
@@ -215,7 +215,7 @@
   "17": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he gently turns back toward the lens and holds a relaxed forward gaze, blinking naturally and breathing softly. The camera remains completely still through the end of the take."
     },
     "_meta": {
       "title": "Prompt 3"
@@ -266,6 +266,10 @@
         0
       ],
       "overlap_frames": 39,
+      "total_steps": [
+        "12",
+        0
+      ],
       "model": [
         "4",
         0

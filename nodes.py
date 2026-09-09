@@ -16,8 +16,9 @@ from .windows import (JointWindows, WINDOW_KEY, plan_windows,
 
 
 class SequentialWindows:
-    def __init__(self, plan):
+    def __init__(self, plan, total_steps=8):
         self.plan = plan
+        self.total_steps = total_steps
 
     def __call__(self, executor, noise, latent_image, sampler, sigmas, denoise_mask=None,
                  callback=None, disable_pbar=False, seed=None, latent_shapes=None):
@@ -27,7 +28,8 @@ class SequentialWindows:
             raise ValueError("Hybrid warmup needs Euler without churn or random inpaint noise.")
         if denoise_mask is not None and torch.any(denoise_mask != 1):
             raise ValueError("This standalone workflow uses an empty AV latent. Source-mask preservation is not implemented.")
-        if not 0 < float(sigmas[-1]) < float(sigmas[0]):
+        finished = float(sigmas[-1]) == 0 and len(sigmas) - 1 == self.total_steps
+        if not finished and not 0 < float(sigmas[-1]) < float(sigmas[0]):
             raise ValueError("Warmup must stop before the final step with return_with_leftover_noise enabled.")
         if torch.count_nonzero(noise) == 0:
             raise ValueError("Enable add_noise on the first KSampler Advanced.")
@@ -80,7 +82,10 @@ class SequentialWindows:
                     callback((index+1)*steps-1, preview, preview, len(spans)*steps)
         finally:
             guider.conds, guider.model_options = original_conds, original_options
-        return comfy.utils.pack_latents(output)[0]
+        # At the full split the second stock KSampler is an exact passthrough.
+        # Return completed carry, as in sequential generation; partial splits
+        # still pass the first owner's noisy state to joint sampling.
+        return comfy.utils.pack_latents(clean if finished else output)[0]
 
 
 def validate_joint(executor, noise, latent_image, sampler, sigmas, denoise_mask=None,
@@ -127,6 +132,8 @@ class H3HybridWindows(io.ComfyNode):
                 io.Int.Input("overlap_frames", default=39, min=5, max=3600, step=17),
                 io.Autogrow.Input("prompts", template=io.Autogrow.TemplatePrefix(
                     input=io.Conditioning.Input("positive"), prefix="positive_", min=1, max=100)),
+                io.Int.Input("total_steps", default=8, min=1, max=10000, optional=True,
+                             tooltip="Match both samplers' total steps. Allows a full sequential split (8+0 with the supplied PDD LoRA)."),
             ],
             outputs=[io.Model.Output(display_name="sequential_model"),
                      io.Model.Output(display_name="joint_model"),
@@ -135,7 +142,7 @@ class H3HybridWindows(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, model, window_frames, overlap_frames, prompts):
+    def execute(cls, model, window_frames, overlap_frames, prompts, total_steps=8):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
         groups = [prompts[name] for name in sorted(prompts, key=lambda name: int(name.rsplit("_", 1)[1]))]
@@ -149,7 +156,7 @@ class H3HybridWindows(io.ComfyNode):
                 # window. Window selection keeps them scoped in both stages.
                 bound.append([tokens, {**metadata, WINDOW_KEY: index}])
         sequential = model.clone()
-        sequential.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(plan))
+        sequential.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(plan, total_steps))
         joint = model.clone()
         joint.model_options["context_handler"] = JointWindows(plan)
         joint.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_joint", validate_joint)

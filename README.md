@@ -32,9 +32,15 @@ first stage stopped. Mixing schedules between stages is unsupported.
 
 For the supplied **8-step PDD LoRA**, keep **8 total steps and CFG 1** in both
 nodes, with video/audio sigma shifts **12 / 3**. The default split is **6 + 2**;
-splits from **1 + 7 through 7 + 1** are supported. The first sampler adds noise
+splits from **1 + 7 through 8 + 0** are supported. The first sampler adds noise
 and returns leftover noise; the second continues that latent with add noise
 disabled and finishes denoising.
+
+Set **Switch at step = 8** for the **8 + 0 sequential baseline**. Each window
+finishes before passing its overlap to the next; the second stock sampler
+passes the completed latent through unchanged. The shared **Total steps** value
+also connects to Hybrid Windows. Use this baseline to compare sequential carry
+with joint finishing while keeping the seed, prompts and inputs fixed.
 
 ## Included custom nodes
 
@@ -97,10 +103,11 @@ From your ComfyUI `custom_nodes` directory:
 git clone https://github.com/Jalen-Brunson/ComfyUI-HybridWindows.git
 ```
 
-Restart ComfyUI, then open either example:
+Restart ComfyUI, then open an example:
 
 - [Ref2VA: reference image](example_workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
-- [FL2VA: first and last images](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
+- [FL2VA: starting image and prompts](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
+- [FL2VA: optional recurring ending guide](example_workflows/H3%20Hybrid%20FL2VA%20-%20recurring%20end%20guide.json).
 
 This pack uses ComfyUI's existing Python dependencies. Model weights are downloaded
 separately. Example images are included in [example_workflows/assets](example_workflows/assets/README.md).
@@ -119,12 +126,29 @@ example uses `hybrid_windows/ref2va_stock_portrait.jpg`, a stock portrait by
 Its three prompts describe the subject's black shirt, short light brown fringe,
 moustache and goatee, with gentle head turns and natural blinking.
 
-The FL2VA example has separate native **Load Image** nodes for the first and
-last frames. The first image connects only to window 1; the last image connects
-only to window 3. They guide the beginning and end of the **whole video**.
-Window 2 continues through overlap carry without an image guide. These
-connections stay the same during both sampler stages. Disconnect `last_frame`
-from the third conditioning node to generate from a first image alone.
+The three prompts describe an opening, continuation and ending. Keep camera
+distance, framing, appearance and lighting consistent, and describe only the
+current portion of the action in each box. Repeating a complete camera move
+in every window can ask the model to restart that move. The example prompts
+favor restrained motion and a continuous composition.
+
+The main FL2VA example uses a **starting image and three prompts**. The first
+image connects only to window 1; later windows continue through generated
+latent overlap. An optional ending-image loader is included but disconnected.
+No control video is required.
+
+The **recurring end guide** variant connects the last image to `last_frame` on
+all three native encoders. Window 1 moves into that composition; windows 2 and
+3 continue the established shot with the same guide. It reaches the ending
+view early, so use it when a stable target composition matters more than
+arriving at that view only at the final moment.
+
+Connecting the last image only to the final window is possible, but caused
+late reframing in our 27-second tests. It is not the recommended setup for a
+continuous long shot. The plain native first/last configuration worked in a
+single-window test. Neither configuration guarantees exact endpoint pixels.
+No generated frames are turned into keyframe guides; overlap continuity uses
+latent masks.
 
 The bundled FL2VA inputs are `hybrid_windows/fl2va_stock_first.png` and
 `hybrid_windows/fl2va_stock_last.png`, two frames from a
@@ -138,13 +162,13 @@ Default Ref2VA model chain:
 
 1. H3 Ref2VA base: `minimax_h3_ref2va_int8_convrot.safetensors`.
 2. Native **LoRA Loader (Model Only)** at 1.0:
-   `minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors`.
+   [minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors).
 3. Native H3 video/audio sigma shifts **12 / 3**.
 4. Hybrid Windows.
 
 Use an unbaked base with this LoRA to avoid applying the PDD changes twice.
 The FL2VA flow substitutes `minimax_h3_fl2va_int8_convrot.safetensors` and
-`minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors`. It uses native
+[minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors). It uses native
 **MiniMax H3 Image to Video** conditioning with the same sampler settings.
 
 | Setting | Sequential KSampler Advanced | Joint KSampler Advanced |
@@ -158,7 +182,8 @@ The FL2VA flow substitutes `minimax_h3_fl2va_int8_convrot.safetensors` and
 | Sampler / scheduler / CFG | euler / simple / 1 | euler / simple / 1 |
 
 `Switch at step` drives both sides of the handoff. `Total steps` drives both
-samplers and the joint end step. For this native PDD recipe keep total steps 8.
+samplers, Hybrid Windows and the joint end step. For this native PDD recipe
+keep total steps 8.
 Each sampler's step numbers refer to the **same complete schedule**.
 
 The three prompts correspond to three overlapping windows. At the default
@@ -171,13 +196,14 @@ Ref2VA starts at 832×480; FL2VA starts at 480×832 to match its portrait images
 In Ref2VA, all three prompts share the
 **Load reference image** node. Native H3 conditioning nodes can accept
 additional reference images. Both examples connect the sigma-shift MODEL
-directly to Hybrid Windows. FL2VA uses prompts, boundary images and generated
-overlap carry.
+directly to Hybrid Windows. FL2VA uses prompts, a starting image and generated
+overlap carry, with an optional recurring ending guide.
 The adapter expects unmasked AV latents. Preservation of original
 source masks is outside this version. Native image guides use frame positions
 within their connected window. When adding windows, keep the first-frame
-connection on the first window and move the last-frame connection to the new
-final window. Set every conditioning node's length to the shared window length.
+connection only on the first window. In the recurring-end variant, also
+connect the ending guide to each added encoder. Set every conditioning node's
+length to the shared window length.
 
 ## How it works
 

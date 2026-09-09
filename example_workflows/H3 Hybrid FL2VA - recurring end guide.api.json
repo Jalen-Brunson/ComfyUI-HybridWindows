@@ -14,7 +14,7 @@
       "image": "hybrid_windows/fl2va_stock_last.png"
     },
     "_meta": {
-      "title": "Optional ending image - disconnected"
+      "title": "Load LAST frame - recurring composition"
     }
   },
   "3": {
@@ -168,16 +168,20 @@
       "first_frame": [
         "1",
         0
+      ],
+      "last_frame": [
+        "2",
+        0
       ]
     },
     "_meta": {
-      "title": "Window 1 - starting image"
+      "title": "Window 1 - move into ending view"
     }
   },
   "16": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera is now stationary, preserving the established distance and focal length. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk. His hands rest together. He looks toward the lens with a calm expression, natural blinking and subtle breathing, then gives a very small relaxed smile. Keep the same soft daylight, exposure, face size and background throughout."
+      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera is now stationary, at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk. His hands rest together. He looks toward the lens with a calm expression, natural blinking and subtle breathing, then gives a very small relaxed smile. Keep the same soft daylight, exposure, face size and background throughout."
     },
     "_meta": {
       "title": "Prompt 2"
@@ -209,16 +213,20 @@
       "vae": [
         "7",
         0
+      ],
+      "last_frame": [
+        "2",
+        0
       ]
     },
     "_meta": {
-      "title": "Window 2 - continuation"
+      "title": "Window 2 - continue the shot"
     }
   },
   "18": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera remains stationary at the same distance and focal length throughout the shot. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk, hands together. He maintains a calm gaze toward the lens, blinking naturally and breathing softly, and holds a comfortable pose as the take ends. Keep the same face size, background, soft daylight and exposure."
+      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera remains stationary at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk, hands together. He maintains a calm gaze toward the lens, blinking naturally and breathing softly, and settles into the final guide image pose. Keep the same face size, background, soft daylight and exposure."
     },
     "_meta": {
       "title": "Prompt 3"
@@ -250,10 +258,14 @@
       "vae": [
         "7",
         0
+      ],
+      "last_frame": [
+        "2",
+        0
       ]
     },
     "_meta": {
-      "title": "Window 3 - continuation"
+      "title": "Window 3 - finish the shot"
     }
   },
   "20": {
@@ -489,7 +501,7 @@
   "30": {
     "class_type": "SaveVideo",
     "inputs": {
-      "filename_prefix": "video/HybridNative_FL2VA",
+      "filename_prefix": "video/HybridNative_FL2VA_EndGuide",
       "format": "mp4",
       "format.codec": "h264",
       "format.codec.encoding": "re-encode",

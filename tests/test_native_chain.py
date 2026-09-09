@@ -162,6 +162,22 @@ class NativeChainTests(unittest.TestCase):
             self.assertNotIn("noise_mask", first)
             self.assertEqual(set(first), {"samples"})
 
+    def test_full_sequential_split_finishes_and_second_sampler_is_passthrough(self):
+        for count in (1, 3):
+            m = model()
+            sequential, joint, cond, total = hybrid.H3HybridWindows.execute(
+                m, 39, 5, {f"positive_{i}": prompt(i) for i in range(count)}, total_steps=8)
+            latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+            first = sample(sequential, latent, cond, end=8, leftover="enable")
+            result = sample(joint, first, cond, start=8, add_noise="disable")
+            self.assertEqual(len(m.model.seen), count * 8)
+            for actual, expected in zip(result["samples"].unbind(), first["samples"].unbind()):
+                torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+            if count == 1:
+                reference = sample(model(), latent, prompt())
+                for actual, expected in zip(result["samples"].unbind(), reference["samples"].unbind()):
+                    torch.testing.assert_close(actual, expected, rtol=2e-6, atol=1e-6)
+
     def test_three_windows_pin_then_release_and_route_prompts(self):
         m = model()
         sequential, joint, cond, total = hybrid.H3HybridWindows.execute(
