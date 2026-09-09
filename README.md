@@ -2,8 +2,10 @@
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes**.
 
-**Use plain `euler` with `simple` in both samplers.** Other samplers are
-unsupported; other schedulers have not been verified for this H3/PDD setup.
+**Use plain `euler` in both samplers.** The supplied PDD examples use `simple`.
+Hybrid sampling is not inherently PDD-only: non-PDD DMD Turbo runs have also
+completed with `simple` and `beta57` in the earlier MMH3 hybrid implementation.
+See the compatibility table below for the implementation and test scope.
 
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
@@ -16,25 +18,25 @@ native PDD LoRA loading, native AV decoding, optional color stabilization and Sa
 Hybrid sampling supports H3. The decoded-frame color node can be used with other
 models and samplers.
 
-## Supported samplers and schedulers
+## Speed LoRA, sampler and scheduler compatibility
 
-| Setting | Support |
-|---|---|
-| **Sampler: `euler`** | The only supported sampler in both stages. Use plain Euler without churn or additional random inpaint noise. |
-| **Other samplers** | Unsupported and rejected by the adapter, including `euler_ancestral`, Heun, DPM++ and UniPC. |
-| **Scheduler: `simple`** | The verified scheduler for the supplied H3/PDD workflows. Select it in both KSampler Advanced nodes. |
-| **Other schedulers** | Not verified for this setup. The adapter does not block them, but their presence in ComfyUI's dropdown does not establish compatibility. |
+“Completed” means the combination produced output in a recorded test. It does
+not establish the best visual quality, long-video stability, or compatibility
+with every H3 conditioning mode. The native adapter does not require a PDD
+LoRA, but it does require **plain Euler without churn or random inpaint noise**.
+
+| Speed LoRA / setup | Sampler | Scheduler | Steps / split | Evidence and scope |
+|---|---|---|---|---|
+| [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors) (PDD) | `euler` | `simple` | 8 / 6+2 | Supplied and tested native Ref2VA workflow. CFG 1; video/audio shifts 12/3. |
+| [MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors) (PDD) | `euler` | `simple` | 8 / 6+2 | Supplied and tested native FL2VA workflow. CFG 1; video/audio shifts 12/3. |
+| [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) (non-PDD) | `euler` | `simple` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, Ref2VA base, LoRA strength 1, CFG 1 and shifts 12/3. Not yet verified in this pack's native adapter. |
+| [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) (non-PDD) | `euler` | `beta57` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, using the same base, strength, CFG and shifts. Not yet verified in this pack's native adapter. |
+| Other speed LoRAs or scheduler combinations | `euler` | LoRA-specific | LoRA-specific | Not verified. Use the LoRA's intended base model, schedule, step count and CFG; an available dropdown entry is not compatibility evidence. |
+| Any LoRA | `euler_ancestral`, Heun, DPM++, UniPC or other non-Euler solvers | Any | Any | Unsupported by this adapter. Its warmup state handling is specific to plain Euler. |
 
 **Both samplers must use the same scheduler, total step count and model sigma
-shifts.** The first sampler's `end_at_step` must equal the second sampler's
-`start_at_step`, so the continuation starts at the same noise level where the
-first stage stopped. Mixing schedules between stages is unsupported.
-
-For the supplied **8-step PDD LoRA**, keep **8 total steps and CFG 1** in both
-nodes, with video/audio sigma shifts **12 / 3**. The default split is **6 + 2**;
-splits from **1 + 7 through 8 + 0** are supported. The first sampler adds noise
-and returns leftover noise; the second continues that latent with add noise
-disabled and finishes denoising.
+shifts.** The first sampler's end step must equal the second sampler's start
+step. Mixing schedules between stages is unsupported.
 
 Set **Switch at step = 8** for the **8 + 0 sequential baseline**. Each window
 finishes before passing its overlap to the next; the second stock sampler
