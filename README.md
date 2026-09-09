@@ -8,14 +8,22 @@ The diagram illustrates the hybrid concept. Resuming from a finished portion
 of a video is not supported in this version.
 
 The examples have three native prompt text boxes, image conditioning,
-native PDD LoRA loading, native AV decoding and Save Video. They use one node
-from this pack: **H3 Hybrid Windows**, which assigns conditioning to windows and
-supplies sequential/joint MODEL outputs plus the full timeline's frame count.
-
-**H3 Window ControlNet** remains available for separate control experiments,
-but is not part of either example.
+native PDD LoRA loading, native AV decoding and Save Video.
 
 This version supports H3. Other video-model families are not implemented yet.
+
+## Included custom nodes
+
+The pack installs **two custom nodes**, both under `sampling/hybrid`:
+
+| Node | What it does | Used in the examples |
+|---|---|---|
+| **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, and the calculated `total_frames`. Connect these to the two native KSampler Advanced nodes and the full-timeline latent. | Both Ref2VA and FL2VA |
+| **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
+
+The model/LoRA loaders, image loaders, prompt text boxes, H3 conditioning,
+KSampler Advanced, VAE decoders and video output nodes in the examples are
+provided by ComfyUI itself.
 
 ## Installation
 
