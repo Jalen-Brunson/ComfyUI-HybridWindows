@@ -2,7 +2,7 @@
   "1": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "hybrid_man_reference.png"
+      "image": "hybrid_windows/ref2va_stock_portrait.jpg"
     },
     "_meta": {
       "title": "Load reference image - all three windows"
@@ -121,105 +121,19 @@
     }
   },
   "13": {
-    "class_type": "LoadVideo",
-    "inputs": {
-      "file": "hybrid_man_loop_90s.mp4"
-    },
-    "_meta": {
-      "title": "24 fps motion-control video"
-    }
-  },
-  "14": {
-    "class_type": "Video Slice",
-    "inputs": {
-      "start_time": 0.0,
-      "duration": 30.0,
-      "strict_duration": false,
-      "video": [
-        "13",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Read first 30 seconds"
-    }
-  },
-  "15": {
-    "class_type": "GetVideoComponents",
-    "inputs": {
-      "video": [
-        "14",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Native control frames"
-    }
-  },
-  "16": {
-    "class_type": "ImageAddNoise",
-    "inputs": {
-      "seed": 456,
-      "strength": 0.1,
-      "image": [
-        "15",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Control noise"
-    }
-  },
-  "17": {
-    "class_type": "ModelPatchLoader",
-    "inputs": {
-      "name": "minimax_h3_fun_controlnet_union.safetensors"
-    },
-    "_meta": {
-      "title": "Native Fun Control model"
-    }
-  },
-  "18": {
-    "class_type": "H3HybridControlNet",
-    "inputs": {
-      "strength": 0.5,
-      "start_percent": 0.0,
-      "end_percent": 1.0,
-      "model": [
-        "4",
-        0
-      ],
-      "model_patch": [
-        "17",
-        0
-      ],
-      "vae": [
-        "6",
-        0
-      ],
-      "control_video": [
-        "16",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Control follows each window"
-    }
-  },
-  "19": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He looks left and right, following the motion-control video. He wears the same black collared shirt throughout. His medium-length light brown hair remains swept back with the same side part, and his short beard stays unchanged. Bright white studio background, soft even lighting, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
     },
     "_meta": {
       "title": "Prompt 1"
     }
   },
-  "20": {
+  "14": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
       "prompt": [
-        "19",
+        "13",
         0
       ],
       "width": [
@@ -252,20 +166,20 @@
       "title": "Native H3 conditioning 1"
     }
   },
-  "21": {
+  "15": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He looks left and right, following the motion-control video. He wears the same black collared shirt throughout. His medium-length light brown hair remains swept back with the same side part, and his short beard stays unchanged. Bright white studio background, soft even lighting, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
     },
     "_meta": {
       "title": "Prompt 2"
     }
   },
-  "22": {
+  "16": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
       "prompt": [
-        "21",
+        "15",
         0
       ],
       "width": [
@@ -298,20 +212,20 @@
       "title": "Native H3 conditioning 2"
     }
   },
-  "23": {
+  "17": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He looks left and right, following the motion-control video. He wears the same black collared shirt throughout. His medium-length light brown hair remains swept back with the same side part, and his short beard stays unchanged. Bright white studio background, soft even lighting, natural skin texture and color, steady framing. No cuts, no camera movement."
+      "value": "A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head slightly left and right, returning to face the camera, with natural blinking. He wears the same black long-sleeved shirt throughout. His short light brown hair stays brushed forward with the same fringe, moustache and short goatee. Bright neutral background, soft daylight, natural skin texture and color, steady framing. No cuts, no camera movement."
     },
     "_meta": {
       "title": "Prompt 3"
     }
   },
-  "24": {
+  "18": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
       "prompt": [
-        "23",
+        "17",
         0
       ],
       "width": [
@@ -344,7 +258,7 @@
       "title": "Native H3 conditioning 3"
     }
   },
-  "25": {
+  "19": {
     "class_type": "H3HybridWindows",
     "inputs": {
       "window_frames": [
@@ -353,19 +267,19 @@
       ],
       "overlap_frames": 39,
       "model": [
-        "18",
+        "4",
         0
       ],
       "prompts.positive_0": [
-        "20",
+        "14",
         0
       ],
       "prompts.positive_1": [
-        "22",
+        "16",
         0
       ],
       "prompts.positive_2": [
-        "24",
+        "18",
         0
       ]
     },
@@ -373,7 +287,7 @@
       "title": "Hybrid windows"
     }
   },
-  "26": {
+  "20": {
     "class_type": "EmptyMiniMaxH3LatentAV",
     "inputs": {
       "width": [
@@ -385,7 +299,7 @@
         0
       ],
       "length": [
-        "25",
+        "19",
         3
       ]
     },
@@ -393,11 +307,11 @@
       "title": "Full timeline latent"
     }
   },
-  "27": {
+  "21": {
     "class_type": "ConditioningZeroOut",
     "inputs": {
       "conditioning": [
-        "25",
+        "19",
         2
       ]
     },
@@ -405,7 +319,7 @@
       "title": "Unused at CFG 1"
     }
   },
-  "28": {
+  "22": {
     "class_type": "KSamplerAdvanced",
     "inputs": {
       "add_noise": "enable",
@@ -424,19 +338,19 @@
       ],
       "return_with_leftover_noise": "enable",
       "positive": [
-        "25",
+        "19",
         2
       ],
       "negative": [
-        "27",
+        "21",
         0
       ],
       "model": [
-        "25",
+        "19",
         0
       ],
       "latent_image": [
-        "26",
+        "20",
         0
       ]
     },
@@ -444,7 +358,7 @@
       "title": "1. Sequential warmup"
     }
   },
-  "29": {
+  "23": {
     "class_type": "KSamplerAdvanced",
     "inputs": {
       "add_noise": "disable",
@@ -466,19 +380,19 @@
       ],
       "return_with_leftover_noise": "disable",
       "positive": [
-        "25",
+        "19",
         2
       ],
       "negative": [
-        "27",
+        "21",
         0
       ],
       "model": [
-        "25",
+        "19",
         1
       ],
       "latent_image": [
-        "28",
+        "22",
         0
       ]
     },
@@ -486,11 +400,11 @@
       "title": "2. Joint finish"
     }
   },
-  "30": {
+  "24": {
     "class_type": "VAEDecode",
     "inputs": {
       "samples": [
-        "29",
+        "23",
         0
       ],
       "vae": [
@@ -502,11 +416,11 @@
       "title": "Decode video"
     }
   },
-  "31": {
+  "25": {
     "class_type": "VAEDecodeAudio",
     "inputs": {
       "samples": [
-        "29",
+        "23",
         0
       ],
       "vae": [
@@ -518,18 +432,18 @@
       "title": "Decode audio"
     }
   },
-  "32": {
+  "26": {
     "class_type": "CreateVideo",
     "inputs": {
       "fps": 24.0,
       "bit_depth": 8,
       "color_space": "sRGB",
       "images": [
-        "30",
+        "24",
         0
       ],
       "audio": [
-        "31",
+        "25",
         0
       ]
     },
@@ -537,7 +451,7 @@
       "title": "Native video at 24 fps"
     }
   },
-  "33": {
+  "27": {
     "class_type": "SaveVideo",
     "inputs": {
       "filename_prefix": "video/HybridNative_Ref2VA",
@@ -547,7 +461,7 @@
       "format.codec.encoding.crf": 16.0,
       "codec": "auto",
       "video": [
-        "32",
+        "26",
         0
       ]
     },

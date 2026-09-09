@@ -43,6 +43,10 @@ async def validate(mode):
     assert types.count("KSamplerAdvanced") == 2
     assert types.count("PrimitiveStringMultiline") == 3
     loaders = [n for n in graph["nodes"] if n["type"] == "LoadImage"]
+    for loader in loaders:
+        filename = loader["widgets_values_named"]["image"]
+        assert filename.startswith("hybrid_windows/"), filename
+        assert (ROOT / "example_workflows" / "assets" / Path(filename).name).is_file(), filename
     if mode == "fl2va":
         assert len(loaders) == 2
         conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ImageToVideo"]
@@ -56,14 +60,15 @@ async def validate(mode):
         conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ReferenceToVideo"]
         assert len(conds) == 3
         assert all(c["inputs"]["ref_images.ref_image_0"] == [str(loaders[0]["id"]), 0] for c in conds)
-    custom = {"H3HybridWindows", "H3HybridControlNet"}
+    custom = {"H3HybridWindows"}
+    assert not {"H3HybridControlNet", "ModelPatchLoader", "ImageAddNoise", "LoadVideo"} & set(types)
     frontend = {"MarkdownNote"}
     assert set(types)-frontend-set(builder.nodes.NODE_CLASS_MAPPINGS) == set()
     assert not any(n["class_type"] in frontend for n in api.values())
     for name in set(types)-custom-frontend:
         cls = builder.nodes.NODE_CLASS_MAPPINGS[name]
         assert cls.__module__ == "nodes" or cls.__module__.startswith("comfy_extras."), (name, cls.__module__)
-    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-2,
+    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-1,
               "frontend_notes": types.count("MarkdownNote"),
               "custom_node_types": sorted(custom), "links": len(graph["links"]),
               "node_and_group_overlap": False, "gpu_render": "not run"}

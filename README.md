@@ -8,15 +8,12 @@ The diagram illustrates the hybrid concept. Resuming from a finished portion
 of a video is not supported in this version.
 
 The examples have three native prompt text boxes, image conditioning,
-optional motion control, native PDD LoRA loading, native AV decoding and Save Video.
-Only two node types come from this pack:
+native PDD LoRA loading, native AV decoding and Save Video. They use one node
+from this pack: **H3 Hybrid Windows**, which assigns conditioning to windows and
+supplies sequential/joint MODEL outputs plus the full timeline's frame count.
 
-- **H3 Hybrid Windows** assigns conditioning to windows and supplies separate
-  sequential/joint MODEL outputs plus the full timeline's frame count.
-- **H3 Window ControlNet** uses core's Fun Control implementation with the
-  correct source-frame offset for each window. Its encoded-control cache lasts
-  only for one sampling call. Native **Add Noise to Image** is an optional
-  upstream experiment.
+**H3 Window ControlNet** remains available for separate control experiments,
+but is not part of either example.
 
 This version supports H3. Other video-model families are not implemented yet.
 
@@ -33,26 +30,22 @@ Restart ComfyUI, then open either example:
 - [Ref2VA: reference image](example_workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
 - [FL2VA: first and last images](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
 
-This pack uses ComfyUI's existing Python dependencies. Model weights and test
-media are supplied separately through the native loader nodes.
+This pack uses ComfyUI's existing Python dependencies. Model weights are downloaded
+separately. Example images are included in [example_workflows/assets](example_workflows/assets/README.md).
 Each workflow includes a **READ ME** note with model download links, installation
-folders, image/control setup, sampler settings and instructions for adding windows.
+folders, image setup, sampler settings and instructions for adding windows.
 
 ## Examples
 
-Open `example_workflows/H3 Hybrid - native KSampler Advanced.json`. Upload a reference
-image and, if using FUN, a **24 fps** processed control video through the native loaders. The example
-names `hybrid_man_reference.png` and `hybrid_man_loop_90s.mp4` refer to local
-test inputs; media and model weights are not included in this directory.
+Copy the images from `example_workflows/assets/` into `ComfyUI/input/hybrid_windows/`,
+or upload them through the native Load Image nodes and select the uploaded files.
+Source credits and license links are included in the [assets README](example_workflows/assets/README.md).
 
-[FUN documents Canny, depth, HED, MLSD and pose control videos](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union).
-The loader and control node do not extract those representations from RGB footage.
-The placeholder stock clip needs an appropriate preprocessor before Control noise,
-or replacement with a processed control video. Raw RGB is accepted by the socket,
-but is not a documented general motion-reference recipe. FUN's source-video
-inpainting uses a separate mask/source path that this pack does not expose.
-Native Ref2VA video-reference conditioning is also separate; the current Ref2VA
-example wires only an image reference.
+Open `example_workflows/H3 Hybrid - native KSampler Advanced.json`. The Ref2VA
+example uses `hybrid_windows/ref2va_stock_portrait.jpg`, a stock portrait by
+[Nadine Ginzel on Pexels](https://www.pexels.com/photo/portrait-of-a-young-man-in-black-shirt-31428197/).
+Its three prompts describe the subject's black shirt, short light brown fringe,
+moustache and goatee, with gentle head turns and natural blinking.
 
 The FL2VA example has separate native **Load Image** nodes for the first and
 last frames. The first image connects only to window 1; the last image connects
@@ -61,8 +54,11 @@ Window 2 continues through overlap carry without an image guide. These
 connections stay the same during both sampler stages. Disconnect `last_frame`
 from the third conditioning node to generate from a first image alone.
 
-The FL2VA test inputs are `hybrid_man_first.png` and `hybrid_man_last.png`;
-replace them with your own images and update the prompts to describe them.
+The bundled FL2VA inputs are `hybrid_windows/fl2va_stock_first.png` and
+`hybrid_windows/fl2va_stock_last.png`, two frames from a
+[Kampus Production stock clip](https://www.pexels.com/video/man-wearing-black-long-sleeve-polo-8189169/).
+They show the same man at a white desk, with a gradual change in camera angle.
+Replace them with your own images and update the prompts to describe them.
 First/last conditioning guides the result; it does not paste exact input pixels
 into the output.
 
@@ -72,18 +68,12 @@ Default Ref2VA model chain:
 2. Native **LoRA Loader (Model Only)** at 1.0:
    `minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors`.
 3. Native H3 video/audio sigma shifts **12 / 3**.
-4. Window ControlNet, then Hybrid Windows.
+4. Hybrid Windows.
 
 Use an unbaked base with this LoRA to avoid applying the PDD changes twice.
 The FL2VA flow substitutes `minimax_h3_fl2va_int8_convrot.safetensors` and
 `minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors`. It uses native
 **MiniMax H3 Image to Video** conditioning with the same sampler settings.
-
-The preset FUN filename is a locally converted full-width control model.
-The public `minimax_h3_fun_controlnet_union_pruned_bf16.safetensors` requires
-the matching **pruned base and pruned PDD LoRA**; replacing only the control
-file on the full-base defaults causes a model-shape mismatch. Both workflow
-notes link all three files for the optional pruned setup.
 
 | Setting | Sequential KSampler Advanced | Joint KSampler Advanced |
 |---|---|---|
@@ -103,17 +93,14 @@ The three prompts correspond to three overlapping windows. At the default
 243 frames / 39 overlap, their frame spans are **0–242, 204–446, 408–650**.
 Output length is **651 frames / 27.125 seconds at 24 fps**. Window and overlap
 values snap up to H3's 17k+5 frame grid. The native empty latent receives the
-calculated total automatically. Increase the control-video trim duration when
-making a longer timeline; the example reads its first 30 seconds. A control
-source shorter than the requested span repeats its last frame, following core.
+calculated total automatically.
 
-The example starts at 832×480, control strength 0.5 and control noise 0.1;
-the control values are experimental settings, not established quality defaults.
-In Ref2VA, all three prompts share the **Load reference image** node. Native H3
-conditioning nodes can accept additional reference images. To test without control, connect the sigma
-shift MODEL directly to Hybrid Windows; ComfyUI skips the disconnected control
-branch. Control is optional in both examples. Without it, FL2VA uses prompts,
-boundary images and generated overlap carry, with no source-video motion input.
+Ref2VA starts at 832×480; FL2VA starts at 480×832 to match its portrait images.
+In Ref2VA, all three prompts share the
+**Load reference image** node. Native H3 conditioning nodes can accept
+additional reference images. Both examples connect the sigma-shift MODEL
+directly to Hybrid Windows. FL2VA uses prompts, boundary images and generated
+overlap carry.
 The adapter expects unmasked AV latents. Preservation of original
 source masks is outside this version. Native image guides use frame positions
 within their connected window. When adding windows, keep the first-frame
@@ -164,7 +151,8 @@ both node/group bounds, and verifies that every other node is native. It also
 rebuilds both examples against the installed core schemas. A ComfyUI restart is
 required after first installing this pack.
 
-A three-window FL2VA GPU smoke test completed with native PDD at 6/2 steps,
+An earlier three-window FL2VA GPU smoke test completed with native PDD at 6/2 steps,
 first/last images and raw RGB in the control socket, exporting 107 frames at
 256×256 with audio. This checks execution and export, not the suitability of
-that control input or long-generation quality.
+that control input or long-generation quality. The current examples remove that
+control branch and pass CPU workflow validation; they have not been rendered again.

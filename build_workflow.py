@@ -13,11 +13,12 @@ sys.argv = [sys.argv[0], "--cpu"]
 import comfy.options
 comfy.options.enable_args_parsing()
 import nodes
-from comfy_extras import nodes_audio, nodes_images, nodes_minimax_h3, nodes_model_patch, nodes_primitive, nodes_video
+from comfy_extras import nodes_audio, nodes_minimax_h3, nodes_primitive, nodes_video
 
 
 def workflow_notes(mode):
     variant = "FL2VA" if mode == "fl2va" else "Ref2VA"
+    size = "480 x 832" if mode == "fl2va" else "832 x 480"
     official = "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main"
     kijai = "https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main"
     base = f"minimax_h3_{mode}_int8_convrot.safetensors"
@@ -25,16 +26,15 @@ def workflow_notes(mode):
     encoder = "qwen3vl_32b_minimax_h3_int8_convrot.safetensors"
     video_vae = "minimax_h3_video_vae_int8_convrot.safetensors"
     audio_vae = "minimax_h3_audio_vae_fp32.safetensors"
-    control = "minimax_h3_fun_controlnet_union_pruned_bf16.safetensors"
-    pruned_base = f"minimax_h3_{mode}_pruned_int8_convrot.safetensors"
-    pruned_pdd = f"MiniMax-H3-{variant}-Acc-8Step_pruned_comfy.safetensors"
     images = (
-        "Upload a first image and a last image in the two **Load Image** nodes. "
+        "Use the bundled `fl2va_stock_first.png` and `fl2va_stock_last.png`, "
+        "or upload your own first and last images in the two **Load Image** nodes. "
         "The first guides the beginning of the whole video; the last guides its end. "
         "Only windows 1 and 3 receive these images. For first-image-only generation, "
         "disconnect `last_frame` on window 3."
         if mode == "fl2va" else
-        "Upload your image in **Load reference image**. It is already connected to all "
+        "Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in "
+        "**Load reference image**. It is already connected to all "
         "three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. "
         "It guides appearance throughout the video rather than fixing the opening pose."
     )
@@ -63,29 +63,17 @@ Install [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridW
 - **Audio VAE:** [{audio_vae}]({official}/vae/{audio_vae})
   Save in `models/vae/`.
 
-Refresh the model lists after downloading and select your files in the loaders. **FUN is optional** for both flows. To skip it, connect **Native video/audio shifts** MODEL directly to **Hybrid windows** MODEL; the control branch then does not run.
+Refresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.
 
 Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.
 
-### Optional FUN models and inputs
-
-The preset `minimax_h3_fun_controlnet_union.safetensors` is a locally converted, full-width control model for the full base above. The public pruned control is **not a drop-in replacement** for that base. For the public pruned path, select all three matching files:
-
-- [Pruned {variant} base]({official}/diffusion_models/{pruned_base}) in `models/diffusion_models/`.
-- [Pruned {variant} PDD LoRA]({kijai}/loras/{pruned_pdd}) in `models/loras/minimax/`.
-- [Pruned FUN control]({official}/model_patches/{control}) in `models/model_patches/`.
-
-[FUN's documented controls](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union) are **Canny, depth, HED, MLSD and pose videos**. The video loader does not extract these from ordinary RGB footage. Supply a processed control video, or add an appropriate preprocessor before Control noise. The placeholder stock clip is ordinary RGB and needs preprocessing for this path. Raw RGB into `control_video` is accepted by the node but is not a documented general motion-reference recipe.
-
-FUN also supports source-video inpainting through a separate mask/source path, which this pack does not expose. H3 Ref2VA's native video-reference conditioning is another separate path; this example currently wires only an image reference.
-
 ## Run the flow
 
-1. {images}
-2. If using FUN, upload your **24 fps processed control video** in **24 fps motion-control video**, as described above. Otherwise skip the control branch. The media filenames are placeholders; supply your own files. Confirm the selected take, start time and duration. Output FPS does not resample the control input.
+1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.
+2. {images}
 3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.
-4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
-5. With FUN, leave **Read first 30 seconds** long enough to cover the output. A short control holds its final frame. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
+4. Set **Width / Height** (default **{size}**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
+5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
 
 ## Keep the two samplers paired
 
@@ -93,26 +81,25 @@ FUN also supports source-video inpainting through a separate mask/source path, w
 - **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.
 - **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.
 - **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.
-- **Control strength = 0.5**, **control noise = 0.1** are experimental example settings, not established FUN quality defaults. For a new generation, set the same new noise seed in both samplers.
+- For a new generation, set the same new noise seed in both samplers.
 
-## Longer videos and optional control
+## Longer videos
 
 Window/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).
 
-To add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. {extend} Extend the control trim to cover the new total duration.
+To add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. {extend}
 
-To generate without motion control, connect **Native video/audio shifts** MODEL directly to **Hybrid windows** MODEL. Each queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).
+Each queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).
 """
 
 
 async def build(mode="ref2va"):
     assert mode in ("ref2va", "fl2va")
     fl2va = mode == "fl2va"
-    for module in (nodes_audio, nodes_images, nodes_minimax_h3, nodes_primitive, nodes_video):
+    for module in (nodes_audio, nodes_minimax_h3, nodes_primitive, nodes_video):
         extension = await module.comfy_entrypoint()
         for cls in await extension.get_node_list():
             nodes.NODE_CLASS_MAPPINGS[cls.GET_SCHEMA().node_id] = cls
-    nodes.NODE_CLASS_MAPPINGS.update(nodes_model_patch.NODE_CLASS_MAPPINGS)
     assert await nodes.load_custom_node(str(ROOT))
     graph_nodes, links, api = [], [], {}
 
@@ -197,10 +184,10 @@ async def build(mode="ref2va"):
 
     ref = add("LoadImage", "Load FIRST frame - start of video" if fl2va else "Load reference image - all three windows",
               (540, 100), (400, 400),
-              {"image": "hybrid_man_first.png" if fl2va else "hybrid_man_reference.png"})
+              {"image": "hybrid_windows/fl2va_stock_first.png" if fl2va else "hybrid_windows/ref2va_stock_portrait.jpg"})
     if fl2va:
         last = add("LoadImage", "Load LAST frame - end of video", (540, 650), (400, 400),
-                   {"image": "hybrid_man_last.png"})
+                   {"image": "hybrid_windows/fl2va_stock_last.png"})
     base = add("UNETLoader", f"H3 {'FL2VA' if fl2va else 'Ref2VA'} base", (40, 100), (440, 140),
                {"unet_name": f"minimax_h3_{mode}_int8_convrot.safetensors", "weight_dtype": "default"})
     lora = add("LoraLoaderModelOnly", "Native PDD LoRA", (40, 290), (440, 150),
@@ -211,29 +198,24 @@ async def build(mode="ref2va"):
                {"clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors", "type": "minimax", "device": "default"})
     vae = add("VAELoader", "Video VAE", (40, 890), (440, 100), {"vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"})
     audio_vae = add("VAELoader", "Audio VAE", (40, 1040), (440, 100), {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"})
-    width = add("PrimitiveInt", "Width", (1040, 1100), (220, 110), {"value": 832})
-    height = add("PrimitiveInt", "Height", (1300, 1100), (220, 110), {"value": 480})
+    width = add("PrimitiveInt", "Width", (1040, 1100), (220, 110), {"value": 480 if fl2va else 832})
+    height = add("PrimitiveInt", "Height", (1300, 1100), (220, 110), {"value": 832 if fl2va else 480})
     window = add("PrimitiveInt", "Window frames", (1560, 1100), (220, 110), {"value": 243})
     split = add("PrimitiveInt", "Switch at step", (1820, 1100), (220, 110), {"value": 6})
     steps = add("PrimitiveInt", "Total steps", (2080, 1100), (220, 110), {"value": 8})
-    source = add("LoadVideo", "24 fps motion-control video", (40, 1520), (440, 330), {"file": "hybrid_man_loop_90s.mp4"})
-    trim = add("Video Slice", "Read first 30 seconds", (540, 1520), (400, 180),
-               {"video": (source, 0), "start_time": 0., "duration": 30., "strict_duration": False})
-    components = add("GetVideoComponents", "Native control frames", (1020, 1520), (380, 140), {"video": (trim, 0)})
-    noise = add("ImageAddNoise", "Control noise", (1460, 1520), (380, 180),
-                {"image": (components, 0), "seed": 456, "strength": .1})
-    patch = add("ModelPatchLoader", "Native Fun Control model", (1020, 1760), (380, 110),
-                {"name": "minimax_h3_fun_controlnet_union.safetensors"})
-    control = add("H3HybridControlNet", "Control follows each window", (1900, 1520), (440, 310),
-                  {"model": (shift, 0), "model_patch": (patch, 0), "vae": (vae, 0),
-                   "control_video": (noise, 0), "strength": .5, "start_percent": 0., "end_percent": 1.})
-    prompt_text = ("A continuous locked-camera close-up of the man in <Picture 1>. He looks left and right, "
-                   "following the motion-control video. He wears the same black collared shirt throughout. "
-                   "His medium-length light brown hair remains swept back with the same side part, and his "
-                   "short beard stays unchanged. Bright white studio background, soft even lighting, "
+    prompt_text = ("A continuous locked-camera close-up of the man in <Picture 1>. He slowly turns his head "
+                   "slightly left and right, returning to face the camera, with natural blinking. "
+                   "He wears the same black long-sleeved shirt throughout. His short light brown hair "
+                   "stays brushed forward with the same fringe, moustache and short goatee. "
+                   "Bright neutral background, soft daylight, "
                    "natural skin texture and color, steady framing. No cuts, no camera movement.")
     if fl2va:
-        prompt_text = prompt_text.replace("the man in <Picture 1>", "a man")
+        prompt_text = ("One continuous portrait shot of a man seated at a white desk in a bright office. "
+                       "He wears the same black long-sleeved button-up shirt, with short black hair swept "
+                       "to one side and a clean-shaven face. His hands rest together on the desk. "
+                       "He looks toward the camera, blinking naturally with a subtle relaxed smile. "
+                       "The camera slowly shifts from a slight angle to a frontal view. Soft daylight, "
+                       "steady exposure, natural skin texture and color. No cuts, no sudden motion.")
     prompts = []
     for i in range(3):
         x = 1040 + i*450
@@ -253,7 +235,7 @@ async def build(mode="ref2va"):
         encoded = add(kind, title, (x, 460), (410, 470), values)
         prompts.append(encoded)
     setup = add("H3HybridWindows", "Hybrid windows", (2440, 100), (390, 320),
-                {"model": (control, 0), "window_frames": (window, 0), "overlap_frames": 39,
+                {"model": (shift, 0), "window_frames": (window, 0), "overlap_frames": 39,
                  **{f"prompts.positive_{i}": (p, 0) for i, p in enumerate(prompts)}})
     empty = add("EmptyMiniMaxH3LatentAV", "Full timeline latent", (2870, 100), (360, 180),
                 {"width": (width, 0), "height": (height, 0), "length": (setup, 3)})
@@ -278,7 +260,6 @@ async def build(mode="ref2va"):
         ("Models", [0, 0, 510, 1240]), ("First and last images" if fl2va else "Load reference image", [520, 0, 450, 1240]),
         ("Three prompts", [1000, 0, 1380, 980]), ("Size and handoff", [1000, 1020, 1380, 240]),
         ("Two native samplers", [2400, 0, 870, 1280]), ("Native output", [3320, 0, 500, 1280]),
-        ("Motion control - adjust trim duration for longer runs", [0, 1420, 2380, 520]),
     ]
     # Leave a full column for the notes without changing the layout within groups.
     for node in graph_nodes:
