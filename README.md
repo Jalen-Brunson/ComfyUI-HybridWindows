@@ -2,6 +2,9 @@
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes**.
 
+**Use plain `euler` with `simple` in both samplers.** Other samplers are
+unsupported; other schedulers have not been verified for this H3/PDD setup.
+
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
 The diagram illustrates the hybrid concept. Resuming from a finished portion
@@ -11,6 +14,26 @@ The examples have three native prompt text boxes, image conditioning,
 native PDD LoRA loading, native AV decoding and Save Video.
 
 This version supports H3. Other video-model families are not implemented yet.
+
+## Supported samplers and schedulers
+
+| Setting | Support |
+|---|---|
+| **Sampler: `euler`** | The only supported sampler in both stages. Use plain Euler without churn or additional random inpaint noise. |
+| **Other samplers** | Unsupported and rejected by the adapter, including `euler_ancestral`, Heun, DPM++ and UniPC. |
+| **Scheduler: `simple`** | The verified scheduler for the supplied H3/PDD workflows. Select it in both KSampler Advanced nodes. |
+| **Other schedulers** | Not verified for this setup. The adapter does not block them, but their presence in ComfyUI's dropdown does not establish compatibility. |
+
+**Both samplers must use the same scheduler, total step count and model sigma
+shifts.** The first sampler's `end_at_step` must equal the second sampler's
+`start_at_step`, so the continuation starts at the same noise level where the
+first stage stopped. Mixing schedules between stages is unsupported.
+
+For the supplied **8-step PDD LoRA**, keep **8 total steps and CFG 1** in both
+nodes, with video/audio sigma shifts **12 / 3**. The default split is **6 + 2**;
+splits from **1 + 7 through 7 + 1** are supported. The first sampler adds noise
+and returns leftover noise; the second continues that latent with add noise
+disabled and finishes denoising.
 
 ## Included custom nodes
 
@@ -133,34 +156,5 @@ video and audio temporal axes. The native sampler then takes **one global Euler
 step**. Overlap can change in this stage. No pixels are blended after decoding.
 
 Sampling uses one native noise draw for the complete timeline, sliced into
-windows. Native float32 LATENT chaining introduces small scaling round-off;
-single-window tests compare within 1e-6 absolute / 2e-6 relative tolerance. Reduced mottling remains
-an empirical question for real renders, not a guarantee of this implementation.
-
-## Validation
-
-From this directory with ComfyUI's Python environment:
-
-```bash
-OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2 python tests/test_native_chain.py
-OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2 python tests/validate_workflow.py
-```
-
-The CPU suite calls actual KSampler Advanced, CFGGuider, ModelPatcher, H3
-conditioning/mask/scaling methods, native Euler and the native PDD final layer.
-A tiny deterministic model stands in for expensive DiT inference. It checks all
-seven handoffs, first/last guide routing and preservation, prompt/control offsets,
-overlap pinning/release, prediction fusion, cancellation cleanup and control-cache
-lifetime. It does not establish
-real-model image quality or CUDA execution.
-
-Workflow validation uses ComfyUI's own prompt validator, checks link types and
-both node/group bounds, and verifies that every other node is native. It also
-rebuilds both examples against the installed core schemas. A ComfyUI restart is
-required after first installing this pack.
-
-An earlier three-window FL2VA GPU smoke test completed with native PDD at 6/2 steps,
-first/last images and raw RGB in the control socket, exporting 107 frames at
-256×256 with audio. This checks execution and export, not the suitability of
-that control input or long-generation quality. The current examples remove that
-control branch and pass CPU workflow validation; they have not been rendered again.
+windows. Reduced mottling remains an empirical question for real renders,
+not a guarantee of this implementation.
