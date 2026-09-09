@@ -21,8 +21,8 @@ import comfy.model_sampling
 import comfy.utils
 import comfy.samplers
 import nodes as native_nodes
-from comfy_extras.nodes_minimax_h3 import EmptyMiniMaxH3LatentAV
-from comfy.ldm.minimax.model import FinalLayer
+from comfy_extras.nodes_minimax_h3 import EmptyMiniMaxH3LatentAV, MiniMaxH3ImageToVideo
+from comfy.ldm.minimax.model import FinalLayer, MiniMaxH3Model
 import comfy.ops
 
 spec = importlib.util.spec_from_file_location("hybrid_windows_test", ROOT / "__init__.py",
@@ -64,11 +64,14 @@ class ToyH3(comfy.model_base.MiniMaxH3):
         self.seen.append({"x": x.clone(), "sigma": t.clone(), "shapes": shapes,
                           "prompt": float(c_crossattn.mean()),
                           "offset": transformer_options.get(windows.OFFSET_KEY, 0),
+                          "payload": kwargs["minimax_payload"],
                           "masks": {k: kwargs[k].clone() for k in ("denoise_mask", "audio_denoise_mask") if k in kwargs},
                           "sigmas": transformer_options["sample_sigmas"].clone()})
         # Deliberately context-dependent: independent windows cannot equal a
         # whole-timeline forward, making incorrect fusion/handoff observable.
-        return .27*x.tanh() + .13*x.mean() + .31*t.reshape(-1, 1, 1) + .02*c_crossattn.mean()
+        guide_rows = MiniMaxH3Model._cond_video_rows(self.diffusion_model, kwargs["minimax_payload"], x.device)
+        guide_signal = 0 if guide_rows is None else .05*guide_rows.mean()
+        return .27*x.tanh() + .13*x.mean() + .31*t.reshape(-1, 1, 1) + .02*c_crossattn.mean() + guide_signal
 
 
 def model():
@@ -81,6 +84,24 @@ def prompt(index=0):
     return [[torch.full((1, 2, 3), float(index)), {}]]
 
 
+def image_prompt(index=0, first=False, last=False):
+    class Clip:
+        def tokenize(self, text, images):
+            return float(text)
+
+        def encode_from_tokens_scheduled(self, tokens):
+            return prompt(tokens)
+
+    class VAE:
+        def encode(self, image):
+            return torch.full((1, 24, 1, 2, 2), float(image.mean()))
+
+    return MiniMaxH3ImageToVideo.execute(
+        Clip(), VAE(), str(index), 32, 32, 39,
+        first_frame=torch.full((1, 32, 32, 3), .2) if first else None,
+        last_frame=torch.full((1, 32, 32, 3), .8) if last else None)[0]
+
+
 def sample(m, latent, positive, start=0, end=8, add_noise="enable", leftover="disable"):
     with patch("latent_preview.prepare_callback", return_value=None):
         return native_nodes.KSamplerAdvanced().sample(
@@ -89,6 +110,41 @@ def sample(m, latent, positive, start=0, end=8, add_noise="enable", leftover="di
 
 
 class NativeChainTests(unittest.TestCase):
+    def test_fl2va_boundary_guides_are_scoped_in_both_stages(self):
+        groups = {"positive_0": image_prompt(0, first=True), "positive_1": image_prompt(1),
+                  "positive_2": image_prompt(2, last=True)}
+        m = model()
+        sequential, joint, cond, total = hybrid.H3HybridWindows.execute(m, 39, 5, groups)
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+        first = sample(sequential, latent, cond, end=6, leftover="enable")
+        sample(joint, first, cond, start=6, add_noise="disable")
+        self.assertEqual(len(m.model.seen), 24)
+        for call in m.model.seen:
+            index = int(call["prompt"])
+            payload = call["payload"]
+            guides = payload.get("keyframes", [])
+            self.assertEqual([g["resolved_frame_index"] for g in guides], {0: [0], 1: [], 2: [38]}[index])
+            if guides:
+                expected = groups[f"positive_{index}"][0][1]["minimax_keyframes"][0]["latent"]
+                torch.testing.assert_close(guides[0]["latent"], expected, rtol=0, atol=0)
+                torch.testing.assert_close(payload["cond_video_latents"][0], expected, rtol=0, atol=0)
+        # Native metadata is reusable; no global-offset rewrite or carry guide is added.
+        self.assertEqual(groups["positive_2"][0][1]["minimax_keyframes"][0]["resolved_frame_index"], 38)
+        self.assertNotIn("minimax_keyframes", groups["positive_1"][0][1])
+
+    def test_fl2va_single_window_preserves_native_guide_effect(self):
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 39)[0]
+        positive = image_prompt(first=True, last=True)
+        reference = sample(model(), latent, positive)
+        unguided = sample(model(), latent, prompt())
+        self.assertFalse(torch.allclose(reference["samples"].unbind()[0], unguided["samples"].unbind()[0]))
+        for split in range(1, 8):
+            sequential, joint, cond, _ = hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": positive})
+            first = sample(sequential, latent, cond, end=split, leftover="enable")
+            result = sample(joint, first, cond, start=split, add_noise="disable")
+            for actual, expected in zip(result["samples"].unbind(), reference["samples"].unbind()):
+                torch.testing.assert_close(actual, expected, rtol=2e-6, atol=1e-6)
+
     def test_single_window_matches_native_for_every_split(self):
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 39)[0]
         original = model()

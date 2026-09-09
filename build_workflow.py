@@ -16,7 +16,9 @@ import nodes
 from comfy_extras import nodes_audio, nodes_images, nodes_minimax_h3, nodes_model_patch, nodes_primitive, nodes_video
 
 
-async def build():
+async def build(mode="ref2va"):
+    assert mode in ("ref2va", "fl2va")
+    fl2va = mode == "fl2va"
     for module in (nodes_audio, nodes_images, nodes_minimax_h3, nodes_primitive, nodes_video):
         extension = await module.comfy_entrypoint()
         for cls in await extension.get_node_list():
@@ -104,11 +106,16 @@ async def build():
         api[str(node_id)] = {"class_type": kind, "inputs": prompt_inputs, "_meta": {"title": title}}
         return node_id
 
-    ref = add("LoadImage", "Reference image", (540, 100), (400, 400), {"image": "hybrid_man_reference.png"})
-    base = add("UNETLoader", "H3 Ref2VA base", (40, 100), (440, 140),
-               {"unet_name": "minimax_h3_ref2va_int8_convrot.safetensors", "weight_dtype": "default"})
+    ref = add("LoadImage", "Load FIRST frame - start of video" if fl2va else "Load reference image - all three windows",
+              (540, 100), (400, 400),
+              {"image": "hybrid_man_first.png" if fl2va else "hybrid_man_reference.png"})
+    if fl2va:
+        last = add("LoadImage", "Load LAST frame - end of video", (540, 650), (400, 400),
+                   {"image": "hybrid_man_last.png"})
+    base = add("UNETLoader", f"H3 {'FL2VA' if fl2va else 'Ref2VA'} base", (40, 100), (440, 140),
+               {"unet_name": f"minimax_h3_{mode}_int8_convrot.safetensors", "weight_dtype": "default"})
     lora = add("LoraLoaderModelOnly", "Native PDD LoRA", (40, 290), (440, 150),
-               {"model": (base, 0), "lora_name": "minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors", "strength_model": 1.0})
+               {"model": (base, 0), "lora_name": f"minimax/MiniMax-H3-{'FL2VA' if fl2va else 'Ref2VA'}-Acc-8Step_comfy.safetensors", "strength_model": 1.0})
     shift = add("MiniMaxH3SigmaShift", "Native video/audio shifts", (40, 490), (440, 150),
                 {"model": (lora, 0), "shift_video": 12., "shift_audio": 3.})
     clip = add("CLIPLoader", "H3 text encoder", (40, 690), (440, 150),
@@ -136,14 +143,25 @@ async def build():
                    "His medium-length light brown hair remains swept back with the same side part, and his "
                    "short beard stays unchanged. Bright white studio background, soft even lighting, "
                    "natural skin texture and color, steady framing. No cuts, no camera movement.")
+    if fl2va:
+        prompt_text = prompt_text.replace("the man in <Picture 1>", "a man")
     prompts = []
     for i in range(3):
         x = 1040 + i*450
         text = add("PrimitiveStringMultiline", f"Prompt {i+1}", (x, 100), (410, 300), {"value": prompt_text})
-        encoded = add("MiniMaxH3ReferenceToVideo", f"Native H3 conditioning {i+1}", (x, 460), (410, 470),
-                      {"clip": (clip, 0), "vae": (vae, 0), "prompt": (text, 0),
-                       "width": (width, 0), "height": (height, 0), "length": (window, 0),
-                       "ref_image_size": "match", "ref_images.ref_image_0": (ref, 0)})
+        values = {"clip": (clip, 0), "vae": (vae, 0), "prompt": (text, 0),
+                  "width": (width, 0), "height": (height, 0), "length": (window, 0)}
+        if fl2va:
+            if i == 0:
+                values["first_frame"] = (ref, 0)
+            elif i == 2:
+                values["last_frame"] = (last, 0)
+            kind = "MiniMaxH3ImageToVideo"
+            title = ("Window 1 - FIRST frame", "Window 2 - continuation", "Window 3 - LAST frame")[i]
+        else:
+            values.update({"ref_image_size": "match", "ref_images.ref_image_0": (ref, 0)})
+            kind, title = "MiniMaxH3ReferenceToVideo", f"Native H3 conditioning {i+1}"
+        encoded = add(kind, title, (x, 460), (410, 470), values)
         prompts.append(encoded)
     setup = add("H3HybridWindows", "Hybrid windows", (2440, 100), (390, 320),
                 {"model": (control, 0), "window_frames": (window, 0), "overlap_frames": 39,
@@ -165,26 +183,29 @@ async def build():
     video = add("CreateVideo", "Native video at 24 fps", (3360, 440), (420, 210),
                 {"images": (decoded, 0), "audio": (decoded_audio, 0), "fps": 24., "bit_depth": 8, "color_space": "sRGB"})
     add("SaveVideo", "Save hybrid test", (3360, 720), (420, 510),
-        {"video": (video, 0), "filename_prefix": "video/HybridNative", "format": "mp4", "format.codec": "h264",
+        {"video": (video, 0), "filename_prefix": "video/HybridNative_FL2VA" if fl2va else "video/HybridNative_Ref2VA", "format": "mp4", "format.codec": "h264",
          "format.codec.encoding": "re-encode", "format.codec.encoding.crf": 16., "codec": "auto"})
     groups = [
-        ("Models", [0, 0, 510, 1240]), ("Reference", [520, 0, 450, 1240]),
+        ("Models", [0, 0, 510, 1240]), ("First and last images" if fl2va else "Load reference image", [520, 0, 450, 1240]),
         ("Three prompts", [1000, 0, 1380, 980]), ("Size and handoff", [1000, 1020, 1380, 240]),
         ("Two native samplers", [2400, 0, 870, 1280]), ("Native output", [3320, 0, 500, 1280]),
         ("Motion control - adjust trim duration for longer runs", [0, 1420, 2380, 520]),
     ]
-    graph = {"id": str(uuid.uuid4()), "revision": 0, "last_node_id": len(graph_nodes),
+    graph = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/{mode}")),
+             "revision": 0, "last_node_id": len(graph_nodes),
              "last_link_id": len(links), "nodes": graph_nodes, "links": links,
              "groups": [{"id": i+1, "title": title, "bounding": bounds, "color": "#3f789e", "font_size": 24}
                         for i, (title, bounds) in enumerate(groups)], "config": {}, "version": .4,
              "extra": {"ds": {"scale": .37, "offset": [50, 100]}, "VHS_latentpreview": False}}
     folder = ROOT / "workflows"
     folder.mkdir(exist_ok=True)
-    (folder / "H3 Hybrid - native KSampler Advanced.json").write_text(json.dumps(graph, indent=2)+"\n")
-    (folder / "H3 Hybrid - native KSampler Advanced.api.json").write_text(json.dumps(api, indent=2)+"\n")
-    print(f"Built {len(graph_nodes)} nodes / {len(links)} links.")
+    name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid - native KSampler Advanced"
+    (folder / f"{name}.json").write_text(json.dumps(graph, indent=2)+"\n")
+    (folder / f"{name}.api.json").write_text(json.dumps(api, indent=2)+"\n")
+    print(f"Built {mode}: {len(graph_nodes)} nodes / {len(links)} links.")
     return graph, api
 
 
 if __name__ == "__main__":
     asyncio.run(build())
+    asyncio.run(build("fl2va"))

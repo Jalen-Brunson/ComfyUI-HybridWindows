@@ -145,8 +145,8 @@ class H3HybridWindows(io.ComfyNode):
             if not group:
                 raise ValueError(f"Connect conditioning for prompt {index + 1}.")
             for tokens, metadata in group:
-                if metadata.get("minimax_keyframes"):
-                    raise ValueError("Use H3 Reference to Video conditioning; keyframe guides are not supported here.")
+                # Native image guides use positions within this conditioning's
+                # window. Window selection keeps them scoped in both stages.
                 bound.append([tokens, {**metadata, WINDOW_KEY: index}])
         sequential = model.clone()
         sequential.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(plan))

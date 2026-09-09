@@ -16,8 +16,8 @@ def intersects(a, b):
     return a[0] < b[0]+b[2] and b[0] < a[0]+a[2] and a[1] < b[1]+b[3] and b[1] < a[1]+a[3]
 
 
-async def main():
-    graph, api = await builder.build()
+async def validate(mode):
+    graph, api = await builder.build(mode)
     result = await execution.validate_prompt("hybrid-native-validation", api, None)
     assert result[0], json.dumps(result, indent=2, default=str)
     by_id = {n["id"]: n for n in graph["nodes"]}
@@ -41,15 +41,34 @@ async def main():
     types = [n["type"] for n in graph["nodes"]]
     assert types.count("KSamplerAdvanced") == 2
     assert types.count("PrimitiveStringMultiline") == 3
+    loaders = [n for n in graph["nodes"] if n["type"] == "LoadImage"]
+    if mode == "fl2va":
+        assert len(loaders) == 2
+        conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ImageToVideo"]
+        assert len(conds) == 3
+        assert conds[0]["inputs"]["first_frame"] == [str(loaders[0]["id"]), 0]
+        assert not {"first_frame", "last_frame"} & conds[1]["inputs"].keys()
+        assert conds[2]["inputs"]["last_frame"] == [str(loaders[1]["id"]), 0]
+        assert "last_frame" not in conds[0]["inputs"] and "first_frame" not in conds[2]["inputs"]
+    else:
+        assert len(loaders) == 1
+        conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ReferenceToVideo"]
+        assert len(conds) == 3
+        assert all(c["inputs"]["ref_images.ref_image_0"] == [str(loaders[0]["id"]), 0] for c in conds)
     custom = {"H3HybridWindows", "H3HybridControlNet"}
     assert set(types)-set(builder.nodes.NODE_CLASS_MAPPINGS) == set()
     for name in set(types)-custom:
         cls = builder.nodes.NODE_CLASS_MAPPINGS[name]
         assert cls.__module__ == "nodes" or cls.__module__.startswith("comfy_extras."), (name, cls.__module__)
-    report = {"comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(types)-2,
+    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(types)-2,
               "custom_node_types": sorted(custom), "links": len(graph["links"]),
               "node_and_group_overlap": False, "gpu_render": "not run"}
     print(json.dumps(report, indent=2))
+
+
+async def main():
+    for mode in ("ref2va", "fl2va"):
+        await validate(mode)
 
 
 if __name__ == "__main__":

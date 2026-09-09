@@ -7,7 +7,7 @@ Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes**.
 The diagram illustrates the hybrid concept. Resuming from a finished portion
 of a video is not supported in this version.
 
-The example has three native prompt text boxes, reference-image conditioning,
+The examples have three native prompt text boxes, image conditioning,
 motion control, native PDD LoRA loading, native AV decoding and Save Video.
 Only two node types come from this pack:
 
@@ -27,18 +27,34 @@ From your ComfyUI `custom_nodes` directory:
 git clone https://github.com/Jalen-Brunson/ComfyUI-HybridWindows.git
 ```
 
-Restart ComfyUI, then open the [example workflow](workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
+Restart ComfyUI, then open either example:
+
+- [Ref2VA: reference image](workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
+- [FL2VA: first and last images](workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
+
 This pack uses ComfyUI's existing Python dependencies. Model weights and test
 media are supplied separately through the native loader nodes.
 
-## Example
+## Examples
 
 Open `workflows/H3 Hybrid - native KSampler Advanced.json`. Upload a reference
 image and a **24 fps** control video through the native loaders. The example
 names `hybrid_man_reference.png` and `hybrid_man_loop_90s.mp4` refer to local
 test inputs; media and model weights are not included in this directory.
 
-Default model chain:
+The FL2VA example has separate native **Load Image** nodes for the first and
+last frames. The first image connects only to window 1; the last image connects
+only to window 3. They guide the beginning and end of the **whole video**.
+Window 2 continues through overlap carry without an image guide. These
+connections stay the same during both sampler stages. Disconnect `last_frame`
+from the third conditioning node to generate from a first image alone.
+
+The FL2VA test inputs are `hybrid_man_first.png` and `hybrid_man_last.png`;
+replace them with your own images and update the prompts to describe them.
+First/last conditioning guides the result; it does not paste exact input pixels
+into the output.
+
+Default Ref2VA model chain:
 
 1. H3 Ref2VA base: `minimax_h3_ref2va_int8_convrot.safetensors`.
 2. Native **LoRA Loader (Model Only)** at 1.0:
@@ -47,6 +63,9 @@ Default model chain:
 4. Window ControlNet, then Hybrid Windows.
 
 Use an unbaked base with this LoRA to avoid applying the PDD changes twice.
+The FL2VA flow substitutes `minimax_h3_fl2va_int8_convrot.safetensors` and
+`minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors`. It uses native
+**MiniMax H3 Image to Video** conditioning with the same sampler settings.
 
 | Setting | Sequential KSampler Advanced | Joint KSampler Advanced |
 |---|---|---|
@@ -71,12 +90,14 @@ making a longer timeline; the example reads its first 30 seconds. A control
 source shorter than the requested span repeats its last frame, following core.
 
 The example starts at 832×480, control strength 0.5 and control noise 0.1.
-All three prompts share one reference image. Native H3 conditioning nodes can
-accept additional reference images. To test without control, connect the sigma
+In Ref2VA, all three prompts share the **Load reference image** node. Native H3
+conditioning nodes can accept additional reference images. To test without control, connect the sigma
 shift MODEL directly to Hybrid Windows; ComfyUI skips the disconnected control
-branch. The current adapter expects unmasked AV latents and reference-to-video
-conditioning. Keyframe guides and preservation of original source masks are
-outside this version.
+branch. The adapter expects unmasked AV latents. Preservation of original
+source masks is outside this version. Native image guides use frame positions
+within their connected window. When adding windows, keep the first-frame
+connection on the first window and move the last-frame connection to the new
+final window. Set every conditioning node's length to the shared window length.
 
 ## How it works
 
@@ -112,11 +133,16 @@ OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2 python tests/validate
 The CPU suite calls actual KSampler Advanced, CFGGuider, ModelPatcher, H3
 conditioning/mask/scaling methods, native Euler and the native PDD final layer.
 A tiny deterministic model stands in for expensive DiT inference. It checks all
-seven handoffs, prompt/control offsets, overlap pinning/release, prediction
-fusion, cancellation cleanup and control-cache lifetime. It does not establish
+seven handoffs, first/last guide routing and preservation, prompt/control offsets,
+overlap pinning/release, prediction fusion, cancellation cleanup and control-cache
+lifetime. It does not establish
 real-model image quality or CUDA execution.
 
 Workflow validation uses ComfyUI's own prompt validator, checks link types and
 both node/group bounds, and verifies that every other node is native. It also
-rebuilds the example against the installed core schemas. A ComfyUI restart is
+rebuilds both examples against the installed core schemas. A ComfyUI restart is
 required after first installing this pack.
+
+A three-window FL2VA GPU smoke test completed with native PDD at 6/2 steps,
+first/last images and motion control, exporting 107 frames at 256×256 with audio.
+This checks execution and export; long-generation quality still needs visual testing.

@@ -119,7 +119,8 @@ class JointWindows(ContextHandlerABC):
                 if key in model_conds:
                     value = model_conds[key]
                     model_conds[key] = value._copy_with(value.cond.narrow(dim, start, end-start))
-            # Text, token tags and reference blocks remain exactly as encoded.
+            # Text, tags, references and window-local guides stay as encoded.
+            # Native H3 rebuilds its packed layout for the window's new shapes.
             result.append({**cond, "model_conds": model_conds})
         return result
 
