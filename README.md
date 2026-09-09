@@ -11,9 +11,10 @@ The diagram illustrates the hybrid concept. Resuming from a finished portion
 of a video is not supported in this version.
 
 The examples have three native prompt text boxes, image conditioning,
-native PDD LoRA loading, native AV decoding and Save Video.
+native PDD LoRA loading, native AV decoding, optional color stabilization and Save Video.
 
-This version supports H3. Other video-model families are not implemented yet.
+Hybrid sampling supports H3. The decoded-frame color node can be used with other
+models and samplers.
 
 ## Supported samplers and schedulers
 
@@ -37,16 +38,56 @@ disabled and finishes denoising.
 
 ## Included custom nodes
 
-The pack installs **two custom nodes**, both under `sampling/hybrid`:
+The pack installs **three custom nodes**. The H3 nodes are under
+`sampling/hybrid`; Video Color Stabilize is under `image/video`.
 
 | Node | What it does | Used in the examples |
 |---|---|---|
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, and the calculated `total_frames`. Connect these to the two native KSampler Advanced nodes and the full-timeline latent. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
+| **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
 
 The model/LoRA loaders, image loaders, prompt text boxes, H3 conditioning,
 KSampler Advanced, VAE decoders and video output nodes in the examples are
 provided by ComfyUI itself.
+
+## Optional color stabilization
+
+Connect **VAE Decode → Video Color Stabilize → Create Video → Save Video**.
+Audio connects directly to Create Video. Both examples include this wiring and
+share one **Output FPS** value between the color node and Create Video.
+The color math assumes SDR/sRGB frames with BT.709 luma coefficients.
+
+Defaults are **enabled**, **strength 0.85**, **reference 1–8 seconds** and
+**smoothing 2 seconds**. Disable the node or set strength to zero for exact
+frame passthrough. The reference interval is preserved; correction ramps in
+over two seconds outside it. Use the generated opening as the reference rather
+than an appearance-conditioning portrait with potentially different lighting.
+
+Without `source_frames`, the target is the opening's median tint and color
+spread. Optionally connect original video frames **before noise or effects**,
+with the same frame count, FPS and starting time as the generated images.
+Resolution may differ. This follows source tint changes relative to its own
+opening; source variation may raise the saturation target but does not lower
+it below the generated opening. The node rejects mismatched frame counts to
+avoid applying corrections at the wrong time. Leave this input disconnected
+in the supplied image-conditioned examples.
+
+This is intended for a **continuous shot**, processed as one complete IMAGE
+batch. It keeps the same reference across generation-window boundaries.
+Split footage at scene cuts. Whole-frame statistics also respond to changes
+in composition, and without source frames the node can reduce intentional
+color changes; lower strength or bypass it when needed.
+
+Only chroma is adjusted: brightness, spatial detail and audio are not graded.
+At saturated pixels, the color change is limited to stay within RGB gamut
+while preserving luma. Sampling and latent carry are unchanged. This treats
+visible color drift, not its inference cause or spatial mottling.
+
+Processing uses CPU work on one frame at a time, with small temporal statistics
+and one output batch. The complete input and output IMAGE batches still need
+RAM; this node does not turn decoding/export into a streaming workflow. Color
+is corrected before video encoding, avoiding a separate recompression pass.
 
 ## Installation
 

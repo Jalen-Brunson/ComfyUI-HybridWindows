@@ -60,7 +60,15 @@ async def validate(mode):
         conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ReferenceToVideo"]
         assert len(conds) == 3
         assert all(c["inputs"]["ref_images.ref_image_0"] == [str(loaders[0]["id"]), 0] for c in conds)
-    custom = {"H3HybridWindows"}
+    custom = {"H3HybridWindows", "VideoColorStabilize"}
+    color_id = next(k for k, n in api.items() if n["class_type"] == "VideoColorStabilize")
+    color_inputs = api[color_id]["inputs"]
+    create = next(n["inputs"] for n in api.values() if n["class_type"] == "CreateVideo")
+    assert create["images"] == [color_id, 0]
+    assert create["fps"] == color_inputs["fps"]
+    assert api[color_inputs["images"][0]]["class_type"] == "VAEDecode"
+    assert api[create["audio"][0]]["class_type"] == "VAEDecodeAudio"
+    assert "source_frames" not in color_inputs
     assert not {"H3HybridControlNet", "ModelPatchLoader", "ImageAddNoise", "LoadVideo"} & set(types)
     frontend = {"MarkdownNote"}
     assert set(types)-frontend-set(builder.nodes.NODE_CLASS_MAPPINGS) == set()
@@ -68,7 +76,7 @@ async def validate(mode):
     for name in set(types)-custom-frontend:
         cls = builder.nodes.NODE_CLASS_MAPPINGS[name]
         assert cls.__module__ == "nodes" or cls.__module__.startswith("comfy_extras."), (name, cls.__module__)
-    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-1,
+    report = {"mode": mode, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-len(custom),
               "frontend_notes": types.count("MarkdownNote"),
               "custom_node_types": sorted(custom), "links": len(graph["links"]),
               "node_and_group_overlap": False, "gpu_render": "not run"}

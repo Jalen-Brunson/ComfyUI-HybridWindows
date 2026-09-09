@@ -403,6 +403,15 @@
     }
   },
   "25": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 24.0
+    },
+    "_meta": {
+      "title": "Output FPS"
+    }
+  },
+  "26": {
     "class_type": "VAEDecode",
     "inputs": {
       "samples": [
@@ -418,7 +427,7 @@
       "title": "Decode video"
     }
   },
-  "26": {
+  "27": {
     "class_type": "VAEDecodeAudio",
     "inputs": {
       "samples": [
@@ -434,26 +443,50 @@
       "title": "Decode audio"
     }
   },
-  "27": {
-    "class_type": "CreateVideo",
+  "28": {
+    "class_type": "VideoColorStabilize",
     "inputs": {
-      "fps": 24.0,
-      "bit_depth": 8,
-      "color_space": "sRGB",
-      "images": [
+      "enabled": true,
+      "strength": 0.85,
+      "fps": [
         "25",
         0
       ],
-      "audio": [
+      "reference_start_seconds": 1.0,
+      "reference_end_seconds": 8.0,
+      "smoothing_seconds": 2.0,
+      "images": [
         "26",
         0
       ]
     },
     "_meta": {
-      "title": "Native video at 24 fps"
+      "title": "Optional color stabilization"
     }
   },
-  "28": {
+  "29": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "fps": [
+        "25",
+        0
+      ],
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "images": [
+        "28",
+        0
+      ],
+      "audio": [
+        "27",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Create video"
+    }
+  },
+  "30": {
     "class_type": "SaveVideo",
     "inputs": {
       "filename_prefix": "video/HybridNative_FL2VA",
@@ -463,7 +496,7 @@
       "format.codec.encoding.crf": 16.0,
       "codec": "auto",
       "video": [
-        "27",
+        "29",
         0
       ]
     },

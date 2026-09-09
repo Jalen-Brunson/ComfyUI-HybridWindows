@@ -75,6 +75,12 @@ Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD alre
 4. Set **Width / Height** (default **{size}**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
 5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
 
+## Optional color stabilization
+
+**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.
+
+The optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.
+
 ## Keep the two samplers paired
 
 - Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.
@@ -164,7 +170,7 @@ async def build(mode="ref2va"):
                 "outputs": outputs, "title": title,
                 "properties": {"Node name for S&R": kind},
                 "widgets_values": widgets, "widgets_values_named": named}
-        if kind not in ("H3HybridWindows", "H3HybridControlNet"):
+        if kind not in ("H3HybridWindows", "H3HybridControlNet", "VideoColorStabilize"):
             node["properties"]["cnr_id"] = "comfy-core"
         graph_nodes.append(node)
         prompt_inputs = dict(named)
@@ -248,18 +254,22 @@ async def build(mode="ref2va"):
     finish = add("KSamplerAdvanced", "2. Joint finish", (2870, 580), (360, 600),
                  {**common, "model": (setup, 1), "latent_image": (warmup, 0), "add_noise": "disable",
                   "start_at_step": (split, 0), "end_at_step": (steps, 0), "return_with_leftover_noise": "disable"})
+    fps = add("PrimitiveFloat", "Output FPS", (3360, 950), (420, 110), {"value": 24.})
     decoded = add("VAEDecode", "Decode video", (3360, 100), (420, 100), {"samples": (finish, 0), "vae": (vae, 0)})
     decoded_audio = add("VAEDecodeAudio", "Decode audio", (3360, 260), (420, 100),
                         {"samples": (finish, 0), "vae": (audio_vae, 0)})
-    video = add("CreateVideo", "Native video at 24 fps", (3360, 440), (420, 210),
-                {"images": (decoded, 0), "audio": (decoded_audio, 0), "fps": 24., "bit_depth": 8, "color_space": "sRGB"})
-    add("SaveVideo", "Save hybrid test", (3360, 720), (420, 510),
+    color = add("VideoColorStabilize", "Optional color stabilization", (3360, 450), (420, 400),
+                {"images": (decoded, 0), "enabled": True, "strength": .85, "fps": (fps, 0),
+                 "reference_start_seconds": 1., "reference_end_seconds": 8., "smoothing_seconds": 2.})
+    video = add("CreateVideo", "Create video", (3880, 100), (420, 210),
+                {"images": (color, 0), "audio": (decoded_audio, 0), "fps": (fps, 0), "bit_depth": 8, "color_space": "sRGB"})
+    add("SaveVideo", "Save hybrid test", (3880, 450), (420, 510),
         {"video": (video, 0), "filename_prefix": "video/HybridNative_FL2VA" if fl2va else "video/HybridNative_Ref2VA", "format": "mp4", "format.codec": "h264",
          "format.codec.encoding": "re-encode", "format.codec.encoding.crf": 16., "codec": "auto"})
     groups = [
         ("Models", [0, 0, 510, 1240]), ("First and last images" if fl2va else "Load reference image", [520, 0, 450, 1240]),
         ("Three prompts", [1000, 0, 1380, 980]), ("Size and handoff", [1000, 1020, 1380, 240]),
-        ("Two native samplers", [2400, 0, 870, 1280]), ("Native output", [3320, 0, 500, 1280]),
+        ("Two native samplers", [2400, 0, 870, 1280]), ("Decode, optional color and output", [3320, 0, 1020, 1280]),
     ]
     # Leave a full column for the notes without changing the layout within groups.
     for node in graph_nodes:

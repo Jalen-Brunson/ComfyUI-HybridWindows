@@ -1,8 +1,8 @@
 {
   "id": "7c0c8ab2-d899-58f7-87be-aefd9765a6f8",
   "revision": 0,
-  "last_node_id": 28,
-  "last_link_id": 52,
+  "last_node_id": 30,
+  "last_link_id": 55,
   "nodes": [
     {
       "id": 1,
@@ -1607,6 +1607,52 @@
     },
     {
       "id": 24,
+      "type": "PrimitiveFloat",
+      "pos": [
+        4520,
+        950
+      ],
+      "size": [
+        420,
+        110
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "value",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            51,
+            54
+          ]
+        }
+      ],
+      "title": "Output FPS",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        24.0
+      ],
+      "widgets_values_named": {
+        "value": 24.0
+      }
+    },
+    {
+      "id": 25,
       "type": "VAEDecode",
       "pos": [
         4520,
@@ -1617,7 +1663,7 @@
         100
       ],
       "flags": {},
-      "order": 23,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -1649,7 +1695,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 25,
+      "id": 26,
       "type": "VAEDecodeAudio",
       "pos": [
         4520,
@@ -1660,7 +1706,7 @@
         100
       ],
       "flags": {},
-      "order": 24,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -1679,7 +1725,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            51
+            53
           ]
         }
       ],
@@ -1692,18 +1738,18 @@
       "widgets_values_named": {}
     },
     {
-      "id": 26,
-      "type": "CreateVideo",
+      "id": 27,
+      "type": "VideoColorStabilize",
       "pos": [
         4520,
-        440
+        450
       ],
       "size": [
         420,
-        210
+        400
       ],
       "flags": {},
-      "order": 25,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
@@ -1712,15 +1758,120 @@
           "link": 50
         },
         {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "enabled"
+          }
+        },
+        {
+          "name": "strength",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "strength"
+          }
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 51,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "reference_start_seconds",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "reference_start_seconds"
+          }
+        },
+        {
+          "name": "reference_end_seconds",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "reference_end_seconds"
+          }
+        },
+        {
+          "name": "smoothing_seconds",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "smoothing_seconds"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            52
+          ]
+        }
+      ],
+      "title": "Optional color stabilization",
+      "properties": {
+        "Node name for S&R": "VideoColorStabilize"
+      },
+      "widgets_values": [
+        true,
+        0.85,
+        24.0,
+        1.0,
+        8.0,
+        2.0
+      ],
+      "widgets_values_named": {
+        "enabled": true,
+        "strength": 0.85,
+        "fps": 24.0,
+        "reference_start_seconds": 1.0,
+        "reference_end_seconds": 8.0,
+        "smoothing_seconds": 2.0
+      }
+    },
+    {
+      "id": 28,
+      "type": "CreateVideo",
+      "pos": [
+        5040,
+        100
+      ],
+      "size": [
+        420,
+        210
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 52
+        },
+        {
           "name": "audio",
           "type": "AUDIO",
-          "link": 51,
+          "link": 53,
           "shape": 7
         },
         {
           "name": "fps",
           "type": "FLOAT",
-          "link": null,
+          "link": 54,
           "widget": {
             "name": "fps"
           }
@@ -1749,45 +1900,45 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            52
+            55
           ]
         }
       ],
-      "title": "Native video at 24 fps",
+      "title": "Create video",
       "properties": {
         "Node name for S&R": "CreateVideo",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        24.0,
+        30.0,
         8,
         "sRGB"
       ],
       "widgets_values_named": {
-        "fps": 24.0,
+        "fps": 30.0,
         "bit_depth": 8,
         "color_space": "sRGB"
       }
     },
     {
-      "id": 27,
+      "id": 29,
       "type": "SaveVideo",
       "pos": [
-        4520,
-        720
+        5040,
+        450
       ],
       "size": [
         420,
         510
       ],
       "flags": {},
-      "order": 26,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 52
+          "link": 55
         },
         {
           "name": "filename_prefix",
@@ -1870,7 +2021,7 @@
       }
     },
     {
-      "id": 28,
+      "id": 30,
       "type": "MarkdownNote",
       "pos": [
         40,
@@ -1881,17 +2032,17 @@
         2320
       ],
       "flags": {},
-      "order": 27,
+      "order": 29,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "READ ME - model downloads and usage",
       "properties": {},
       "widgets_values": [
-        "# Ref2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is already connected to all three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. It guides appearance throughout the video rather than fixing the opening pose.\n3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.\n4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Connect the same reference image to each added conditioning node.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n"
+        "# Ref2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is already connected to all three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. It guides appearance throughout the video rather than fixing the opening pose.\n3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.\n4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Connect the same reference image to each added conditioning node.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n"
       ],
       "widgets_values_named": {
-        "text": "# Ref2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is already connected to all three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. It guides appearance throughout the video rather than fixing the opening pose.\n3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.\n4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Connect the same reference image to each added conditioning node.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n"
+        "text": "# Ref2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is already connected to all three conditioning nodes. Refer to it as `<Picture 1>` in your prompts. It guides appearance throughout the video rather than fixing the opening pose.\n3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.\n4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Connect the same reference image to each added conditioning node.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n"
       },
       "color": "#234",
       "bgcolor": "#345"
@@ -2262,7 +2413,7 @@
       46,
       23,
       0,
-      24,
+      25,
       0,
       "LATENT"
     ],
@@ -2270,7 +2421,7 @@
       47,
       6,
       0,
-      24,
+      25,
       1,
       "VAE"
     ],
@@ -2278,7 +2429,7 @@
       48,
       23,
       0,
-      25,
+      26,
       0,
       "LATENT"
     ],
@@ -2286,31 +2437,55 @@
       49,
       7,
       0,
-      25,
+      26,
       1,
       "VAE"
     ],
     [
       50,
-      24,
+      25,
       0,
-      26,
+      27,
       0,
       "IMAGE"
     ],
     [
       51,
-      25,
+      24,
       0,
+      27,
+      4,
+      "FLOAT"
+    ],
+    [
+      52,
+      27,
+      0,
+      28,
+      0,
+      "IMAGE"
+    ],
+    [
+      53,
       26,
+      0,
+      28,
       1,
       "AUDIO"
     ],
     [
-      52,
-      26,
+      54,
+      24,
       0,
-      27,
+      28,
+      2,
+      "FLOAT"
+    ],
+    [
+      55,
+      28,
+      0,
+      29,
       0,
       "VIDEO"
     ]
@@ -2378,11 +2553,11 @@
     },
     {
       "id": 6,
-      "title": "Native output",
+      "title": "Decode, optional color and output",
       "bounding": [
         4480,
         0,
-        500,
+        1020,
         1280
       ],
       "color": "#3f789e",
