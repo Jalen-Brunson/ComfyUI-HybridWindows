@@ -107,7 +107,7 @@ git clone https://github.com/Jalen-Brunson/ComfyUI-HybridWindows.git
 
 Restart ComfyUI, then open an example:
 
-- [Ref2VA: reference image](example_workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
+- [R2V (Ref2VA): reference image](example_workflows/H3%20Hybrid%20R2V%20-%20native%20KSampler%20Advanced.json).
 - [FL2VA: starting image and prompts](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
 - [FL2VA: optional recurring ending guide](example_workflows/H3%20Hybrid%20FL2VA%20-%20recurring%20end%20guide.json).
 
@@ -122,7 +122,9 @@ Copy the images from `example_workflows/assets/` into `ComfyUI/input/hybrid_wind
 or upload them through the native Load Image nodes and select the uploaded files.
 Source credits and license links are included in the [assets README](example_workflows/assets/README.md).
 
-Open `example_workflows/H3 Hybrid - native KSampler Advanced.json`. The Ref2VA
+R2V means reference-to-video; this example uses the H3 Ref2VA model.
+
+Open `example_workflows/H3 Hybrid R2V - native KSampler Advanced.json`. The Ref2VA
 example uses `hybrid_windows/ref2va_stock_portrait.jpg`, a stock portrait by
 [Nadine Ginzel on Pexels](https://www.pexels.com/photo/portrait-of-a-young-man-in-black-shirt-31428197/).
 Its three prompts describe the subject's black shirt, short light brown fringe,
@@ -227,3 +229,11 @@ step**. Overlap can change in this stage. No pixels are blended after decoding.
 Sampling uses one native noise draw for the complete timeline, sliced into
 windows. Reduced mottling remains an empirical question for real renders,
 not a guarantee of this implementation.
+
+## Research credit
+
+Credit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for
+[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)
+(ICML 2024), an inspiration for temporal generation through sliding-window
+denoising. This H3 adaptation uses sequential Euler warmup followed by a joint
+window finish.

@@ -136,7 +136,8 @@ def workflow_notes(mode, end_guide=False):
     )
     if mode == "fl2va" and not end_guide:
         extend = "Keep the starting image only on window 1; added windows continue through overlap carry."
-    return f"""# {variant} Hybrid - start here
+    label = "FL2VA" if mode == "fl2va" else "R2V (Ref2VA)"
+    return f"""# {label} Hybrid - start here
 
 Build one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.
 
@@ -190,6 +191,14 @@ Window/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 3
 To add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. {extend}
 
 Each queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).
+
+## Research credit
+
+Credit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for
+[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)
+(ICML 2024), an inspiration for temporal generation through sliding-window
+denoising. This H3 adaptation uses sequential Euler warmup followed by a joint
+window finish.
 """
 
 
@@ -365,7 +374,7 @@ async def build(mode="ref2va", end_guide=False):
     graph_nodes.append({
         "id": len(graph_nodes)+1, "type": "MarkdownNote", "pos": [40, 100], "size": [1040, 2320],
         "flags": {}, "order": len(graph_nodes), "mode": 0, "inputs": [], "outputs": [],
-        "title": "READ ME - model downloads and usage", "properties": {},
+        "title": "READ ME - FL2VA" if fl2va else "READ ME - R2V (Ref2VA)", "properties": {},
         "widgets_values": [note], "widgets_values_named": {"text": note},
         "color": "#234", "bgcolor": "#345",
     })
@@ -378,7 +387,7 @@ async def build(mode="ref2va", end_guide=False):
              "extra": {"ds": {"scale": .29, "offset": [50, 100]}, "VHS_latentpreview": False}}
     folder = ROOT / "example_workflows"
     folder.mkdir(exist_ok=True)
-    name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid - native KSampler Advanced"
+    name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid R2V - native KSampler Advanced"
     if end_guide:
         name = "H3 Hybrid FL2VA - recurring end guide"
     (folder / f"{name}.json").write_text(json.dumps(graph, indent=2)+"\n")
