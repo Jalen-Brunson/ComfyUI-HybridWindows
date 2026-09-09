@@ -8,14 +8,15 @@ The diagram illustrates the hybrid concept. Resuming from a finished portion
 of a video is not supported in this version.
 
 The examples have three native prompt text boxes, image conditioning,
-motion control, native PDD LoRA loading, native AV decoding and Save Video.
+optional motion control, native PDD LoRA loading, native AV decoding and Save Video.
 Only two node types come from this pack:
 
 - **H3 Hybrid Windows** assigns conditioning to windows and supplies separate
   sequential/joint MODEL outputs plus the full timeline's frame count.
 - **H3 Window ControlNet** uses core's Fun Control implementation with the
   correct source-frame offset for each window. Its encoded-control cache lasts
-  only for one sampling call. Use native **Add Noise to Image** upstream.
+  only for one sampling call. Native **Add Noise to Image** is an optional
+  upstream experiment.
 
 This version supports H3. Other video-model families are not implemented yet.
 
@@ -40,9 +41,18 @@ folders, image/control setup, sampler settings and instructions for adding windo
 ## Examples
 
 Open `example_workflows/H3 Hybrid - native KSampler Advanced.json`. Upload a reference
-image and a **24 fps** control video through the native loaders. The example
+image and, if using FUN, a **24 fps** processed control video through the native loaders. The example
 names `hybrid_man_reference.png` and `hybrid_man_loop_90s.mp4` refer to local
 test inputs; media and model weights are not included in this directory.
+
+[FUN documents Canny, depth, HED, MLSD and pose control videos](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union).
+The loader and control node do not extract those representations from RGB footage.
+The placeholder stock clip needs an appropriate preprocessor before Control noise,
+or replacement with a processed control video. Raw RGB is accepted by the socket,
+but is not a documented general motion-reference recipe. FUN's source-video
+inpainting uses a separate mask/source path that this pack does not expose.
+Native Ref2VA video-reference conditioning is also separate; the current Ref2VA
+example wires only an image reference.
 
 The FL2VA example has separate native **Load Image** nodes for the first and
 last frames. The first image connects only to window 1; the last image connects
@@ -69,6 +79,12 @@ The FL2VA flow substitutes `minimax_h3_fl2va_int8_convrot.safetensors` and
 `minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors`. It uses native
 **MiniMax H3 Image to Video** conditioning with the same sampler settings.
 
+The preset FUN filename is a locally converted full-width control model.
+The public `minimax_h3_fun_controlnet_union_pruned_bf16.safetensors` requires
+the matching **pruned base and pruned PDD LoRA**; replacing only the control
+file on the full-base defaults causes a model-shape mismatch. Both workflow
+notes link all three files for the optional pruned setup.
+
 | Setting | Sequential KSampler Advanced | Joint KSampler Advanced |
 |---|---|---|
 | Model | `sequential_model` | `joint_model` |
@@ -91,11 +107,14 @@ calculated total automatically. Increase the control-video trim duration when
 making a longer timeline; the example reads its first 30 seconds. A control
 source shorter than the requested span repeats its last frame, following core.
 
-The example starts at 832×480, control strength 0.5 and control noise 0.1.
+The example starts at 832×480, control strength 0.5 and control noise 0.1;
+the control values are experimental settings, not established quality defaults.
 In Ref2VA, all three prompts share the **Load reference image** node. Native H3
 conditioning nodes can accept additional reference images. To test without control, connect the sigma
 shift MODEL directly to Hybrid Windows; ComfyUI skips the disconnected control
-branch. The adapter expects unmasked AV latents. Preservation of original
+branch. Control is optional in both examples. Without it, FL2VA uses prompts,
+boundary images and generated overlap carry, with no source-video motion input.
+The adapter expects unmasked AV latents. Preservation of original
 source masks is outside this version. Native image guides use frame positions
 within their connected window. When adding windows, keep the first-frame
 connection on the first window and move the last-frame connection to the new
@@ -146,5 +165,6 @@ rebuilds both examples against the installed core schemas. A ComfyUI restart is
 required after first installing this pack.
 
 A three-window FL2VA GPU smoke test completed with native PDD at 6/2 steps,
-first/last images and motion control, exporting 107 frames at 256×256 with audio.
-This checks execution and export; long-generation quality still needs visual testing.
+first/last images and raw RGB in the control socket, exporting 107 frames at
+256×256 with audio. This checks execution and export, not the suitability of
+that control input or long-generation quality.

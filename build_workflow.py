@@ -26,6 +26,8 @@ def workflow_notes(mode):
     video_vae = "minimax_h3_video_vae_int8_convrot.safetensors"
     audio_vae = "minimax_h3_audio_vae_fp32.safetensors"
     control = "minimax_h3_fun_controlnet_union_pruned_bf16.safetensors"
+    pruned_base = f"minimax_h3_{mode}_pruned_int8_convrot.safetensors"
+    pruned_pdd = f"MiniMax-H3-{variant}-Acc-8Step_pruned_comfy.safetensors"
     images = (
         "Upload a first image and a last image in the two **Load Image** nodes. "
         "The first guides the beginning of the whole video; the last guides its end. "
@@ -60,20 +62,30 @@ Install [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridW
   Save in `models/vae/`.
 - **Audio VAE:** [{audio_vae}]({official}/vae/{audio_vae})
   Save in `models/vae/`.
-- **Fun Control model:** [{control}]({official}/model_patches/{control})
-  Save in `models/model_patches/` and select it in **Native Fun Control model**.
 
-The control loader's preset `minimax_h3_fun_controlnet_union.safetensors` is a locally converted filename. For a new install, choose the public control file linked above. Refresh the model lists after downloading and select your files in the loaders.
+Refresh the model lists after downloading and select your files in the loaders. **FUN is optional** for both flows. To skip it, connect **Native video/audio shifts** MODEL directly to **Hybrid windows** MODEL; the control branch then does not run.
 
 Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.
+
+### Optional FUN models and inputs
+
+The preset `minimax_h3_fun_controlnet_union.safetensors` is a locally converted, full-width control model for the full base above. The public pruned control is **not a drop-in replacement** for that base. For the public pruned path, select all three matching files:
+
+- [Pruned {variant} base]({official}/diffusion_models/{pruned_base}) in `models/diffusion_models/`.
+- [Pruned {variant} PDD LoRA]({kijai}/loras/{pruned_pdd}) in `models/loras/minimax/`.
+- [Pruned FUN control]({official}/model_patches/{control}) in `models/model_patches/`.
+
+[FUN's documented controls](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union) are **Canny, depth, HED, MLSD and pose videos**. The video loader does not extract these from ordinary RGB footage. Supply a processed control video, or add an appropriate preprocessor before Control noise. The placeholder stock clip is ordinary RGB and needs preprocessing for this path. Raw RGB into `control_video` is accepted by the node but is not a documented general motion-reference recipe.
+
+FUN also supports source-video inpainting through a separate mask/source path, which this pack does not expose. H3 Ref2VA's native video-reference conditioning is another separate path; this example currently wires only an image reference.
 
 ## Run the flow
 
 1. {images}
-2. Upload your **24 fps control video** in **24 fps motion-control video**. The example media filenames are placeholders; supply your own files. Confirm the selected take, start time and duration. Output FPS does not resample the control input.
+2. If using FUN, upload your **24 fps processed control video** in **24 fps motion-control video**, as described above. Otherwise skip the control branch. The media filenames are placeholders; supply your own files. Confirm the selected take, start time and duration. Output FPS does not resample the control input.
 3. Edit **Prompt 1, 2 and 3** for consecutive overlapping windows. Keep identity, clothing, hairstyle and lighting descriptions consistent for a continuous shot.
 4. Set **Width / Height** (default **832 x 480**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
-5. Leave **Read first 30 seconds** long enough to cover the output. A short control holds its final frame. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
+5. With FUN, leave **Read first 30 seconds** long enough to cover the output. A short control holds its final frame. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
 
 ## Keep the two samplers paired
 
@@ -81,7 +93,7 @@ Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD alre
 - **Switch at step = 6** connects both sides of the handoff. Valid split values are **1-7** with this 8-step setup.
 - **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.
 - **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.
-- **Control strength = 0.5**, **control noise = 0.1** are the starting settings. For a new generation, set the same new noise seed in both samplers.
+- **Control strength = 0.5**, **control noise = 0.1** are experimental example settings, not established FUN quality defaults. For a new generation, set the same new noise seed in both samplers.
 
 ## Longer videos and optional control
 
