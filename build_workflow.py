@@ -197,7 +197,7 @@ async def build(mode="ref2va"):
              "groups": [{"id": i+1, "title": title, "bounding": bounds, "color": "#3f789e", "font_size": 24}
                         for i, (title, bounds) in enumerate(groups)], "config": {}, "version": .4,
              "extra": {"ds": {"scale": .37, "offset": [50, 100]}, "VHS_latentpreview": False}}
-    folder = ROOT / "workflows"
+    folder = ROOT / "example_workflows"
     folder.mkdir(exist_ok=True)
     name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid - native KSampler Advanced"
     (folder / f"{name}.json").write_text(json.dumps(graph, indent=2)+"\n")

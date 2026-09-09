@@ -29,15 +29,15 @@ git clone https://github.com/Jalen-Brunson/ComfyUI-HybridWindows.git
 
 Restart ComfyUI, then open either example:
 
-- [Ref2VA: reference image](workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
-- [FL2VA: first and last images](workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
+- [Ref2VA: reference image](example_workflows/H3%20Hybrid%20-%20native%20KSampler%20Advanced.json).
+- [FL2VA: first and last images](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
 
 This pack uses ComfyUI's existing Python dependencies. Model weights and test
 media are supplied separately through the native loader nodes.
 
 ## Examples
 
-Open `workflows/H3 Hybrid - native KSampler Advanced.json`. Upload a reference
+Open `example_workflows/H3 Hybrid - native KSampler Advanced.json`. Upload a reference
 image and a **24 fps** control video through the native loaders. The example
 names `hybrid_man_reference.png` and `hybrid_man_loop_90s.mp4` refer to local
 test inputs; media and model weights are not included in this directory.
