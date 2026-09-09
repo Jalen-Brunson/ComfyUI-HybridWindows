@@ -9,8 +9,7 @@ See the compatibility table below for the implementation and test scope.
 
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
-The diagram illustrates the hybrid concept. Resuming from a finished portion
-of a video is not supported in this version.
+The diagram illustrates the hybrid concept.
 
 The examples have three native prompt text boxes, image conditioning,
 native PDD LoRA loading, native AV decoding, optional color stabilization and Save Video.
