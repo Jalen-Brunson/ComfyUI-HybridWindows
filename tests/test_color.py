@@ -108,6 +108,13 @@ class ColorTests(unittest.TestCase):
         images = clip(count=2)
         torch.testing.assert_close(run(images, source_frames=images[:, ::2, ::2]), images, rtol=0, atol=2e-7)
 
+    def test_unchanged_zero_channel_does_not_block_other_color_changes(self):
+        rgb = np.array([[[.4, .4, 0.]]], dtype=np.float32)
+        corrected = color.correct_frame(rgb, [0., 0.], 1., [0., .01])
+        self.assertGreater(float(corrected[0, 0, 0]), .41)
+        self.assertEqual(corrected[0, 0, 2], 0.)
+        np.testing.assert_allclose(luma(corrected), luma(rgb), rtol=0, atol=2e-7)
+
     def test_misaligned_source_fails_before_processing(self):
         images = clip()
         with self.assertRaisesRegex(ValueError, "same frame count"):

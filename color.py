@@ -68,7 +68,10 @@ def correct_frame(rgb, center, gain, shift):
     # Limit the color change at the RGB gamut boundary, preserving luma rather
     # than clipping channels independently and moving highlights/shadows.
     room = np.where(delta > 0, 1. - rgb, rgb)
-    scale = np.minimum(1., np.min(room / np.maximum(np.abs(delta), 1e-12), axis=-1))
+    magnitude = np.abs(delta)
+    limits = np.ones_like(delta)
+    np.divide(room, magnitude, out=limits, where=magnitude > 1e-12)
+    scale = np.minimum(1., np.min(limits, axis=-1))
     return np.clip(rgb + delta * scale[..., None], 0., 1.)
 
 
