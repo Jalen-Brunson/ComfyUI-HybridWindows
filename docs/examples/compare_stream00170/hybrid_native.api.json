@@ -1,0 +1,818 @@
+{
+ "101": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "stream_00170.mp4"
+  }
+ },
+ "102": {
+  "class_type": "Video Slice",
+  "inputs": {
+   "video": [
+    "101",
+    0
+   ],
+   "start_time": 0.0,
+   "duration": 120.625,
+   "strict_duration": true
+  }
+ },
+ "103": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "102",
+    0
+   ]
+  }
+ },
+ "104": {
+  "class_type": "ImageAddNoise",
+  "inputs": {
+   "image": [
+    "103",
+    0
+   ],
+   "seed": 123,
+   "strength": 0.1
+  }
+ },
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "hybrid_man_reference.png"
+  }
+ },
+ "2": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "3": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "lora_name": "minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors",
+   "strength_model": 1.0,
+   "model": [
+    "2",
+    0
+   ]
+  }
+ },
+ "4": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "shift_video": 12.0,
+   "shift_audio": 3.0,
+   "model": [
+    "3",
+    0
+   ]
+  }
+ },
+ "5": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  }
+ },
+ "6": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+  }
+ },
+ "7": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  }
+ },
+ "200": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 0,
+   "length": 243
+  }
+ },
+ "300": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "200",
+    0
+   ]
+  }
+ },
+ "201": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 204,
+   "length": 243
+  }
+ },
+ "301": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "201",
+    0
+   ]
+  }
+ },
+ "202": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 408,
+   "length": 243
+  }
+ },
+ "302": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "202",
+    0
+   ]
+  }
+ },
+ "203": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 612,
+   "length": 243
+  }
+ },
+ "303": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "203",
+    0
+   ]
+  }
+ },
+ "204": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 816,
+   "length": 243
+  }
+ },
+ "304": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "204",
+    0
+   ]
+  }
+ },
+ "205": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 1020,
+   "length": 243
+  }
+ },
+ "305": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "205",
+    0
+   ]
+  }
+ },
+ "206": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 1224,
+   "length": 243
+  }
+ },
+ "306": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "206",
+    0
+   ]
+  }
+ },
+ "207": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 1428,
+   "length": 243
+  }
+ },
+ "307": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "207",
+    0
+   ]
+  }
+ },
+ "208": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 1632,
+   "length": 243
+  }
+ },
+ "308": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "208",
+    0
+   ]
+  }
+ },
+ "209": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 1836,
+   "length": 243
+  }
+ },
+ "309": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "209",
+    0
+   ]
+  }
+ },
+ "210": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 2040,
+   "length": 243
+  }
+ },
+ "310": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "210",
+    0
+   ]
+  }
+ },
+ "211": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 2244,
+   "length": 243
+  }
+ },
+ "311": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "211",
+    0
+   ]
+  }
+ },
+ "212": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 2448,
+   "length": 243
+  }
+ },
+ "312": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "212",
+    0
+   ]
+  }
+ },
+ "213": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "104",
+    0
+   ],
+   "batch_index": 2652,
+   "length": 243
+  }
+ },
+ "313": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "prompt": "Use <Video 1> as the continuous motion, timing and camera-framing reference. Replace the woman in <Video 1> with the man in <Picture 1>: a fully human man with shoulder-length light brown hair, a full brown beard and moustache, blue eyes, wearing a plain black shirt, with no robotic or metal parts anywhere on his face or body. He walks slowly toward the camera down the rubble-strewn street of a ruined, grey, bombed-out city under an overcast sky, looking into the lens and talking, matching the body movement, head motion, gestures, mouth movement and pacing of <Video 1> exactly. Keep his appearance, the dusty daylight, the setting and the framing consistent throughout this single continuous shot. Steady camera tracking backward in front of him. He speaks in a calm, natural male voice over quiet wind and distant ambience. No shot changes or zooms.",
+   "width": 768,
+   "height": 576,
+   "length": 243,
+   "ref_image_size": "match",
+   "clip": [
+    "5",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "1",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "213",
+    0
+   ]
+  }
+ },
+ "19": {
+  "class_type": "H3HybridWindows",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "window_frames": 243,
+   "overlap_frames": 39,
+   "total_steps": 8,
+   "prompts.positive_0": [
+    "300",
+    0
+   ],
+   "prompts.positive_1": [
+    "301",
+    0
+   ],
+   "prompts.positive_2": [
+    "302",
+    0
+   ],
+   "prompts.positive_3": [
+    "303",
+    0
+   ],
+   "prompts.positive_4": [
+    "304",
+    0
+   ],
+   "prompts.positive_5": [
+    "305",
+    0
+   ],
+   "prompts.positive_6": [
+    "306",
+    0
+   ],
+   "prompts.positive_7": [
+    "307",
+    0
+   ],
+   "prompts.positive_8": [
+    "308",
+    0
+   ],
+   "prompts.positive_9": [
+    "309",
+    0
+   ],
+   "prompts.positive_10": [
+    "310",
+    0
+   ],
+   "prompts.positive_11": [
+    "311",
+    0
+   ],
+   "prompts.positive_12": [
+    "312",
+    0
+   ],
+   "prompts.positive_13": [
+    "313",
+    0
+   ]
+  }
+ },
+ "20": {
+  "class_type": "EmptyMiniMaxH3LatentAV",
+  "inputs": {
+   "width": 768,
+   "height": 576,
+   "length": [
+    "19",
+    3
+   ]
+  }
+ },
+ "21": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "19",
+    2
+   ]
+  }
+ },
+ "22": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "add_noise": "enable",
+   "noise_seed": 123,
+   "steps": 8,
+   "cfg": 1.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 0,
+   "end_at_step": 6,
+   "return_with_leftover_noise": "enable",
+   "positive": [
+    "19",
+    2
+   ],
+   "negative": [
+    "21",
+    0
+   ],
+   "model": [
+    "19",
+    0
+   ],
+   "latent_image": [
+    "20",
+    0
+   ]
+  }
+ },
+ "23": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "add_noise": "disable",
+   "noise_seed": 123,
+   "steps": 8,
+   "cfg": 1.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 6,
+   "end_at_step": 8,
+   "return_with_leftover_noise": "disable",
+   "positive": [
+    "19",
+    2
+   ],
+   "negative": [
+    "21",
+    0
+   ],
+   "model": [
+    "19",
+    1
+   ],
+   "latent_image": [
+    "22",
+    0
+   ]
+  }
+ },
+ "25": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "23",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "VAEDecodeAudio",
+  "inputs": {
+   "samples": [
+    "23",
+    0
+   ],
+   "vae": [
+    "7",
+    0
+   ]
+  }
+ },
+ "28": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "fps": 24.0,
+   "bit_depth": 8,
+   "color_space": "sRGB",
+   "images": [
+    "25",
+    0
+   ],
+   "audio": [
+    "26",
+    0
+   ]
+  }
+ },
+ "29": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "filename_prefix": "video/compare_stream00170/hybrid_native_6p2",
+   "format": "mp4",
+   "format.codec": "h264",
+   "format.codec.encoding": "re-encode",
+   "format.codec.encoding.crf": 16.0,
+   "codec": "auto",
+   "video": [
+    "28",
+    0
+   ]
+  }
+ }
+}

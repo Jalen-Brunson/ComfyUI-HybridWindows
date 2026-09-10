@@ -17,6 +17,58 @@ native PDD LoRA loading, native AV decoding, optional color stabilization and Sa
 Hybrid sampling supports H3. The decoded-frame color node can be used with other
 models and samplers.
 
+## Example: Looping Sampler vs Hybrid on a two-minute clip
+
+Same clip, same reference picture, same model chain, same compute; only the sampler differs.
+Left to right: the motion-reference clip (`stream_00170`, the MMH3Tools example video, its
+person replaced by `<Picture 1>` in both renders), the **MMH3 Looping Sampler** (8 sequential
+steps per chunk) and **Hybrid Windows** (6 sequential + 2 joint steps). 14 windows of 243 frames
+with a 39-frame overlap = 2895 frames / 120.6 s at 768x576, seed 123, Ref2VA int8 + the native
+PDD 8-step LoRA at 1.0, euler / simple, CFG 1, plain SDPA attention, one prompt for every window,
+no post-processing. Both arms run 112 model evaluations; pure sampling time 43:17 vs 43:14.
+
+[![Original | Looping Sampler | Hybrid, 6-second excerpt at 1:32](docs/examples/original_looping_hybrid_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4)
+
+*6-second excerpt at 1:32 (window 12 of 14). Click it for the full 120-second video with audio
+(track 1: left = Looping, right = Hybrid; track 2: the original's audio).*
+
+[![Looping Sampler vs Hybrid with the per-window chunk-quality readout](docs/examples/looping_vs_hybrid_metrics_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_chunk_metrics.mp4)
+
+*The same excerpt with the per-window chunk-quality panels (window 1 is the anchor; amber =
+WATCH). Click for the full video.*
+
+Full-length videos (release assets):
+[Looping vs Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_clean.mp4) ·
+[with metrics](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_chunk_metrics.mp4) ·
+[Original | Looping | Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4) ·
+colour-corrected: [Looping vs Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_color_clean.mp4) ·
+[with metrics](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_color_chunk_metrics.mp4) ·
+[Original | Looping | Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid_color.mp4).
+Stills at 1:40: [original / looping / hybrid](docs/examples/original_looping_hybrid_100s.png),
+[metrics overlay](docs/examples/looping_vs_hybrid_metrics_100s.png),
+[colour-corrected](docs/examples/original_looping_hybrid_color_100s.png),
+[colour-corrected with metrics](docs/examples/looping_vs_hybrid_color_metrics_100s.png).
+
+| Measured on the finished videos | Looping Sampler (8) | Hybrid (6 + 2) |
+|---|---|---|
+| Pure sampling time | 43:17 | 43:14 |
+| ArcFace likeness to the reference picture, whole clip (median / p10) | 0.649 / 0.581 | 0.736 / 0.693 |
+| Likeness, window 1 → window 14 | 0.72 → 0.56 | 0.75 → 0.71 |
+| Fine texture at window 14 (ratio to the clip's own first window) | ×1.56 | ×1.45 |
+| Skin colour patchiness ("mottle") at window 14 | ×1.54 | ×1.00 |
+| First WATCH verdict of the chunk-quality readout | window 7 | window 9 |
+
+Both renders drift in the same direction over two minutes (the usual contrast and texture climb
+of chained H3 generation; neither reaches BAD). The hybrid drifts less and, most visibly, keeps
+the reference identity flat across the whole clip where the sequential chain loses it steadily.
+This is one seed on one clip; it isolates the sampler, not a full production pipeline.
+
+The colour-corrected variants apply the same chroma-only grade to both renders (tint and
+saturation nudged back toward each clip's first eight seconds, following the source's own colour
+trajectory; brightness, contrast, texture and audio untouched). The exact API payloads of both arms,
+the builder that produced them and the colour-grade command are in
+[docs/examples/compare_stream00170](docs/examples/compare_stream00170/).
+
 ## Speed LoRA, sampler and scheduler compatibility
 
 “Completed” means the combination produced output in a recorded test. It does
