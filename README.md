@@ -1,6 +1,6 @@
 # Hybrid Windows for ComfyUI
 
-Experimental H3 hybrid sampling through two stock KSampler Advanced nodes or the single **H3 Hybrid Window Sampler** used by the accessible 05A workflow.
+Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes** or a **single Hybrid Window Sampler**.
 
 **Use plain `euler` in both samplers.** The supplied PDD examples use `simple`.
 Hybrid sampling is not inherently PDD-only: non-PDD DMD Turbo runs have also
@@ -99,24 +99,6 @@ with joint finishing while keeping the seed, prompts and inputs fixed.
 
 **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. Plain Euler with zero churn is required. The default is six sequential steps followed by two joint steps.
 
-## Accessible 05 workflow
-
-[05A Hybrid - accessible fresh inpaint](example_workflows/05A%20Hybrid%20-%20accessible%20fresh%20inpaint.json) starts with **Load source video → Write prompt → Add reference images → Define blur**, followed by Queue. Its instruction panels include [model download links and folders, chunks, blur/noise, optional hair segmentation, masks and audio](docs/accessible-workflow.md).
-
-Install **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod). Face analysis needs InsightFace/buffalo_l and a compatible ONNX Runtime. The Sapiens2 checkpoint is needed only when enabling hair segmentation. None of the excluded `vlm_video_prompt`, `wan_chunk_io`, `path_tools`, `minimax_h3_mask_tools` or `MaskVidExperiments` nodes is used.
-
-The clear source feeds video/audio encoding. A second branch runs **face blur → native Image Add Noise (0.10) → Image Composite Masked → Control 1**. The source therefore supplies the first control automatically. **Inpaint mask**, **Control 2**, and **Sapiens2 Hair region mask** are separate optional groups, all muted by default. Enable a group by setting all its nodes to Always. Disabled groups need no input files or model execution.
-
-The inpaint mask, when enabled, controls both sampler preservation and where noise is composited into Control 1. Without it, the full picture may regenerate and noise affects the full control image. Sapiens2 extracts Hair from the clear source and feeds the face node's region_mask, without an external hair-mask loader. It does not replace the inpaint mask.
-
-The optional **Load H3 RefMods → Apply H3 RefMods to Cond Set** branch applies saved mods to every chunk before the control references. All loader slots default to `(none)`, which leaves conditioning unchanged. No trainer/extractor is included; see the workflow’s RefMods instruction panel.
-
-Defaults: **832 × 480, two 124-frame windows, 39-frame overlap, 209 frames at 24 fps, Euler/simple, 6+2 steps**, with the 05 flow's DMD Turbo LoRA. The original beta57 schedule needs an extra extension and is not reproduced here. Enter one pipe-separated prompt per window. Source audio is preserved by default; the output uses the original loaded soundtrack directly.
-
-This fresh-run edition omits automatic project/prompt-file handling, accepted-prefix resume/master assembly, persistent source-encode caching, delayed schedules, audio frame ranges and diagnostic branches. RefMod loading and application are included; the trainer/extractor, background removal and custom attention patches are omitted. The original 05 is unchanged.
-
-`python build_accessible_workflow.py` rebuilds the shareable UI/API examples and local copy in `user/default/workflows/H3 Diagnostics/`, preserving local widget settings where node titles match. The repo example uses placeholder paths. `python tests/validate_accessible_workflow.py` checks optional branch combinations, excluded imports, layout, mask behavior, noise compositing and Hair extraction on CPU. It does not perform a GPU render or segmentation-model inference.
-
 ## Included custom nodes
 
 The pack installs **four custom nodes**. The H3 nodes are under
@@ -124,7 +106,7 @@ The pack installs **four custom nodes**. The H3 nodes are under
 
 | Node | What it does | Used in the examples |
 |---|---|---|
-| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | Accessible 05A |
+| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | — |
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, and the calculated `total_frames`. Connect these to the two native KSampler Advanced nodes and the full-timeline latent. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
