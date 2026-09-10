@@ -68,13 +68,17 @@ Keep the other buffalo_l ONNX files beside it, without another nested buffalo_l 
 
 The ComfyUI Python environment also needs [InsightFace](https://github.com/deepinsight/insightface/tree/master/python-package) and [ONNX Runtime](https://onnxruntime.ai/docs/install/). Match the face node's provider to your installation: **cuda** for GPU execution or **cpu**. Set the node's enabled switch to false to skip face analysis while setting up the rest of the flow.
 
-## Optional hair segmentation: Sapiens2
+## Optional face + hair segmentation blur: Sapiens2
 
 Download [sapiens2_5b_seg.safetensors](https://huggingface.co/facebook/sapiens2-seg-5b/blob/main/sapiens2_5b_seg.safetensors) from [Meta's Sapiens2 segmentation model page](https://huggingface.co/facebook/sapiens2-seg-5b).
 
-Save it in `ComfyUI/models/sapiens2/`, then select it in **Optional hair segmentation model**. Choose a **segmentation** checkpoint, not a pose or normals model. The class extractor is already set to **Hair** with **29** classes.
+Save it in `ComfyUI/models/sapiens2/`, then select it in **Optional hair segmentation model**. Choose a **segmentation** checkpoint, not a pose or normals model.
 
-This checkpoint is only needed when you unmute the **OPTIONAL Hair region mask** group. Leave the group muted to skip its model loading and execution. The existing [ComfyUI-Sapiens2 nodes](https://github.com/kijai/ComfyUI-Sapiens2) provide both segmentation and Hair extraction.
+This checkpoint is only needed when you unmute the **OPTIONAL Face + hair seg blur** group. Leave the group muted to skip its model loading and execution. The existing [ComfyUI-Sapiens2 nodes](https://github.com/kijai/ComfyUI-Sapiens2) provide the segmentation and per-class extraction.
+
+**Why this is the better blur.** By default the blur region is an ellipse fitted to the face detector's bounding *box*. An ellipse cannot tell what is inside it, so it also softens anything that happens to sit in *front* of the face — hands, jewellery, props — while clipping the jaw and neck it is meant to cover. The group extracts **Face_Neck + Hair + Eyeglass** and combines them into `region_mask` instead. Because `Upper_Lip`, `Lower_Lip`, `Upper_Teeth`, `Lower_Teeth` and `Tongue` are separate Sapiens2 classes, that union is already "face and hair minus mouth and lips" — lip articulation survives without any geometric mouth cut. `Upper_Lip + Lower_Lip` additionally feed `protect_mask` so the small `region_grow` cannot dilate the face region over the lips.
+
+**Two switches, not one.** Unmute the group **and** set the blur node's **face_detector** to **false**. With `face_detector` on, the ellipse is still drawn *in addition to* the region mask, which is exactly the collateral blur this group avoids. Measured over a 4153-frame clip: residual face recognition 0.10 with the segmentation versus 0.19 for the ellipse, and 3.2% of the blurred pixels landing outside the face and hair versus 18%. With `face_detector` off no InsightFace model is loaded at all unless `measure_residual` is on.
 
 <!-- workflow-panel -->
 # Define chunks and prompts
@@ -131,12 +135,14 @@ Blur is applied only to the control branch. It does not blur the source being en
 
 ## Face-blur controls
 
-The **Face Anonymize Video** node detects faces automatically. There is **no hair mask or region-mask video loader**. The optional Sapiens2 group supplies `region_mask` directly from the clear source when enabled. `protect_mask` is left disconnected.
+The **Face Anonymize Video** node detects faces automatically. There is **no hair mask or region-mask video loader**. The optional Sapiens2 group supplies `region_mask` and `protect_mask` directly from the clear source when enabled.
 
 - **enabled:** true applies blur; false passes the original source frames through as Control 1.
 - **gender:** `any` by default. Select a specific option only when you want detection filtered that way.
 - **all_faces:** true by default; false tracks the largest matching face.
-- **keep_mouth:** true by default, retaining mouth/jaw detail for articulation. Turn it off to blur the full detected face region.
+- **keep_mouth:** true by default, retaining mouth/jaw detail for articulation. Turn it off to blur the full detected face region. Note that it keeps the whole lower face, not just the lips: jaw, chin and cheeks all stay sharp, which is a large amount of identity. Prefer the segmentation group over `keep_mouth` when you have the model.
+- **face_detector:** true by default. Set it to false to blur **only** `region_mask` (minus `protect_mask`) with no ellipse at all — see the segmentation section above. It requires a connected `region_mask`; without one the node stops with an error rather than silently blurring nothing.
+- **region_min_component:** drops `region_mask` blobs smaller than this fraction of the largest one, before `region_grow` inflates them, clearing stray segmentation specks on the background or on props. 0 disables it; 0.05 is a good default with the segmentation group, and still keeps a second performer's face.
 - **mouth_line:** controls how far down the face the upper-face blur reaches when keep_mouth is on; default 0.73.
 - **strength:** default 0.5; larger values apply stronger blur.
 - **expand:** grows the detected face box; default 0.45.

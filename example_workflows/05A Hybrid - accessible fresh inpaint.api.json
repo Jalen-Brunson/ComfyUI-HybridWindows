@@ -192,7 +192,7 @@
       "title": "Load source video + audio"
     }
   },
-  "26": {
+  "33": {
     "class_type": "H3InsightFaceLoader",
     "inputs": {
       "model_folder": "models/insightface/buffalo_l"
@@ -201,7 +201,7 @@
       "title": "InsightFace model folder"
     }
   },
-  "27": {
+  "34": {
     "class_type": "FaceAnonymizeVideo",
     "inputs": {
       "enabled": true,
@@ -220,17 +220,19 @@
       "output_mask": false,
       "hair_expand": 0.0,
       "region_mode": "blur",
-      "region_grow": 6,
+      "region_grow": 2,
       "mouth_keepout": true,
       "mouth_anchor": "landmarks",
       "mouth_gap": 0.5,
       "protect_grow": 2,
+      "face_detector": true,
+      "region_min_component": 0.0,
       "images": [
         "18",
         0
       ],
       "insightface": [
-        "26",
+        "33",
         0
       ]
     },
@@ -238,13 +240,13 @@
       "title": "Blur source faces \u2192 Control 1"
     }
   },
-  "28": {
+  "35": {
     "class_type": "ImageAddNoise",
     "inputs": {
       "seed": 506229209449357,
       "strength": 0.1,
       "image": [
-        "27",
+        "34",
         0
       ]
     },
@@ -252,18 +254,18 @@
       "title": "Source control noise \u2014 0.10"
     }
   },
-  "29": {
+  "36": {
     "class_type": "ImageCompositeMasked",
     "inputs": {
       "x": 0,
       "y": 0,
       "resize_source": false,
       "destination": [
-        "27",
+        "34",
         0
       ],
       "source": [
-        "28",
+        "35",
         0
       ]
     },
@@ -271,7 +273,7 @@
       "title": "Composite noise into Control 1"
     }
   },
-  "30": {
+  "37": {
     "class_type": "LoadImage",
     "inputs": {
       "image": "hybrid_windows/ref2va_stock_portrait.jpg"
@@ -280,11 +282,11 @@
       "title": "3. Reference image \u2014 Picture 1"
     }
   },
-  "31": {
+  "38": {
     "class_type": "MMH3ImageList",
     "inputs": {
       "images.image_0": [
-        "30",
+        "37",
         0
       ]
     },
@@ -292,7 +294,7 @@
       "title": "Reference pictures (add images here)"
     }
   },
-  "32": {
+  "39": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
       "value": "The person in <Picture 1> follows the movement and timing in <Video 1>. Preserve the source video's composition, background and lighting. Natural motion, consistent appearance. | Continue the same uninterrupted shot of the person in <Picture 1>, following the movement and timing in <Video 1>. Keep the established appearance, composition, background and lighting consistent."
@@ -301,7 +303,7 @@
       "title": "4. Window prompts \u2014 separate with |"
     }
   },
-  "33": {
+  "40": {
     "class_type": "MMH3ReferenceMultiPrompt",
     "inputs": {
       "width": [
@@ -318,7 +320,7 @@
       ],
       "ref_image_size": "match",
       "prompts": [
-        "32",
+        "39",
         0
       ],
       "use_input_audio": false,
@@ -333,6 +335,7 @@
         0
       ],
       "embeddings": "",
+      "static_ref_videos": "",
       "clip": [
         "4",
         0
@@ -346,11 +349,11 @@
         0
       ],
       "ref_images": [
-        "31",
+        "38",
         0
       ],
       "ref_videos.ref_video_0": [
-        "29",
+        "36",
         0
       ]
     },
@@ -358,7 +361,7 @@
       "title": "Encode references + window prompts"
     }
   },
-  "34": {
+  "41": {
     "class_type": "MiniMaxH3RefModsLoader",
     "inputs": {
       "show_info": false,
@@ -391,18 +394,18 @@
       "title": "Optional RefMods \u2014 select saved mods"
     }
   },
-  "35": {
+  "42": {
     "class_type": "H3RefModCondSetApply",
     "inputs": {
       "retention": 1.0,
       "insert_position": "before_controls",
       "controls_override": -1,
       "cond_set": [
-        "33",
+        "40",
         0
       ],
       "mods": [
-        "34",
+        "41",
         0
       ]
     },
@@ -410,11 +413,11 @@
       "title": "Apply RefMods to every chunk"
     }
   },
-  "36": {
+  "43": {
     "class_type": "PreviewAny",
     "inputs": {
       "source": [
-        "34",
+        "41",
         1
       ]
     },
@@ -422,7 +425,7 @@
       "title": "RefMod prompt hint \u2014 describe it in your prompt"
     }
   },
-  "37": {
+  "44": {
     "class_type": "MMH3StreamingEncode",
     "inputs": {
       "frames_per_chunk": 85,
@@ -440,7 +443,7 @@
       "title": "Encode source video"
     }
   },
-  "38": {
+  "45": {
     "class_type": "VAEEncodeAudio",
     "inputs": {
       "audio": [
@@ -456,15 +459,15 @@
       "title": "Encode source audio"
     }
   },
-  "39": {
+  "46": {
     "class_type": "MMH3PackAV",
     "inputs": {
       "video_latent": [
-        "37",
+        "44",
         0
       ],
       "audio_latent": [
-        "38",
+        "45",
         0
       ]
     },
@@ -472,7 +475,7 @@
       "title": "Source video + audio latent"
     }
   },
-  "40": {
+  "47": {
     "class_type": "SolidMask",
     "inputs": {
       "value": 0.0,
@@ -483,7 +486,7 @@
       "title": "Audio: 0 preserves / 1 regenerates"
     }
   },
-  "41": {
+  "48": {
     "class_type": "RandomNoise",
     "inputs": {
       "noise_seed": 475773496218965
@@ -492,7 +495,7 @@
       "title": "Seed"
     }
   },
-  "42": {
+  "49": {
     "class_type": "KSamplerSelect",
     "inputs": {
       "sampler_name": "euler"
@@ -501,7 +504,7 @@
       "title": "Plain Euler"
     }
   },
-  "43": {
+  "50": {
     "class_type": "BasicScheduler",
     "inputs": {
       "scheduler": "simple",
@@ -516,7 +519,7 @@
       "title": "8-step Turbo schedule"
     }
   },
-  "44": {
+  "51": {
     "class_type": "MMH3HybridWindowSampler",
     "inputs": {
       "window_frames": [
@@ -537,27 +540,27 @@
         0
       ],
       "noise": [
-        "41",
+        "48",
         0
       ],
       "sampler": [
-        "42",
+        "49",
         0
       ],
       "sigmas": [
-        "43",
+        "50",
         0
       ],
       "cond_set": [
-        "35",
+        "42",
         0
       ],
       "latent": [
-        "39",
+        "46",
         0
       ],
       "audio_denoise_mask": [
-        "40",
+        "47",
         0
       ]
     },
@@ -565,11 +568,11 @@
       "title": "5. Hybrid \u2014 6 sequential + 2 joint"
     }
   },
-  "45": {
+  "52": {
     "class_type": "VAEDecode",
     "inputs": {
       "samples": [
-        "44",
+        "51",
         0
       ],
       "vae": [
@@ -581,11 +584,11 @@
       "title": "Decode video"
     }
   },
-  "46": {
+  "53": {
     "class_type": "VAEDecodeAudio",
     "inputs": {
       "samples": [
-        "44",
+        "51",
         0
       ],
       "vae": [
@@ -597,7 +600,7 @@
       "title": "Decode generated/preserved audio latent"
     }
   },
-  "47": {
+  "54": {
     "class_type": "VideoColorStabilize",
     "inputs": {
       "enabled": true,
@@ -611,7 +614,7 @@
       "smoothing_seconds": 2.0,
       "max_tint_shift": 0.06,
       "images": [
-        "45",
+        "52",
         0
       ]
     },
@@ -619,7 +622,7 @@
       "title": "Optional color stabilization"
     }
   },
-  "48": {
+  "55": {
     "class_type": "ComfySwitchNode",
     "inputs": {
       "switch": true,
@@ -628,7 +631,7 @@
         2
       ],
       "on_false": [
-        "46",
+        "53",
         0
       ]
     },
@@ -636,7 +639,7 @@
       "title": "Original soundtrack? True = exact source audio"
     }
   },
-  "49": {
+  "56": {
     "class_type": "CreateVideo",
     "inputs": {
       "fps": [
@@ -646,11 +649,11 @@
       "bit_depth": 8,
       "color_space": "sRGB",
       "images": [
-        "47",
+        "54",
         0
       ],
       "audio": [
-        "48",
+        "55",
         0
       ]
     },
@@ -658,7 +661,7 @@
       "title": "6. Video + soundtrack"
     }
   },
-  "50": {
+  "57": {
     "class_type": "SaveVideo",
     "inputs": {
       "filename_prefix": "video/HybridAccessible",
@@ -668,7 +671,7 @@
       "format.codec.encoding.crf": 16.0,
       "codec": "auto",
       "video": [
-        "49",
+        "56",
         0
       ]
     },
@@ -676,11 +679,11 @@
       "title": "Save accessible hybrid"
     }
   },
-  "51": {
+  "58": {
     "class_type": "PreviewAny",
     "inputs": {
       "source": [
-        "44",
+        "51",
         1
       ]
     },

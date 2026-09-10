@@ -2,8 +2,8 @@
   "id": "c9e1d76e-9289-59c7-a803-2b7981b5db10",
   "version": 0.4,
   "revision": 0,
-  "last_node_id": 57,
-  "last_link_id": 81,
+  "last_node_id": 64,
+  "last_link_id": 92,
   "nodes": [
     {
       "id": 1,
@@ -162,8 +162,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            58,
-            59
+            69,
+            70
           ]
         }
       ],
@@ -227,7 +227,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            37
+            48
           ]
         }
       ],
@@ -276,9 +276,9 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            38,
-            53,
-            70
+            49,
+            64,
+            81
           ]
         }
       ],
@@ -323,9 +323,9 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            39,
-            55,
-            72
+            50,
+            66,
+            83
           ]
         }
       ],
@@ -373,7 +373,7 @@
             7,
             13,
             19,
-            40
+            51
           ]
         }
       ],
@@ -422,7 +422,7 @@
             8,
             14,
             20,
-            41
+            52
           ]
         }
       ],
@@ -469,8 +469,8 @@
           "type": "INT",
           "links": [
             3,
-            47,
-            65
+            58,
+            76
           ]
         }
       ],
@@ -517,8 +517,8 @@
           "type": "INT",
           "links": [
             5,
-            48,
-            66
+            59,
+            77
           ]
         }
       ],
@@ -636,7 +636,7 @@
             9,
             15,
             21,
-            42
+            53
           ]
         },
         {
@@ -736,8 +736,8 @@
             6,
             12,
             18,
-            74,
-            79
+            85,
+            90
           ]
         }
       ],
@@ -979,8 +979,8 @@
           "type": "IMAGE",
           "links": [
             26,
-            29,
-            52
+            39,
+            63
           ]
         },
         {
@@ -992,8 +992,8 @@
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            54,
-            75
+            65,
+            86
           ]
         },
         {
@@ -1259,7 +1259,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            46
+            57
           ]
         },
         {
@@ -1391,8 +1391,8 @@
           "name": "MASK",
           "type": "MASK",
           "links": [
-            35,
-            67
+            46,
+            78
           ]
         }
       ],
@@ -1413,10 +1413,10 @@
       "type": "Sapiens2Loader",
       "pos": [
         3550,
-        1250
+        1200
       ],
       "size": [
-        420,
+        400,
         140
       ],
       "flags": {},
@@ -1457,12 +1457,12 @@
       "id": 24,
       "type": "Sapiens2Seg",
       "pos": [
-        4080,
-        1250
+        3990,
+        1200
       ],
       "size": [
-        380,
-        200
+        370,
+        180
       ],
       "flags": {},
       "order": 23,
@@ -1492,7 +1492,11 @@
           "name": "class_id_mask",
           "type": "MASK",
           "links": [
-            28
+            28,
+            29,
+            30,
+            35,
+            36
           ]
         },
         {
@@ -1517,12 +1521,12 @@
       "id": 25,
       "type": "Sapiens2SegExtract",
       "pos": [
-        4560,
-        1250
+        4400,
+        1200
       ],
       "size": [
-        470,
-        220
+        380,
+        180
       ],
       "flags": {},
       "order": 24,
@@ -1567,7 +1571,77 @@
           ]
         }
       ],
-      "title": "Hair \u2192 blur region mask",
+      "title": "Face_Neck \u2192 region",
+      "properties": {
+        "Node name for S&R": "Sapiens2SegExtract",
+        "aux_id": "kijai/ComfyUI-Sapiens2"
+      },
+      "widgets_values": [
+        "Face_Neck",
+        false,
+        29
+      ],
+      "widgets_values_named": {
+        "class_name": "Face_Neck",
+        "invert": false,
+        "num_classes": 29
+      }
+    },
+    {
+      "id": 26,
+      "type": "Sapiens2SegExtract",
+      "pos": [
+        4820,
+        1200
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "class_id_mask",
+          "type": "MASK",
+          "link": 29
+        },
+        {
+          "name": "class_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "class_name"
+          }
+        },
+        {
+          "name": "invert",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "invert"
+          }
+        },
+        {
+          "name": "num_classes",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "num_classes"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            32
+          ]
+        }
+      ],
+      "title": "Hair \u2192 region",
       "properties": {
         "Node name for S&R": "Sapiens2SegExtract",
         "aux_id": "kijai/ComfyUI-Sapiens2"
@@ -1584,7 +1658,442 @@
       }
     },
     {
-      "id": 26,
+      "id": 27,
+      "type": "Sapiens2SegExtract",
+      "pos": [
+        5240,
+        1200
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "class_id_mask",
+          "type": "MASK",
+          "link": 30
+        },
+        {
+          "name": "class_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "class_name"
+          }
+        },
+        {
+          "name": "invert",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "invert"
+          }
+        },
+        {
+          "name": "num_classes",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "num_classes"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            34
+          ]
+        }
+      ],
+      "title": "Eyeglass \u2192 region",
+      "properties": {
+        "Node name for S&R": "Sapiens2SegExtract",
+        "aux_id": "kijai/ComfyUI-Sapiens2"
+      },
+      "widgets_values": [
+        "Eyeglass",
+        false,
+        29
+      ],
+      "widgets_values_named": {
+        "class_name": "Eyeglass",
+        "invert": false,
+        "num_classes": 29
+      }
+    },
+    {
+      "id": 28,
+      "type": "MaskComposite",
+      "pos": [
+        3550,
+        1420
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "destination",
+          "type": "MASK",
+          "link": 31
+        },
+        {
+          "name": "source",
+          "type": "MASK",
+          "link": 32
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "x"
+          }
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "y"
+          }
+        },
+        {
+          "name": "operation",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "operation"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "title": "Face_Neck + Hair",
+      "properties": {
+        "Node name for S&R": "MaskComposite",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        0,
+        0,
+        "add"
+      ],
+      "widgets_values_named": {
+        "x": 0,
+        "y": 0,
+        "operation": "add"
+      }
+    },
+    {
+      "id": 29,
+      "type": "MaskComposite",
+      "pos": [
+        3890,
+        1420
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "destination",
+          "type": "MASK",
+          "link": 33
+        },
+        {
+          "name": "source",
+          "type": "MASK",
+          "link": 34
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "x"
+          }
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "y"
+          }
+        },
+        {
+          "name": "operation",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "operation"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            41
+          ]
+        }
+      ],
+      "title": "+ Eyeglass \u2192 region mask",
+      "properties": {
+        "Node name for S&R": "MaskComposite",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        0,
+        0,
+        "add"
+      ],
+      "widgets_values_named": {
+        "x": 0,
+        "y": 0,
+        "operation": "add"
+      }
+    },
+    {
+      "id": 30,
+      "type": "Sapiens2SegExtract",
+      "pos": [
+        4400,
+        1420
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "class_id_mask",
+          "type": "MASK",
+          "link": 35
+        },
+        {
+          "name": "class_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "class_name"
+          }
+        },
+        {
+          "name": "invert",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "invert"
+          }
+        },
+        {
+          "name": "num_classes",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "num_classes"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "title": "Upper_Lip \u2192 protect",
+      "properties": {
+        "Node name for S&R": "Sapiens2SegExtract",
+        "aux_id": "kijai/ComfyUI-Sapiens2"
+      },
+      "widgets_values": [
+        "Upper_Lip",
+        false,
+        29
+      ],
+      "widgets_values_named": {
+        "class_name": "Upper_Lip",
+        "invert": false,
+        "num_classes": 29
+      }
+    },
+    {
+      "id": 31,
+      "type": "Sapiens2SegExtract",
+      "pos": [
+        4820,
+        1420
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "class_id_mask",
+          "type": "MASK",
+          "link": 36
+        },
+        {
+          "name": "class_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "class_name"
+          }
+        },
+        {
+          "name": "invert",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "invert"
+          }
+        },
+        {
+          "name": "num_classes",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "num_classes"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "title": "Lower_Lip \u2192 protect",
+      "properties": {
+        "Node name for S&R": "Sapiens2SegExtract",
+        "aux_id": "kijai/ComfyUI-Sapiens2"
+      },
+      "widgets_values": [
+        "Lower_Lip",
+        false,
+        29
+      ],
+      "widgets_values_named": {
+        "class_name": "Lower_Lip",
+        "invert": false,
+        "num_classes": 29
+      }
+    },
+    {
+      "id": 32,
+      "type": "MaskComposite",
+      "pos": [
+        5240,
+        1420
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "destination",
+          "type": "MASK",
+          "link": 37
+        },
+        {
+          "name": "source",
+          "type": "MASK",
+          "link": 38
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "x"
+          }
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "y"
+          }
+        },
+        {
+          "name": "operation",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "operation"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            42
+          ]
+        }
+      ],
+      "title": "Lips \u2192 protect mask",
+      "properties": {
+        "Node name for S&R": "MaskComposite",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        0,
+        0,
+        "add"
+      ],
+      "widgets_values_named": {
+        "x": 0,
+        "y": 0,
+        "operation": "add"
+      }
+    },
+    {
+      "id": 33,
       "type": "H3InsightFaceLoader",
       "pos": [
         550,
@@ -1595,7 +2104,7 @@
         170
       ],
       "flags": {},
-      "order": 25,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -1612,7 +2121,7 @@
           "name": "insightface",
           "type": "H3_INSIGHTFACE_MODEL",
           "links": [
-            30
+            40
           ]
         }
       ],
@@ -1629,7 +2138,7 @@
       }
     },
     {
-      "id": 27,
+      "id": 34,
       "type": "FaceAnonymizeVideo",
       "pos": [
         40,
@@ -1637,33 +2146,33 @@
       ],
       "size": [
         440,
-        1050
+        1180
       ],
       "flags": {},
-      "order": 26,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 29
+          "link": 39
         },
         {
           "name": "insightface",
           "type": "H3_INSIGHTFACE_MODEL",
-          "link": 30,
+          "link": 40,
           "shape": 7
         },
         {
           "name": "region_mask",
           "type": "MASK",
-          "link": 31,
+          "link": 41,
           "shape": 7
         },
         {
           "name": "protect_mask",
           "type": "MASK",
-          "link": null,
+          "link": 42,
           "shape": 7
         },
         {
@@ -1839,6 +2348,24 @@
           "widget": {
             "name": "protect_grow"
           }
+        },
+        {
+          "name": "face_detector",
+          "type": "BOOLEAN",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "face_detector"
+          }
+        },
+        {
+          "name": "region_min_component",
+          "type": "FLOAT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "region_min_component"
+          }
         }
       ],
       "outputs": [
@@ -1846,8 +2373,8 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            32,
-            33
+            43,
+            44
           ]
         },
         {
@@ -1888,11 +2415,13 @@
         false,
         0.0,
         "blur",
-        6,
+        2,
         true,
         "landmarks",
         0.5,
-        2
+        2,
+        true,
+        0.0
       ],
       "widgets_values_named": {
         "enabled": true,
@@ -1911,15 +2440,17 @@
         "output_mask": false,
         "hair_expand": 0.0,
         "region_mode": "blur",
-        "region_grow": 6,
+        "region_grow": 2,
         "mouth_keepout": true,
         "mouth_anchor": "landmarks",
         "mouth_gap": 0.5,
-        "protect_grow": 2
+        "protect_grow": 2,
+        "face_detector": true,
+        "region_min_component": 0.0
       }
     },
     {
-      "id": 28,
+      "id": 35,
       "type": "ImageAddNoise",
       "pos": [
         550,
@@ -1930,13 +2461,13 @@
         190
       ],
       "flags": {},
-      "order": 27,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 32
+          "link": 43
         },
         {
           "name": "seed",
@@ -1960,7 +2491,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            34
+            45
           ]
         }
       ],
@@ -1980,7 +2511,7 @@
       }
     },
     {
-      "id": 29,
+      "id": 36,
       "type": "ImageCompositeMasked",
       "pos": [
         900,
@@ -1991,23 +2522,23 @@
         220
       ],
       "flags": {},
-      "order": 28,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
           "name": "destination",
           "type": "IMAGE",
-          "link": 33
+          "link": 44
         },
         {
           "name": "source",
           "type": "IMAGE",
-          "link": 34
+          "link": 45
         },
         {
           "name": "mask",
           "type": "MASK",
-          "link": 35,
+          "link": 46,
           "shape": 7
         },
         {
@@ -2040,7 +2571,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            45
+            56
           ]
         }
       ],
@@ -2061,7 +2592,7 @@
       }
     },
     {
-      "id": 30,
+      "id": 37,
       "type": "LoadImage",
       "pos": [
         2380,
@@ -2072,7 +2603,7 @@
         440
       ],
       "flags": {},
-      "order": 29,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
@@ -2089,7 +2620,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            36
+            47
           ]
         },
         {
@@ -2111,7 +2642,7 @@
       }
     },
     {
-      "id": 31,
+      "id": 38,
       "type": "MMH3ImageList",
       "pos": [
         2380,
@@ -2122,13 +2653,13 @@
         170
       ],
       "flags": {},
-      "order": 30,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
           "name": "images.image_0",
           "type": "IMAGE",
-          "link": 36,
+          "link": 47,
           "shape": 7
         }
       ],
@@ -2137,7 +2668,7 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            44
+            55
           ]
         },
         {
@@ -2160,7 +2691,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 32,
+      "id": 39,
       "type": "PrimitiveStringMultiline",
       "pos": [
         2920,
@@ -2171,7 +2702,7 @@
         400
       ],
       "flags": {},
-      "order": 31,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
@@ -2188,7 +2719,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            43
+            54
           ]
         }
       ],
@@ -2205,7 +2736,7 @@
       }
     },
     {
-      "id": 33,
+      "id": 40,
       "type": "MMH3ReferenceMultiPrompt",
       "pos": [
         2920,
@@ -2216,40 +2747,40 @@
         720
       ],
       "flags": {},
-      "order": 32,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 37
+          "link": 48
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 38
+          "link": 49
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 39
+          "link": 50
         },
         {
           "name": "ref_images",
           "type": "IMAGE",
-          "link": 44,
+          "link": 55,
           "shape": 7
         },
         {
           "name": "ref_videos.ref_video_0",
           "type": "IMAGE",
-          "link": 45,
+          "link": 56,
           "shape": 7
         },
         {
           "name": "ref_videos.ref_video_1",
           "type": "IMAGE",
-          "link": 46,
+          "link": 57,
           "shape": 7
         },
         {
@@ -2261,7 +2792,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 40,
+          "link": 51,
           "widget": {
             "name": "width"
           }
@@ -2269,7 +2800,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 41,
+          "link": 52,
           "widget": {
             "name": "height"
           }
@@ -2277,7 +2808,7 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 42,
+          "link": 53,
           "widget": {
             "name": "length"
           }
@@ -2293,7 +2824,7 @@
         {
           "name": "prompts",
           "type": "STRING",
-          "link": 43,
+          "link": 54,
           "widget": {
             "name": "prompts"
           }
@@ -2326,7 +2857,7 @@
         {
           "name": "chunk_frames",
           "type": "INT",
-          "link": 47,
+          "link": 58,
           "shape": 7,
           "widget": {
             "name": "chunk_frames"
@@ -2335,7 +2866,7 @@
         {
           "name": "overlap_frames",
           "type": "INT",
-          "link": 48,
+          "link": 59,
           "shape": 7,
           "widget": {
             "name": "overlap_frames"
@@ -2349,6 +2880,15 @@
           "widget": {
             "name": "embeddings"
           }
+        },
+        {
+          "name": "static_ref_videos",
+          "type": "STRING",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "static_ref_videos"
+          }
         }
       ],
       "outputs": [
@@ -2356,7 +2896,7 @@
           "name": "cond_set",
           "type": "MMH3_COND_SET",
           "links": [
-            49
+            60
           ]
         },
         {
@@ -2391,6 +2931,7 @@
         true,
         0,
         0,
+        "",
         ""
       ],
       "widgets_values_named": {
@@ -2404,11 +2945,12 @@
         "window_ref_video": true,
         "chunk_frames": 0,
         "overlap_frames": 0,
-        "embeddings": ""
+        "embeddings": "",
+        "static_ref_videos": ""
       }
     },
     {
-      "id": 34,
+      "id": 41,
       "type": "MiniMaxH3RefModsLoader",
       "pos": [
         3550,
@@ -2419,7 +2961,7 @@
         700
       ],
       "flags": {},
-      "order": 33,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
@@ -2628,14 +3170,14 @@
           "name": "mods",
           "type": "H3_REF_MODS",
           "links": [
-            50
+            61
           ]
         },
         {
           "name": "prompt_hint",
           "type": "STRING",
           "links": [
-            51
+            62
           ]
         }
       ],
@@ -2700,7 +3242,7 @@
       }
     },
     {
-      "id": 35,
+      "id": 42,
       "type": "H3RefModCondSetApply",
       "pos": [
         4280,
@@ -2711,18 +3253,18 @@
         250
       ],
       "flags": {},
-      "order": 34,
+      "order": 41,
       "mode": 0,
       "inputs": [
         {
           "name": "cond_set",
           "type": "MMH3_COND_SET",
-          "link": 49
+          "link": 60
         },
         {
           "name": "mods",
           "type": "H3_REF_MODS",
-          "link": 50,
+          "link": 61,
           "shape": 7
         },
         {
@@ -2755,7 +3297,7 @@
           "name": "cond_set",
           "type": "MMH3_COND_SET",
           "links": [
-            63
+            74
           ]
         },
         {
@@ -2781,7 +3323,7 @@
       }
     },
     {
-      "id": 36,
+      "id": 43,
       "type": "PreviewAny",
       "pos": [
         4280,
@@ -2792,13 +3334,13 @@
         300
       ],
       "flags": {},
-      "order": 35,
+      "order": 42,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 51
+          "link": 62
         }
       ],
       "outputs": [
@@ -2817,7 +3359,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 37,
+      "id": 44,
       "type": "MMH3StreamingEncode",
       "pos": [
         3550,
@@ -2828,18 +3370,18 @@
         170
       ],
       "flags": {},
-      "order": 36,
+      "order": 43,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 52
+          "link": 63
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 53
+          "link": 64
         },
         {
           "name": "frames_per_chunk",
@@ -2864,7 +3406,7 @@
           "name": "latent",
           "type": "LATENT",
           "links": [
-            56
+            67
           ]
         },
         {
@@ -2888,7 +3430,7 @@
       }
     },
     {
-      "id": 38,
+      "id": 45,
       "type": "VAEEncodeAudio",
       "pos": [
         3550,
@@ -2899,18 +3441,18 @@
         120
       ],
       "flags": {},
-      "order": 37,
+      "order": 44,
       "mode": 0,
       "inputs": [
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 54
+          "link": 65
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 55
+          "link": 66
         }
       ],
       "outputs": [
@@ -2918,7 +3460,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            57
+            68
           ]
         }
       ],
@@ -2931,7 +3473,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 39,
+      "id": 46,
       "type": "MMH3PackAV",
       "pos": [
         3550,
@@ -2942,18 +3484,18 @@
         170
       ],
       "flags": {},
-      "order": 38,
+      "order": 45,
       "mode": 0,
       "inputs": [
         {
           "name": "video_latent",
           "type": "LATENT",
-          "link": 56
+          "link": 67
         },
         {
           "name": "audio_latent",
           "type": "LATENT",
-          "link": 57,
+          "link": 68,
           "shape": 7
         }
       ],
@@ -2962,7 +3504,7 @@
           "name": "latent",
           "type": "LATENT",
           "links": [
-            64
+            75
           ]
         },
         {
@@ -2980,7 +3522,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 40,
+      "id": 47,
       "type": "SolidMask",
       "pos": [
         3550,
@@ -2991,7 +3533,7 @@
         170
       ],
       "flags": {},
-      "order": 39,
+      "order": 46,
       "mode": 0,
       "inputs": [
         {
@@ -3024,7 +3566,7 @@
           "name": "MASK",
           "type": "MASK",
           "links": [
-            68
+            79
           ]
         }
       ],
@@ -3045,7 +3587,7 @@
       }
     },
     {
-      "id": 41,
+      "id": 48,
       "type": "RandomNoise",
       "pos": [
         4080,
@@ -3056,7 +3598,7 @@
         140
       ],
       "flags": {},
-      "order": 40,
+      "order": 47,
       "mode": 0,
       "inputs": [
         {
@@ -3073,7 +3615,7 @@
           "name": "NOISE",
           "type": "NOISE",
           "links": [
-            60
+            71
           ]
         }
       ],
@@ -3091,7 +3633,7 @@
       }
     },
     {
-      "id": 42,
+      "id": 49,
       "type": "KSamplerSelect",
       "pos": [
         4080,
@@ -3102,7 +3644,7 @@
         110
       ],
       "flags": {},
-      "order": 41,
+      "order": 48,
       "mode": 0,
       "inputs": [
         {
@@ -3119,7 +3661,7 @@
           "name": "SAMPLER",
           "type": "SAMPLER",
           "links": [
-            61
+            72
           ]
         }
       ],
@@ -3136,7 +3678,7 @@
       }
     },
     {
-      "id": 43,
+      "id": 50,
       "type": "BasicScheduler",
       "pos": [
         4080,
@@ -3147,13 +3689,13 @@
         210
       ],
       "flags": {},
-      "order": 42,
+      "order": 49,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 58
+          "link": 69
         },
         {
           "name": "scheduler",
@@ -3185,7 +3727,7 @@
           "name": "SIGMAS",
           "type": "SIGMAS",
           "links": [
-            62
+            73
           ]
         }
       ],
@@ -3206,7 +3748,7 @@
       }
     },
     {
-      "id": 44,
+      "id": 51,
       "type": "MMH3HybridWindowSampler",
       "pos": [
         4560,
@@ -3217,55 +3759,55 @@
         610
       ],
       "flags": {},
-      "order": 43,
+      "order": 50,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 59
+          "link": 70
         },
         {
           "name": "noise",
           "type": "NOISE",
-          "link": 60
+          "link": 71
         },
         {
           "name": "sampler",
           "type": "SAMPLER",
-          "link": 61
+          "link": 72
         },
         {
           "name": "sigmas",
           "type": "SIGMAS",
-          "link": 62
+          "link": 73
         },
         {
           "name": "cond_set",
           "type": "MMH3_COND_SET",
-          "link": 63
+          "link": 74
         },
         {
           "name": "latent",
           "type": "LATENT",
-          "link": 64
+          "link": 75
         },
         {
           "name": "denoise_mask",
           "type": "MASK",
-          "link": 67,
+          "link": 78,
           "shape": 7
         },
         {
           "name": "audio_denoise_mask",
           "type": "MASK",
-          "link": 68,
+          "link": 79,
           "shape": 7
         },
         {
           "name": "window_frames",
           "type": "INT",
-          "link": 65,
+          "link": 76,
           "widget": {
             "name": "window_frames"
           }
@@ -3273,7 +3815,7 @@
         {
           "name": "overlap_frames",
           "type": "INT",
-          "link": 66,
+          "link": 77,
           "widget": {
             "name": "overlap_frames"
           }
@@ -3326,15 +3868,15 @@
           "name": "latent",
           "type": "LATENT",
           "links": [
-            69,
-            71
+            80,
+            82
           ]
         },
         {
           "name": "report",
           "type": "STRING",
           "links": [
-            81
+            92
           ]
         }
       ],
@@ -3363,7 +3905,7 @@
       }
     },
     {
-      "id": 45,
+      "id": 52,
       "type": "VAEDecode",
       "pos": [
         5140,
@@ -3374,18 +3916,18 @@
         110
       ],
       "flags": {},
-      "order": 44,
+      "order": 51,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 69
+          "link": 80
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 70
+          "link": 81
         }
       ],
       "outputs": [
@@ -3393,7 +3935,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            73
+            84
           ]
         }
       ],
@@ -3406,7 +3948,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 46,
+      "id": 53,
       "type": "VAEDecodeAudio",
       "pos": [
         5140,
@@ -3417,18 +3959,18 @@
         110
       ],
       "flags": {},
-      "order": 45,
+      "order": 52,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 71
+          "link": 82
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 72
+          "link": 83
         }
       ],
       "outputs": [
@@ -3436,7 +3978,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            76
+            87
           ]
         }
       ],
@@ -3449,7 +3991,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 47,
+      "id": 54,
       "type": "VideoColorStabilize",
       "pos": [
         5140,
@@ -3460,13 +4002,13 @@
         430
       ],
       "flags": {},
-      "order": 46,
+      "order": 53,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 73
+          "link": 84
         },
         {
           "name": "source_frames",
@@ -3493,7 +4035,7 @@
         {
           "name": "fps",
           "type": "FLOAT",
-          "link": 74,
+          "link": 85,
           "widget": {
             "name": "fps"
           }
@@ -3537,7 +4079,7 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            77
+            88
           ]
         }
       ],
@@ -3566,7 +4108,7 @@
       }
     },
     {
-      "id": 48,
+      "id": 55,
       "type": "ComfySwitchNode",
       "pos": [
         5680,
@@ -3577,18 +4119,18 @@
         180
       ],
       "flags": {},
-      "order": 47,
+      "order": 54,
       "mode": 0,
       "inputs": [
         {
           "name": "on_false",
           "type": "AUDIO",
-          "link": 76
+          "link": 87
         },
         {
           "name": "on_true",
           "type": "AUDIO",
-          "link": 75
+          "link": 86
         },
         {
           "name": "switch",
@@ -3604,7 +4146,7 @@
           "name": "output",
           "type": "AUDIO",
           "links": [
-            78
+            89
           ]
         }
       ],
@@ -3621,7 +4163,7 @@
       }
     },
     {
-      "id": 49,
+      "id": 56,
       "type": "CreateVideo",
       "pos": [
         5680,
@@ -3632,24 +4174,24 @@
         240
       ],
       "flags": {},
-      "order": 48,
+      "order": 55,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 77
+          "link": 88
         },
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 78,
+          "link": 89,
           "shape": 7
         },
         {
           "name": "fps",
           "type": "FLOAT",
-          "link": 79,
+          "link": 90,
           "widget": {
             "name": "fps"
           }
@@ -3678,7 +4220,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            80
+            91
           ]
         }
       ],
@@ -3699,7 +4241,7 @@
       }
     },
     {
-      "id": 50,
+      "id": 57,
       "type": "SaveVideo",
       "pos": [
         5680,
@@ -3710,13 +4252,13 @@
         560
       ],
       "flags": {},
-      "order": 49,
+      "order": 56,
       "mode": 0,
       "inputs": [
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 80
+          "link": 91
         },
         {
           "name": "filename_prefix",
@@ -3799,7 +4341,7 @@
       }
     },
     {
-      "id": 51,
+      "id": 58,
       "type": "PreviewAny",
       "pos": [
         4560,
@@ -3810,13 +4352,13 @@
         260
       ],
       "flags": {},
-      "order": 50,
+      "order": 57,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 81
+          "link": 92
         }
       ],
       "outputs": [
@@ -3835,7 +4377,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 52,
+      "id": 59,
       "type": "MarkdownNote",
       "title": "05A \u2014 Start here",
       "pos": [
@@ -3847,7 +4389,7 @@
         2200
       ],
       "flags": {},
-      "order": 51,
+      "order": 58,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -3857,7 +4399,7 @@
       ]
     },
     {
-      "id": 53,
+      "id": 60,
       "type": "MarkdownNote",
       "title": "Model downloads and folders",
       "pos": [
@@ -3869,17 +4411,17 @@
         2200
       ],
       "flags": {},
-      "order": 52,
+      "order": 59,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# Model downloads and folders\n\nThese are the files selected in the shared workflow. Open a link and click **Download**. Keep the filenames below. Folder paths are relative to your **ComfyUI** folder unless stated otherwise; create missing folders, then refresh model lists or restart ComfyUI.\n\n## Required generation models\n\n| Loader | Download | Save inside ComfyUI |\n| --- | --- | --- |\n| H3 Ref2VA model | [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors) | `models/diffusion_models/` |\n| 8-step Turbo LoRA | [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) | `models/loras/minimax/` |\n| H3 text encoder | [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors) | `models/text_encoders/` |\n| Video VAE | [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors) | `models/vae/` |\n| Audio VAE | [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors) | `models/vae/` |\n\nIn **H3 text encoder**, choose type **minimax**. Select the Turbo LoRA at strength **1.0**. Use the Ref2VA base with the listed DMD Turbo LoRA; the workflow is set to **8 steps / Euler / simple**, with **6 sequential + 2 joint** steps and video/audio shifts **12 / 3**. Keep the audio VAE selected even when preserving the source soundtrack: this flow encodes source audio for sampling.\n\n## Face blur: InsightFace buffalo_l\n\nDownload **buffalo_l.zip** from the [official InsightFace model-package release](https://github.com/deepinsight/insightface/releases/tag/v0.7) and extract the ONNX files.\n\nIn **InsightFace model folder**, select the folder containing the extracted ONNX files. The default is `models/insightface/buffalo_l`, relative to your ComfyUI installation:\n\n`ComfyUI/models/insightface/buffalo_l/det_10g.onnx`\n\nKeep the other buffalo_l ONNX files beside it, without another nested buffalo_l folder. You can enter an absolute folder path for models stored elsewhere. The loader's **insightface** output is connected to the source face-blur node; it also works with Face Likeness Probe. No source-code edits or automatic downloads are needed. ONNX sessions load only when the face node uses them, and **unload_after** still releases the cached sessions. Legacy face nodes without a loader use InsightFace's standard `~/.insightface/models/buffalo_l` location.\n\nThe ComfyUI Python environment also needs [InsightFace](https://github.com/deepinsight/insightface/tree/master/python-package) and [ONNX Runtime](https://onnxruntime.ai/docs/install/). Match the face node's provider to your installation: **cuda** for GPU execution or **cpu**. Set the node's enabled switch to false to skip face analysis while setting up the rest of the flow.\n\n## Optional hair segmentation: Sapiens2\n\nDownload [sapiens2_5b_seg.safetensors](https://huggingface.co/facebook/sapiens2-seg-5b/blob/main/sapiens2_5b_seg.safetensors) from [Meta's Sapiens2 segmentation model page](https://huggingface.co/facebook/sapiens2-seg-5b).\n\nSave it in `ComfyUI/models/sapiens2/`, then select it in **Optional hair segmentation model**. Choose a **segmentation** checkpoint, not a pose or normals model. The class extractor is already set to **Hair** with **29** classes.\n\nThis checkpoint is only needed when you unmute the **OPTIONAL Hair region mask** group. Leave the group muted to skip its model loading and execution. The existing [ComfyUI-Sapiens2 nodes](https://github.com/kijai/ComfyUI-Sapiens2) provide both segmentation and Hair extraction."
+        "# Model downloads and folders\n\nThese are the files selected in the shared workflow. Open a link and click **Download**. Keep the filenames below. Folder paths are relative to your **ComfyUI** folder unless stated otherwise; create missing folders, then refresh model lists or restart ComfyUI.\n\n## Required generation models\n\n| Loader | Download | Save inside ComfyUI |\n| --- | --- | --- |\n| H3 Ref2VA model | [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors) | `models/diffusion_models/` |\n| 8-step Turbo LoRA | [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) | `models/loras/minimax/` |\n| H3 text encoder | [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors) | `models/text_encoders/` |\n| Video VAE | [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors) | `models/vae/` |\n| Audio VAE | [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors) | `models/vae/` |\n\nIn **H3 text encoder**, choose type **minimax**. Select the Turbo LoRA at strength **1.0**. Use the Ref2VA base with the listed DMD Turbo LoRA; the workflow is set to **8 steps / Euler / simple**, with **6 sequential + 2 joint** steps and video/audio shifts **12 / 3**. Keep the audio VAE selected even when preserving the source soundtrack: this flow encodes source audio for sampling.\n\n## Face blur: InsightFace buffalo_l\n\nDownload **buffalo_l.zip** from the [official InsightFace model-package release](https://github.com/deepinsight/insightface/releases/tag/v0.7) and extract the ONNX files.\n\nIn **InsightFace model folder**, select the folder containing the extracted ONNX files. The default is `models/insightface/buffalo_l`, relative to your ComfyUI installation:\n\n`ComfyUI/models/insightface/buffalo_l/det_10g.onnx`\n\nKeep the other buffalo_l ONNX files beside it, without another nested buffalo_l folder. You can enter an absolute folder path for models stored elsewhere. The loader's **insightface** output is connected to the source face-blur node; it also works with Face Likeness Probe. No source-code edits or automatic downloads are needed. ONNX sessions load only when the face node uses them, and **unload_after** still releases the cached sessions. Legacy face nodes without a loader use InsightFace's standard `~/.insightface/models/buffalo_l` location.\n\nThe ComfyUI Python environment also needs [InsightFace](https://github.com/deepinsight/insightface/tree/master/python-package) and [ONNX Runtime](https://onnxruntime.ai/docs/install/). Match the face node's provider to your installation: **cuda** for GPU execution or **cpu**. Set the node's enabled switch to false to skip face analysis while setting up the rest of the flow.\n\n## Optional face + hair segmentation blur: Sapiens2\n\nDownload [sapiens2_5b_seg.safetensors](https://huggingface.co/facebook/sapiens2-seg-5b/blob/main/sapiens2_5b_seg.safetensors) from [Meta's Sapiens2 segmentation model page](https://huggingface.co/facebook/sapiens2-seg-5b).\n\nSave it in `ComfyUI/models/sapiens2/`, then select it in **Optional hair segmentation model**. Choose a **segmentation** checkpoint, not a pose or normals model.\n\nThis checkpoint is only needed when you unmute the **OPTIONAL Face + hair seg blur** group. Leave the group muted to skip its model loading and execution. The existing [ComfyUI-Sapiens2 nodes](https://github.com/kijai/ComfyUI-Sapiens2) provide the segmentation and per-class extraction.\n\n**Why this is the better blur.** By default the blur region is an ellipse fitted to the face detector's bounding *box*. An ellipse cannot tell what is inside it, so it also softens anything that happens to sit in *front* of the face \u2014 hands, jewellery, props \u2014 while clipping the jaw and neck it is meant to cover. The group extracts **Face_Neck + Hair + Eyeglass** and combines them into `region_mask` instead. Because `Upper_Lip`, `Lower_Lip`, `Upper_Teeth`, `Lower_Teeth` and `Tongue` are separate Sapiens2 classes, that union is already \"face and hair minus mouth and lips\" \u2014 lip articulation survives without any geometric mouth cut. `Upper_Lip + Lower_Lip` additionally feed `protect_mask` so the small `region_grow` cannot dilate the face region over the lips.\n\n**Two switches, not one.** Unmute the group **and** set the blur node's **face_detector** to **false**. With `face_detector` on, the ellipse is still drawn *in addition to* the region mask, which is exactly the collateral blur this group avoids. Measured over a 4153-frame clip: residual face recognition 0.10 with the segmentation versus 0.19 for the ellipse, and 3.2% of the blurred pixels landing outside the face and hair versus 18%. With `face_detector` off no InsightFace model is loaded at all unless `measure_residual` is on."
       ]
     },
     {
-      "id": 54,
+      "id": 61,
       "type": "MarkdownNote",
       "title": "Define chunks and prompts",
       "pos": [
@@ -3891,7 +4433,7 @@
         2200
       ],
       "flags": {},
-      "order": 53,
+      "order": 60,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -3901,7 +4443,7 @@
       ]
     },
     {
-      "id": 55,
+      "id": 62,
       "type": "MarkdownNote",
       "title": "Source blur and optional Control 2",
       "pos": [
@@ -3913,17 +4455,17 @@
         2200
       ],
       "flags": {},
-      "order": 54,
+      "order": 61,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# Source blur and optional Control 2\n\nThe source video now feeds two separate branches:\n\n- **Clear source \u2192 video/audio encode:** supplies the original footage for inpainting and the original soundtrack.\n- **Source \u2192 Blur source faces \u2192 Add Noise (0.10) \u2192 masked composite \u2192 Control 1:** supplies motion and composition guidance to the reference encoder as `<Video 1>`.\n\nBlur is applied only to the control branch. It does not blur the source being encoded or the audio. A blurred control can reduce visible face-identity cues while preserving coarse movement; it does not guarantee removal of all identity information.\n\n## Face-blur controls\n\nThe **Face Anonymize Video** node detects faces automatically. There is **no hair mask or region-mask video loader**. The optional Sapiens2 group supplies `region_mask` directly from the clear source when enabled. `protect_mask` is left disconnected.\n\n- **enabled:** true applies blur; false passes the original source frames through as Control 1.\n- **gender:** `any` by default. Select a specific option only when you want detection filtered that way.\n- **all_faces:** true by default; false tracks the largest matching face.\n- **keep_mouth:** true by default, retaining mouth/jaw detail for articulation. Turn it off to blur the full detected face region.\n- **mouth_line:** controls how far down the face the upper-face blur reaches when keep_mouth is on; default 0.73.\n- **strength:** default 0.5; larger values apply stronger blur.\n- **expand:** grows the detected face box; default 0.45.\n- **hold / ema:** retain and smooth the tracked box when detection varies between frames.\n- **provider:** CUDA by default; CPU is available when your ONNX Runtime setup requires it.\n\n`hair_expand` stays 0, `output_mask` stays false, and residual measurement is off by default. The mask used for inpainting is independent of face detection and the optional hair segmentation.\n\nFace blur requires [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **InsightFace with buffalo_l models**, and an appropriate **ONNX Runtime** installation. Setting enabled to false skips face analysis while leaving the source connected as Control 1.\n\n## Source-control noise \u2014 0.10\n\n**Image Add Noise** adds noise at strength **0.10** to the blurred source-control images. **Image Composite Masked** uses the blurred image as its destination and the noisy image as its source.\n\nWhen the inpaint-mask group is enabled, its white regions receive the noisy control image; black regions retain the blurred control without added noise. When the mask group is muted, the composite has no mask and uses the noisy control across the entire image.\n\nThis is an image-noise strength, not sampler denoise. Set noise strength to 0 to disable added noise. It does not change the clear source used for encoding, or the source soundtrack.\n\n## Optional Sapiens2 hair region\n\nThe existing **ComfyUI-Sapiens2** package provides **Sapiens2 Loader \u2192 Body-Part Segmentation \u2192 Seg Extract Class**. The extractor is set to **Hair**, with 29 source classes, and its MASK connects to the blur node's `region_mask`.\n\nThe entire **OPTIONAL Hair region mask** group starts muted so no segmentation checkpoint is loaded or executed. To use it, select a Sapiens2 **segmentation** checkpoint in its loader and unmute all three nodes. A pose or normals checkpoint cannot be used here. The included selection is `sapiens2_5b_seg.safetensors`; choose another compatible segmentation model if needed.\n\nSegmentation reads the clear source, preserving frame alignment automatically. `frames_per_batch = 1` limits the number of frames processed per model call. The model can still require substantial VRAM.\n\nWith the group enabled, **region_mode = blur** blurs the segmented hair as well as the detected face. Other region modes on the face node change how that region is replaced; select them deliberately. `region_grow` expands the selected region, and mouth_keepout can protect the mouth. Turning face blur's enabled switch off skips its effect, but mute the hair group too when you want to skip segmentation work.\n\nThe hair mask controls preprocessing of **Control 1**. It does not automatically become the sampler's inpaint mask. To replace hair in the final video while an inpaint mask is enabled, that inpaint mask must also allow the hair area to regenerate.\n\n## Optional second motion control\n\nControl 1 is always the source-derived video. For extra guidance, unmute the entire **OPTIONAL Control 2** group, choose its video path, and mention `<Video 2>` in the relevant prompts. The second input uses the same start time, frame count and output dimensions as the source. Leave the group muted when not needed; a missing file in that muted branch does not block a run.\n\nRemove `<Video 2>` references from prompts when Control 2 is disabled. `<Video 1>` continues to refer to the source-derived control.\n\nFor a short static likeness clip instead of an aligned second control, list `ref_video_1` in **static_ref_videos**. That socket is the second video input. Its loader still uses the linked start time and frame cap; adjust those if the clip needs a different interval. Leave static_ref_videos empty for normal time-aligned motion controls.\n\n## Blur is not an inpaint mask\n\nBlur changes the guidance H3 receives. A white inpaint mask permits source-picture regions to regenerate; black pins the encoded source there. The reference picture supplies the desired appearance. A black inpaint region will not be replaced simply because Control 1 is blurred. With the mask group disabled, the entire picture is free to regenerate."
+        "# Source blur and optional Control 2\n\nThe source video now feeds two separate branches:\n\n- **Clear source \u2192 video/audio encode:** supplies the original footage for inpainting and the original soundtrack.\n- **Source \u2192 Blur source faces \u2192 Add Noise (0.10) \u2192 masked composite \u2192 Control 1:** supplies motion and composition guidance to the reference encoder as `<Video 1>`.\n\nBlur is applied only to the control branch. It does not blur the source being encoded or the audio. A blurred control can reduce visible face-identity cues while preserving coarse movement; it does not guarantee removal of all identity information.\n\n## Face-blur controls\n\nThe **Face Anonymize Video** node detects faces automatically. There is **no hair mask or region-mask video loader**. The optional Sapiens2 group supplies `region_mask` and `protect_mask` directly from the clear source when enabled.\n\n- **enabled:** true applies blur; false passes the original source frames through as Control 1.\n- **gender:** `any` by default. Select a specific option only when you want detection filtered that way.\n- **all_faces:** true by default; false tracks the largest matching face.\n- **keep_mouth:** true by default, retaining mouth/jaw detail for articulation. Turn it off to blur the full detected face region. Note that it keeps the whole lower face, not just the lips: jaw, chin and cheeks all stay sharp, which is a large amount of identity. Prefer the segmentation group over `keep_mouth` when you have the model.\n- **face_detector:** true by default. Set it to false to blur **only** `region_mask` (minus `protect_mask`) with no ellipse at all \u2014 see the segmentation section above. It requires a connected `region_mask`; without one the node stops with an error rather than silently blurring nothing.\n- **region_min_component:** drops `region_mask` blobs smaller than this fraction of the largest one, before `region_grow` inflates them, clearing stray segmentation specks on the background or on props. 0 disables it; 0.05 is a good default with the segmentation group, and still keeps a second performer's face.\n- **mouth_line:** controls how far down the face the upper-face blur reaches when keep_mouth is on; default 0.73.\n- **strength:** default 0.5; larger values apply stronger blur.\n- **expand:** grows the detected face box; default 0.45.\n- **hold / ema:** retain and smooth the tracked box when detection varies between frames.\n- **provider:** CUDA by default; CPU is available when your ONNX Runtime setup requires it.\n\n`hair_expand` stays 0, `output_mask` stays false, and residual measurement is off by default. The mask used for inpainting is independent of face detection and the optional hair segmentation.\n\nFace blur requires [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **InsightFace with buffalo_l models**, and an appropriate **ONNX Runtime** installation. Setting enabled to false skips face analysis while leaving the source connected as Control 1.\n\n## Source-control noise \u2014 0.10\n\n**Image Add Noise** adds noise at strength **0.10** to the blurred source-control images. **Image Composite Masked** uses the blurred image as its destination and the noisy image as its source.\n\nWhen the inpaint-mask group is enabled, its white regions receive the noisy control image; black regions retain the blurred control without added noise. When the mask group is muted, the composite has no mask and uses the noisy control across the entire image.\n\nThis is an image-noise strength, not sampler denoise. Set noise strength to 0 to disable added noise. It does not change the clear source used for encoding, or the source soundtrack.\n\n## Optional Sapiens2 hair region\n\nThe existing **ComfyUI-Sapiens2** package provides **Sapiens2 Loader \u2192 Body-Part Segmentation \u2192 Seg Extract Class**. The extractor is set to **Hair**, with 29 source classes, and its MASK connects to the blur node's `region_mask`.\n\nThe entire **OPTIONAL Hair region mask** group starts muted so no segmentation checkpoint is loaded or executed. To use it, select a Sapiens2 **segmentation** checkpoint in its loader and unmute all three nodes. A pose or normals checkpoint cannot be used here. The included selection is `sapiens2_5b_seg.safetensors`; choose another compatible segmentation model if needed.\n\nSegmentation reads the clear source, preserving frame alignment automatically. `frames_per_batch = 1` limits the number of frames processed per model call. The model can still require substantial VRAM.\n\nWith the group enabled, **region_mode = blur** blurs the segmented hair as well as the detected face. Other region modes on the face node change how that region is replaced; select them deliberately. `region_grow` expands the selected region, and mouth_keepout can protect the mouth. Turning face blur's enabled switch off skips its effect, but mute the hair group too when you want to skip segmentation work.\n\nThe hair mask controls preprocessing of **Control 1**. It does not automatically become the sampler's inpaint mask. To replace hair in the final video while an inpaint mask is enabled, that inpaint mask must also allow the hair area to regenerate.\n\n## Optional second motion control\n\nControl 1 is always the source-derived video. For extra guidance, unmute the entire **OPTIONAL Control 2** group, choose its video path, and mention `<Video 2>` in the relevant prompts. The second input uses the same start time, frame count and output dimensions as the source. Leave the group muted when not needed; a missing file in that muted branch does not block a run.\n\nRemove `<Video 2>` references from prompts when Control 2 is disabled. `<Video 1>` continues to refer to the source-derived control.\n\nFor a short static likeness clip instead of an aligned second control, list `ref_video_1` in **static_ref_videos**. That socket is the second video input. Its loader still uses the linked start time and frame cap; adjust those if the clip needs a different interval. Leave static_ref_videos empty for normal time-aligned motion controls.\n\n## Blur is not an inpaint mask\n\nBlur changes the guidance H3 receives. A white inpaint mask permits source-picture regions to regenerate; black pins the encoded source there. The reference picture supplies the desired appearance. A black inpaint region will not be replaced simply because Control 1 is blurred. With the mask group disabled, the entire picture is free to regenerate."
       ]
     },
     {
-      "id": 56,
+      "id": 63,
       "type": "MarkdownNote",
       "title": "Inpaint mask, audio and output",
       "pos": [
@@ -3935,7 +4477,7 @@
         2200
       ],
       "flags": {},
-      "order": 55,
+      "order": 62,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -3945,7 +4487,7 @@
       ]
     },
     {
-      "id": 57,
+      "id": 64,
       "type": "MarkdownNote",
       "title": "",
       "pos": [
@@ -3957,7 +4499,7 @@
         2200
       ],
       "flags": {},
-      "order": 56,
+      "order": 63,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -4194,425 +4736,513 @@
     ],
     [
       29,
-      18,
+      24,
       0,
-      27,
+      26,
       0,
-      "IMAGE"
+      "MASK"
     ],
     [
       30,
-      26,
+      24,
       0,
       27,
-      1,
-      "H3_INSIGHTFACE_MODEL"
+      0,
+      "MASK"
     ],
     [
       31,
       25,
       0,
-      27,
-      2,
+      28,
+      0,
       "MASK"
     ],
     [
       32,
-      27,
+      26,
       0,
       28,
-      0,
-      "IMAGE"
+      1,
+      "MASK"
     ],
     [
       33,
-      27,
-      0,
-      29,
-      0,
-      "IMAGE"
-    ],
-    [
-      34,
       28,
       0,
       29,
+      0,
+      "MASK"
+    ],
+    [
+      34,
+      27,
+      0,
+      29,
       1,
-      "IMAGE"
+      "MASK"
     ],
     [
       35,
-      22,
+      24,
       0,
-      29,
-      2,
+      30,
+      0,
       "MASK"
     ],
     [
       36,
-      30,
+      24,
       0,
       31,
+      0,
+      "MASK"
+    ],
+    [
+      37,
+      30,
+      0,
+      32,
+      0,
+      "MASK"
+    ],
+    [
+      38,
+      31,
+      0,
+      32,
+      1,
+      "MASK"
+    ],
+    [
+      39,
+      18,
+      0,
+      34,
       0,
       "IMAGE"
     ],
     [
+      40,
+      33,
+      0,
+      34,
+      1,
+      "H3_INSIGHTFACE_MODEL"
+    ],
+    [
+      41,
+      29,
+      0,
+      34,
+      2,
+      "MASK"
+    ],
+    [
+      42,
+      32,
+      0,
+      34,
+      3,
+      "MASK"
+    ],
+    [
+      43,
+      34,
+      0,
+      35,
+      0,
+      "IMAGE"
+    ],
+    [
+      44,
+      34,
+      0,
+      36,
+      0,
+      "IMAGE"
+    ],
+    [
+      45,
+      35,
+      0,
+      36,
+      1,
+      "IMAGE"
+    ],
+    [
+      46,
+      22,
+      0,
+      36,
+      2,
+      "MASK"
+    ],
+    [
+      47,
       37,
+      0,
+      38,
+      0,
+      "IMAGE"
+    ],
+    [
+      48,
       4,
       0,
-      33,
+      40,
       0,
       "CLIP"
     ],
     [
-      38,
+      49,
       5,
       0,
-      33,
+      40,
       1,
       "VAE"
     ],
     [
-      39,
+      50,
       6,
       0,
-      33,
+      40,
       2,
       "VAE"
     ],
     [
+      51,
+      7,
+      0,
       40,
       7,
-      0,
-      33,
-      7,
       "INT"
     ],
     [
-      41,
+      52,
       8,
       0,
-      33,
+      40,
       8,
       "INT"
     ],
     [
-      42,
+      53,
       12,
       1,
-      33,
+      40,
       9,
       "INT"
     ],
     [
-      43,
-      32,
+      54,
+      39,
       0,
-      33,
+      40,
       11,
       "STRING"
     ],
     [
-      44,
-      31,
+      55,
+      38,
       0,
-      33,
+      40,
       3,
       "IMAGE"
     ],
     [
-      45,
-      29,
+      56,
+      36,
       0,
-      33,
+      40,
       4,
       "IMAGE"
     ],
     [
-      46,
+      57,
       20,
       0,
-      33,
+      40,
       5,
       "IMAGE"
     ],
     [
-      47,
+      58,
       9,
       0,
-      33,
+      40,
       15,
       "INT"
     ],
     [
-      48,
+      59,
       10,
       0,
-      33,
+      40,
       16,
       "INT"
     ],
     [
-      49,
-      33,
+      60,
+      40,
       0,
-      35,
+      42,
       0,
       "MMH3_COND_SET"
     ],
     [
-      50,
-      34,
+      61,
+      41,
       0,
-      35,
+      42,
       1,
       "H3_REF_MODS"
     ],
     [
-      51,
-      34,
+      62,
+      41,
       1,
-      36,
+      43,
       0,
       "STRING"
     ],
     [
-      52,
+      63,
       18,
       0,
-      37,
+      44,
       0,
       "IMAGE"
     ],
     [
-      53,
+      64,
       5,
       0,
-      37,
+      44,
       1,
       "VAE"
     ],
     [
-      54,
+      65,
       18,
       2,
-      38,
+      45,
       0,
       "AUDIO"
     ],
     [
-      55,
+      66,
       6,
       0,
-      38,
+      45,
       1,
       "VAE"
     ],
     [
-      56,
-      37,
+      67,
+      44,
       0,
-      39,
+      46,
       0,
       "LATENT"
     ],
     [
-      57,
-      38,
+      68,
+      45,
       0,
-      39,
+      46,
       1,
       "LATENT"
     ],
     [
-      58,
+      69,
       3,
       0,
-      43,
+      50,
       0,
       "MODEL"
     ],
     [
-      59,
+      70,
       3,
       0,
-      44,
+      51,
       0,
       "MODEL"
     ],
     [
-      60,
-      41,
+      71,
+      48,
       0,
-      44,
+      51,
       1,
       "NOISE"
     ],
     [
-      61,
-      42,
+      72,
+      49,
       0,
-      44,
+      51,
       2,
       "SAMPLER"
     ],
     [
-      62,
-      43,
+      73,
+      50,
       0,
-      44,
+      51,
       3,
       "SIGMAS"
     ],
     [
-      63,
-      35,
+      74,
+      42,
       0,
-      44,
+      51,
       4,
       "MMH3_COND_SET"
     ],
     [
-      64,
-      39,
+      75,
+      46,
       0,
-      44,
+      51,
       5,
       "LATENT"
     ],
     [
-      65,
+      76,
       9,
       0,
-      44,
+      51,
       8,
       "INT"
     ],
     [
-      66,
+      77,
       10,
       0,
-      44,
+      51,
       9,
       "INT"
     ],
     [
-      67,
+      78,
       22,
       0,
-      44,
+      51,
       6,
       "MASK"
     ],
     [
-      68,
-      40,
+      79,
+      47,
       0,
-      44,
+      51,
       7,
       "MASK"
     ],
     [
-      69,
-      44,
+      80,
+      51,
       0,
-      45,
+      52,
       0,
       "LATENT"
     ],
     [
-      70,
+      81,
       5,
       0,
-      45,
+      52,
       1,
       "VAE"
     ],
     [
-      71,
-      44,
+      82,
+      51,
       0,
-      46,
+      53,
       0,
       "LATENT"
     ],
     [
-      72,
+      83,
       6,
       0,
-      46,
+      53,
       1,
       "VAE"
     ],
     [
-      73,
-      45,
+      84,
+      52,
       0,
-      47,
+      54,
       0,
       "IMAGE"
     ],
     [
-      74,
+      85,
       14,
       0,
-      47,
+      54,
       4,
       "FLOAT"
     ],
     [
-      75,
+      86,
       18,
       2,
-      48,
+      55,
       1,
       "AUDIO"
     ],
     [
-      76,
-      46,
+      87,
+      53,
       0,
-      48,
+      55,
       0,
       "AUDIO"
     ],
     [
-      77,
-      47,
+      88,
+      54,
       0,
-      49,
+      56,
       0,
       "IMAGE"
     ],
     [
-      78,
-      48,
+      89,
+      55,
       0,
-      49,
+      56,
       1,
       "AUDIO"
     ],
     [
-      79,
+      90,
       14,
       0,
-      49,
+      56,
       2,
       "FLOAT"
     ],
     [
-      80,
-      49,
+      91,
+      56,
       0,
-      50,
+      57,
       0,
       "VIDEO"
     ],
     [
-      81,
-      44,
-      1,
+      92,
       51,
+      1,
+      58,
       0,
       "STRING"
     ]
@@ -4680,12 +5310,12 @@
     },
     {
       "id": 6,
-      "title": "OPTIONAL Hair region mask \u2014 enable group to use",
+      "title": "OPTIONAL Face + hair seg blur \u2014 unmute, then set face_detector = false",
       "bounding": [
         3510,
         1180,
-        1560,
-        370
+        2120,
+        520
       ],
       "color": "#3f789e",
       "font_size": 24
@@ -4719,9 +5349,9 @@
       "title": "OPTIONAL RefMods \u2014 leave slots at (none) to skip",
       "bounding": [
         3510,
-        1640,
+        1720,
         1560,
-        810
+        800
       ],
       "color": "#3f789e",
       "font_size": 24

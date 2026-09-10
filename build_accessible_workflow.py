@@ -170,20 +170,46 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
                {"image": (mask_video, 0), "channel": "red"})
     threshold = add("ThresholdMask", "Binary inpaint mask", (2920, 1850), (420, 130),
                     {"mask": (mask, 0), "value": .5})
-    seg_model = add("Sapiens2Loader", "Optional hair segmentation model", (3550, 1250), (420, 140),
+    seg_model = add("Sapiens2Loader", "Optional hair segmentation model", (3550, 1200), (400, 140),
                     {"checkpoint": "sapiens2_5b_seg.safetensors"})
-    seg = add("Sapiens2Seg", "Segment clear source video", (4080, 1250), (380, 200),
+    seg = add("Sapiens2Seg", "Segment clear source video", (3990, 1200), (370, 180),
               {"image": (source, 0), "sapiens2_model": (seg_model, 0), "frames_per_batch": 1})
-    hair = add("Sapiens2SegExtract", "Hair → blur region mask", (4560, 1250), (470, 220),
-               {"class_id_mask": (seg, 0), "class_name": "Hair", "invert": False, "num_classes": 29})
+    # Face_Neck + Hair + Eyeglass is "face and hair minus mouth and lips" by construction:
+    # the lip/teeth/tongue classes are separate Goliath classes, so they are never in this union.
+    # Driving the blur from this instead of the detector's oval keeps hands and props in front of
+    # the face sharp (measured: 3.2% of the blur outside face+hair vs 18% for the oval).
+    seg_kw = {"class_id_mask": (seg, 0), "invert": False, "num_classes": 29}
+    face_cls = add("Sapiens2SegExtract", "Face_Neck → region", (4400, 1200), (380, 180),
+                   {**seg_kw, "class_name": "Face_Neck"})
+    hair = add("Sapiens2SegExtract", "Hair → region", (4820, 1200), (380, 180),
+               {**seg_kw, "class_name": "Hair"})
+    glasses = add("Sapiens2SegExtract", "Eyeglass → region", (5240, 1200), (380, 180),
+                  {**seg_kw, "class_name": "Eyeglass"})
+    union_kw = {"x": 0, "y": 0, "operation": "add"}
+    face_hair = add("MaskComposite", "Face_Neck + Hair", (3550, 1420), (300, 180),
+                    {"destination": (face_cls, 0), "source": (hair, 0), **union_kw})
+    region = add("MaskComposite", "+ Eyeglass → region mask", (3890, 1420), (300, 180),
+                 {"destination": (face_hair, 0), "source": (glasses, 0), **union_kw})
+    # protect the lips so region_grow cannot dilate the face region over them; teeth and tongue
+    # sit inside the lip line, so a small grow cannot reach them without crossing the lips first.
+    upper_lip = add("Sapiens2SegExtract", "Upper_Lip → protect", (4400, 1420), (380, 180),
+                    {**seg_kw, "class_name": "Upper_Lip"})
+    lower_lip = add("Sapiens2SegExtract", "Lower_Lip → protect", (4820, 1420), (380, 180),
+                    {**seg_kw, "class_name": "Lower_Lip"})
+    lips = add("MaskComposite", "Lips → protect mask", (5240, 1420), (300, 180),
+               {"destination": (upper_lip, 0), "source": (lower_lip, 0), **union_kw})
     insightface = add("H3InsightFaceLoader", "InsightFace model folder", (550, 1700), (650, 170),
                       {"model_folder": "models/insightface/buffalo_l"})
-    blur = add("FaceAnonymizeVideo", "Blur source faces → Control 1", (40, 1390), (440, 1050),
-               {"images": (source, 0), "insightface": (insightface, 0), "enabled": True, "gender": "any", "keep_mouth": True,
+    blur = add("FaceAnonymizeVideo", "Blur source faces → Control 1", (40, 1390), (440, 1180),
+               {"images": (source, 0), "insightface": (insightface, 0), "enabled": True, "gender": "any",
+                "keep_mouth": not enable_hair,
                 "mouth_line": .73, "expand": .45, "mode": "blur", "strength": .5,
                 "hold": 24, "ema": .6, "all_faces": True, "measure_residual": False,
                 "provider": "cuda", "unload_after": True, "output_mask": False, "hair_expand": 0.,
-                "region_mask": (hair, 0), "region_mode": "blur"})
+                "region_mask": (region, 0), "region_mode": "blur", "region_grow": 2,
+                "protect_mask": (lips, 0), "protect_grow": 2,
+                # with the seg group muted there is no region mask, so the detector must stay on
+                "face_detector": not enable_hair, "region_min_component": 0.05 if enable_hair else 0.})
     noisy = add("ImageAddNoise", "Source control noise — 0.10", (550, 1390), (300, 190),
                 {"image": (blur, 0), "seed": 506229209449357, "strength": .10})
     composite = add("ImageCompositeMasked", "Composite noise into Control 1", (900, 1390), (300, 220),
@@ -245,7 +271,8 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
         graph_nodes[node_id-1]["mode"] = 0 if enable_mask else 2
     for node_id in (control_path, control):
         graph_nodes[node_id-1]["mode"] = 0 if enable_control2 else 2
-    for node_id in (seg_model, seg, hair):
+    for node_id in (seg_model, seg, face_cls, hair, glasses, face_hair, region,
+                    upper_lip, lower_lip, lips):
         graph_nodes[node_id-1]["mode"] = 0 if enable_hair else 2
     # The UI keeps optional connections; the default API omits muted branches.
     muted = {str(n["id"]) for n in graph_nodes if n["mode"] == 2}
@@ -269,10 +296,10 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
         ("Source video path", [1250, 30, 520, 230]),
         ("Source video + audio", [1800, 30, 510, 590]),
         ("Source blur + 0.10 noise — Control 1", [0, 1320, 1230, 1170]),
-        ("OPTIONAL Hair region mask — enable group to use", [3510, 1180, 1560, 370]),
+        ("OPTIONAL Face + hair seg blur — unmute, then set face_detector = false", [3510, 1180, 2120, 520]),
         ("OPTIONAL Control 2 — enable group to use", [1250, 1130, 1060, 600]),
         ("OPTIONAL Inpaint mask — enable group to use", [1250, 1780, 2240, 650]),
-        ("OPTIONAL RefMods — leave slots at (none) to skip", [3510, 1640, 1560, 810]),
+        ("OPTIONAL RefMods — leave slots at (none) to skip", [3510, 1720, 1560, 800]),
         ("Reference pictures", [2340, 30, 520, 830]),
         ("Prompts and conditioning", [2880, 30, 600, 1350]),
         ("Clear source encode and audio mask", [3510, 30, 510, 1030]),
