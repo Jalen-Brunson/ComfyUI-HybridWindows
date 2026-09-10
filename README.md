@@ -107,13 +107,48 @@ The pack installs **four custom nodes**. The H3 nodes are under
 | Node | What it does | Used in the examples |
 |---|---|---|
 | **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | — |
-| **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, and the calculated `total_frames`. Connect these to the two native KSampler Advanced nodes and the full-timeline latent. | Both Ref2VA and FL2VA |
+| **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
 
 The model/LoRA loaders, image loaders, prompt text boxes, H3 conditioning,
 KSampler Advanced, VAE decoders and video output nodes in the examples are
 provided by ComfyUI itself.
+
+## Source masks, resume and per-window noise
+
+With none of these connected the node behaves exactly as the examples show. They
+exist so a production graph -- v2v inpainting with an accepted-prefix resume --
+can run on this chain instead of the single-node sampler.
+
+- **`cond_set`** takes one conditioning per window from MMH3 Reference
+  (Multi-Prompt), instead of the `positive_N` sockets. Connect one or the other.
+- **`latent`** is the master to sample: a source encode for v2v, or a
+  continuation master on resume. The node composes the masks and the accepted
+  prefix into one per-row noise mask, so **sample the node's `latent` output**,
+  not the master you connected.
+- **`denoise_mask` / `audio_denoise_mask`** (white regenerates, black keeps the
+  source) are reduced onto the latent grid by `denoise_mask_mode`. Pinned rows
+  are held through both stages: the joint stage keeps the model looking at the
+  clean source, so they are never re-injected from a half-denoised latent.
+- **`accepted_prefix_frames`** holds a finished head fixed. Windows that lie
+  entirely inside it skip the warm-up, and the output takes those rows from the
+  input. It must be 0 or 5+17k frames.
+- **`start_window`** is this run's first global window index (the resume shift);
+  it seeds the per-window noise.
+- **`noise_mode`**: `global` slices one draw, as before. `per_window` draws
+  `seed + start_window + window index` per window, the same draws the
+  single-node sampler makes, so a graph can be moved between the two samplers
+  and compared.
+
+Both samplers must run in one queue. The joint stage resumes the exact state the
+warm-up left, and a restart in between loses it -- it says so rather than
+sampling something wrong. Take the warm-up's `output`, never `denoised_output`.
+
+A short latent is accepted: when the master is shorter than
+`window + (count-1) * (window - overlap)` the last window slides back to end at
+the clip, the way ComfyUI's own static window schedule does. That is what a
+continuation master looks like on a project's last part.
 
 ## Optional color stabilization
 

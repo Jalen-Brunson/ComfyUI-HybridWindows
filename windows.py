@@ -9,15 +9,36 @@ import comfy.model_management
 import comfy.utils
 from comfy.context_windows import ContextHandlerABC, create_weights_pyramid
 from comfy.ldm.minimax.model import FRAME_PER_TOKEN
+from comfy.nested_tensor import NestedTensor
 from comfy_extras.nodes_minimax_h3 import align_frame_count, video_latent_t
 
 WINDOW_KEY = "hybrid_window_index"
 OFFSET_KEY = "hybrid_window_frame0"
+# MMH3Tools' own key for the same quantity. Control-strength schedules and the
+# Fun ControlNet wrapper read this one, so both stages publish both names and a
+# graph built for either sampler behaves the same.
+CONTROL_OFFSET_KEY = "mmh3_control_frame0"
+
+AUDIO_PER_FRAME = 40 / 24
 
 
 def frame_at(index):
     groups, remainder = divmod(index, len(FRAME_PER_TOKEN))
     return groups * sum(FRAME_PER_TOKEN) + sum(FRAME_PER_TOKEN[:remainder])
+
+
+def audio_index_at(index, total_video, total_audio):
+    """Audio latent column at a video latent boundary, clamped to the clip.
+
+    The ends are pinned rather than computed so a window that reaches the last
+    video latent also reaches the last audio column, whatever rounding would
+    have said.
+    """
+    if index <= 0:
+        return 0
+    if index >= total_video:
+        return total_audio
+    return min(total_audio, max(0, round(frame_at(index) * AUDIO_PER_FRAME)))
 
 
 @dataclass(frozen=True)
@@ -45,19 +66,38 @@ class WindowPlan:
         return self.window_frames + (self.count - 1) * (self.window_frames - self.overlap_frames)
 
     def spans(self, shapes):
+        """Window spans for this latent, laid out like core's static schedule.
+
+        A latent shorter than the rigid `length + (count-1)*stride` is accepted
+        and its LAST window slides back to end at the clip, exactly as
+        `create_windows_static_standard` does. A continuation master built by
+        H3ContinueMaster is short in precisely this way on a project's last
+        part, and refusing it would make resume impossible there.
+        """
         video, audio = shapes
-        expected = video_latent_t(self.total_frames)
-        if video[2] != expected or audio[3] != round(self.total_frames * 40 / 24):
+        total_v = video[2]
+        rigid = video_latent_t(self.total_frames)
+        smallest = 2 if self.count == 1 else (self.count - 2) * self.stride + self.length + 1
+        if not smallest <= total_v <= rigid:
             raise ValueError(
-                f"Hybrid windows need {self.total_frames} frames for {self.count} prompts. "
-                "Connect total_frames to the Empty MiniMax H3 AV Latent length.")
+                f"Hybrid windows: {self.count} conditioning window(s) need between {smallest} "
+                f"and {rigid} video latents ({frame_at(smallest)}-{self.total_frames} frames); "
+                f"this latent has {total_v} ({frame_at(total_v)} frames). Match the number of "
+                "prompts to the latent, or connect total_frames to the Empty MiniMax H3 AV "
+                "Latent length.")
+        total_a = audio[3]
+        if total_a != round(frame_at(total_v) * AUDIO_PER_FRAME):
+            raise ValueError(
+                f"Hybrid windows: {total_v} video latents pair with "
+                f"{round(frame_at(total_v) * AUDIO_PER_FRAME)} audio latents, not {total_a}.")
         spans = []
         for index in range(self.count):
             v0 = index * self.stride
             v1 = v0 + self.length
-            a0 = round(frame_at(v0) * 40 / 24)
-            a1 = audio[3] if v1 == expected else round(frame_at(v1) * 40 / 24)
-            spans.append((v0, v1, a0, a1))
+            if v1 > total_v:  # core slides the final window back instead of shortening it
+                v0, v1 = max(0, total_v - self.length), total_v
+            spans.append((v0, v1, audio_index_at(v0, total_v, total_a),
+                          audio_index_at(v1, total_v, total_a)))
         return spans
 
 
@@ -69,6 +109,34 @@ def plan_windows(window_frames, overlap_frames, count):
 def slice_av(parts, span):
     v0, v1, a0, a1 = span
     return [parts[0][:, :, v0:v1], parts[1][:, :, :, a0:a1]]
+
+
+def ones_mask(video, audio):
+    """A per-row keep-nothing mask shaped like MMH3's, so the two agree."""
+    return [torch.ones([video.shape[0], 1] + list(video.shape[2:]),
+                       dtype=torch.float32, device=video.device),
+            torch.ones([audio.shape[0], 1, audio.shape[2], audio.shape[3]],
+                       dtype=torch.float32, device=audio.device)]
+
+
+def pin_prefix(mask, video, audio, accepted_v, accepted_a):
+    """Hold the first accepted rows fixed, keeping any pin the master had.
+
+    Keep-wins rather than overwrite: an inpaint keep region or a pinned source
+    audio track inside the accepted span must stay pinned. At carry strength 1
+    this is MMH3 `_carry_mask`'s clamp written out, so a graph pinned by either
+    sampler sees the same mask.
+    """
+    if mask is None:
+        vm, am = ones_mask(video, audio)
+    elif isinstance(mask, NestedTensor):
+        parts = mask.unbind()
+        vm, am = parts[0].clone(), parts[-1].clone()
+    else:  # a video-only mask; audio was never pinned
+        vm, am = mask.clone(), ones_mask(video, audio)[1]
+    vm[:, :, :accepted_v] = 0.0
+    am[:, :, :, :accepted_a] = 0.0
+    return NestedTensor([vm, am])
 
 
 def write_new(destination, source, span, previous):
@@ -89,8 +157,10 @@ def select_conditioning(conds, index):
 
 
 def window_options(options, span):
+    frame0 = frame_at(span[0])
     return {**options, "transformer_options": {
-        **options.get("transformer_options", {}), OFFSET_KEY: frame_at(span[0]),
+        **options.get("transformer_options", {}),
+        OFFSET_KEY: frame0, CONTROL_OFFSET_KEY: frame0,
     }}
 
 

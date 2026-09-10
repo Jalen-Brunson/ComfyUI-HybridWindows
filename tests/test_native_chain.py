@@ -20,8 +20,12 @@ import comfy.model_patcher
 import comfy.model_sampling
 import comfy.utils
 import comfy.samplers
+import comfy.nested_tensor
+import comfy.patcher_extension
+import comfy.sample
+import comfy_extras.nodes_custom_sampler as custom
 import nodes as native_nodes
-from comfy_extras.nodes_minimax_h3 import EmptyMiniMaxH3LatentAV, MiniMaxH3ImageToVideo
+from comfy_extras.nodes_minimax_h3 import EmptyMiniMaxH3LatentAV, MiniMaxH3ImageToVideo, video_latent_t
 from comfy.ldm.minimax.model import FinalLayer, MiniMaxH3Model
 import comfy.ops
 
@@ -64,6 +68,7 @@ class ToyH3(comfy.model_base.MiniMaxH3):
         self.seen.append({"x": x.clone(), "sigma": t.clone(), "shapes": shapes,
                           "prompt": float(c_crossattn.mean()),
                           "offset": transformer_options.get(windows.OFFSET_KEY, 0),
+                          "control_offset": transformer_options.get(windows.CONTROL_OFFSET_KEY, 0),
                           "payload": kwargs["minimax_payload"],
                           "masks": {k: kwargs[k].clone() for k in ("denoise_mask", "audio_denoise_mask") if k in kwargs},
                           "sigmas": transformer_options["sample_sigmas"].clone()})
@@ -114,7 +119,7 @@ class NativeChainTests(unittest.TestCase):
         groups = {"positive_0": image_prompt(0, first=True), "positive_1": image_prompt(1),
                   "positive_2": image_prompt(2, last=True)}
         m = model()
-        sequential, joint, cond, total = hybrid.H3HybridWindows.execute(m, 39, 5, groups)
+        sequential, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(m, 39, 5, groups)
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
         first = sample(sequential, latent, cond, end=6, leftover="enable")
         sample(joint, first, cond, start=6, add_noise="disable")
@@ -139,7 +144,7 @@ class NativeChainTests(unittest.TestCase):
         unguided = sample(model(), latent, prompt())
         self.assertFalse(torch.allclose(reference["samples"].unbind()[0], unguided["samples"].unbind()[0]))
         for split in range(1, 8):
-            sequential, joint, cond, _ = hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": positive})
+            sequential, joint, cond, _, *_ = hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": positive})
             first = sample(sequential, latent, cond, end=split, leftover="enable")
             result = sample(joint, first, cond, start=split, add_noise="disable")
             for actual, expected in zip(result["samples"].unbind(), reference["samples"].unbind()):
@@ -151,7 +156,7 @@ class NativeChainTests(unittest.TestCase):
         reference = sample(original, latent, prompt())
         for split in range(1, 8):
             m = model()
-            sequential, joint, cond, total = hybrid.H3HybridWindows.execute(
+            sequential, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
                 m, 39, 5, {"positive_0": prompt()})
             first = sample(sequential, latent, cond, end=split, leftover="enable")
             result = sample(joint, first, cond, start=split, add_noise="disable")
@@ -165,7 +170,7 @@ class NativeChainTests(unittest.TestCase):
     def test_full_sequential_split_finishes_and_second_sampler_is_passthrough(self):
         for count in (1, 3):
             m = model()
-            sequential, joint, cond, total = hybrid.H3HybridWindows.execute(
+            sequential, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
                 m, 39, 5, {f"positive_{i}": prompt(i) for i in range(count)}, total_steps=8)
             latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
             first = sample(sequential, latent, cond, end=8, leftover="enable")
@@ -180,7 +185,7 @@ class NativeChainTests(unittest.TestCase):
 
     def test_three_windows_pin_then_release_and_route_prompts(self):
         m = model()
-        sequential, joint, cond, total = hybrid.H3HybridWindows.execute(
+        sequential, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
             m, 39, 5, {f"positive_{i}": prompt(i) for i in range(3)})
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
         original_parts = [x.clone() for x in latent["samples"].unbind()]
@@ -203,17 +208,17 @@ class NativeChainTests(unittest.TestCase):
 
     def test_bad_chain_settings_fail_before_model_evaluation(self):
         m = model()
-        sequential, joint, cond, total = hybrid.H3HybridWindows.execute(m, 39, 5, {"positive_0": prompt()})
+        sequential, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(m, 39, 5, {"positive_0": prompt()})
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
         with self.assertRaisesRegex(ValueError, "leftover_noise"):
             sample(sequential, latent, cond, end=6)
-        with self.assertRaisesRegex(ValueError, "Disable add_noise"):
+        with self.assertRaisesRegex(ValueError, "[Dd]isable [Nn]oise|disable add_noise"):
             sample(joint, latent, cond, start=6)
         self.assertEqual(m.model.seen, [])
 
     def test_prompt_socket_numbers_define_order(self):
         m = model()
-        _, _, bound, total = hybrid.H3HybridWindows.execute(
+        _, _, bound, total, *_ = hybrid.H3HybridWindows.execute(
             m, 243, 39, {"positive_2": prompt(2), "positive_0": prompt(0), "positive_1": prompt(1)})
         self.assertEqual([float(c[0].mean()) for c in bound], [0, 1, 2])
         self.assertEqual([c[1][windows.WINDOW_KEY] for c in bound], [0, 1, 2])
@@ -260,7 +265,7 @@ class NativeChainTests(unittest.TestCase):
 
     def test_cancel_restores_execution_local_options(self):
         m = model()
-        sequential, _, cond, total = hybrid.H3HybridWindows.execute(m, 39, 5, {"positive_0": prompt()})
+        sequential, _, cond, total, *_ = hybrid.H3HybridWindows.execute(m, 39, 5, {"positive_0": prompt()})
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
         with patch.object(m.model, "apply_model", side_effect=RuntimeError("cancelled")):
             with self.assertRaisesRegex(RuntimeError, "cancelled"):
@@ -314,6 +319,232 @@ class NativeChainTests(unittest.TestCase):
             control.control_run(Executor())
         self.assertIs(guider.model_options, original)
         self.assertEqual(states[0].latents, {})
+
+
+def custom_sample(sequential, joint, latent, cond, split=6, steps=8, seed=123, model_for_sigmas=None):
+    """The two-SamplerCustomAdvanced chain: one schedule, split at `split`."""
+    sigmas = comfy.samplers.calculate_sigmas(
+        (model_for_sigmas or sequential).get_model_object("model_sampling"), "simple", steps)
+    high, low = custom.SplitSigmas.execute(sigmas, split)
+    warm = custom.SamplerCustomAdvanced.execute(
+        custom.Noise_RandomNoise(seed), custom.BasicGuider.execute(sequential, cond)[0],
+        custom.KSamplerSelect.execute("euler")[0], high, latent)[0]
+    if len(low) < 2:
+        return warm
+    return custom.SamplerCustomAdvanced.execute(
+        custom.Noise_EmptyNoise(), custom.BasicGuider.execute(joint, cond)[0],
+        custom.KSamplerSelect.execute("euler")[0], low, warm)[0]
+
+
+def masked_latent(frames, keep_video=0, keep_audio=0):
+    """An AV latent whose own mask pins a leading run of rows."""
+    latent = EmptyMiniMaxH3LatentAV.execute(32, 32, frames)[0]
+    video, audio = latent["samples"].unbind()
+    video = video + torch.linspace(0, 1, video.shape[2]).reshape(1, 1, -1, 1, 1)
+    audio = audio + .5
+    mask = windows.ones_mask(video, audio)
+    mask[0][:, :, :keep_video] = 0
+    mask[1][:, :, :, :keep_audio] = 0
+    return {"samples": comfy.nested_tensor.NestedTensor([video, audio]),
+            "noise_mask": comfy.nested_tensor.NestedTensor(mask)}
+
+
+class NativeSourceTests(unittest.TestCase):
+    """The optional inputs: a source master, its pins, resume and per-window noise."""
+
+    def test_custom_sampler_chain_matches_ksampler_advanced_chain(self):
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        a = model()
+        seq_a, joint_a, cond_a, total, *_ = hybrid.H3HybridWindows.execute(a, 39, 5, groups)
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+        first = sample(seq_a, latent, cond_a, end=6, leftover="enable")
+        expected = sample(joint_a, first, cond_a, start=6, add_noise="disable")
+        b = model()
+        seq_b, joint_b, cond_b, _, *_ = hybrid.H3HybridWindows.execute(b, 39, 5, groups)
+        actual = custom_sample(seq_b, joint_b, latent, cond_b)
+        for got, want in zip(actual["samples"].unbind(), expected["samples"].unbind()):
+            torch.testing.assert_close(got, want, rtol=0, atol=0)
+
+    def test_source_mask_pins_rows_through_both_stages(self):
+        keep_v, keep_a = 4, 6
+        source = masked_latent(73, keep_v, keep_a)
+        m = model()
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        seq, joint, cond, total, prepared, report = hybrid.H3HybridWindows.execute(
+            m, 39, 5, groups, latent=source)
+        self.assertEqual(total, 73)
+        result = custom_sample(seq, joint, prepared, cond)
+        # Every model call in both stages is told which rows are held.
+        self.assertTrue(all("denoise_mask" in call["masks"] for call in m.model.seen))
+        video, audio = result["samples"].unbind()
+        src_v, src_a = source["samples"].unbind()
+        torch.testing.assert_close(video[:, :, :keep_v], src_v[:, :, :keep_v], rtol=2e-6, atol=1e-6)
+        torch.testing.assert_close(audio[:, :, :, :keep_a], src_a[:, :, :, :keep_a], rtol=2e-6, atol=1e-6)
+        self.assertFalse(torch.allclose(video[:, :, keep_v:], src_v[:, :, keep_v:]))
+        self.assertIn("Source pins", report)
+
+    def test_masked_latent_without_the_node_latent_input_is_refused(self):
+        source = masked_latent(73, 4, 6)
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+            model(), 39, 5, {f"positive_{i}": prompt(i) for i in range(2)})
+        self.assertIsNone(prepared)
+        with self.assertRaisesRegex(ValueError, "latent"):
+            custom_sample(seq, joint, source, cond)
+
+    def test_both_window_offset_keys_are_published(self):
+        m = model()
+        seq, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {f"positive_{i}": prompt(i) for i in range(3)})
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+        custom_sample(seq, joint, latent, cond)
+        native = {call["offset"] for call in m.model.seen}
+        mmh3 = {call["control_offset"] for call in m.model.seen}
+        self.assertEqual(native, mmh3)
+        self.assertEqual(native, {0, 34, 68})
+
+    def test_accepted_prefix_skips_windows_and_keeps_input_rows(self):
+        accepted = 39
+        source = masked_latent(73)
+        m = model()
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+            m, 39, 5, groups, latent=source, accepted_prefix_frames=accepted, start_window=3)
+        result = custom_sample(seq, joint, prepared, cond)
+        # Window 1 lies inside the prefix: only window 2 is sampled in stage 1.
+        warmup_calls = [c for c in m.model.seen if len(c["sigmas"]) == 7]
+        self.assertEqual({int(c["prompt"]) for c in warmup_calls}, {1})
+        video, audio = result["samples"].unbind()
+        src_v, src_a = source["samples"].unbind()
+        accepted_v = video_latent_t(accepted)
+        torch.testing.assert_close(video[:, :, :accepted_v], src_v[:, :, :accepted_v], rtol=0, atol=0)
+        self.assertFalse(torch.allclose(video[:, :, accepted_v:], src_v[:, :, accepted_v:]))
+        self.assertIn("Accepted prefix", report)
+        # The input latent itself is never written to.
+        torch.testing.assert_close(source["samples"].unbind()[0], src_v, rtol=0, atol=0)
+
+    def test_accepted_prefix_off_grid_is_refused(self):
+        with self.assertRaisesRegex(ValueError, r"5\+17k"):
+            hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": prompt()},
+                                           latent=masked_latent(39), accepted_prefix_frames=10)
+
+    def test_per_window_noise_differs_from_the_global_draw(self):
+        latents, results = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0], []
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        for mode in ("global", "per_window"):
+            m = model()
+            seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+                m, 39, 5, groups, latent=latents, noise_mode=mode)
+            results.append(custom_sample(seq, joint, prepared, cond)["samples"].unbind()[0])
+        self.assertFalse(torch.allclose(results[0], results[1]))
+
+    def test_per_window_noise_matches_a_seeded_draw_per_window(self):
+        m = model()
+        source = masked_latent(73)
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, groups, latent=source, noise_mode="per_window", start_window=2)
+        run = seq.wrappers[comfy.patcher_extension.WrappersMP.OUTER_SAMPLE]["hybrid_sequential"][0].run
+        video, audio = prepared["samples"].unbind()
+        spans = run.plan.spans([tuple(video.shape), tuple(audio.shape)])
+        custom_sample(seq, joint, prepared, cond, split=8)
+        previous = 0
+        for index, (v0, v1, a0, a1) in enumerate(spans):
+            expected = comfy.sample.prepare_noise(
+                comfy.nested_tensor.NestedTensor([video[:, :, v0:v1].clone(),
+                                                  audio[:, :, :, a0:a1].clone()]), 123 + 2 + index)
+            # At sigma 1 the solver starts at the noise itself; the carried head
+            # is the one part the inpaint path replaces before the model sees it.
+            carry = max(0, previous - v0)
+            drawn = comfy.utils.unpack_latents(
+                m.model.seen[index * 8]["x"], [tuple(video[:, :, v0:v1].shape),
+                                               tuple(audio[:, :, :, a0:a1].shape)])
+            torch.testing.assert_close(drawn[0][:, :, carry:], expected.unbind()[0][:, :, carry:],
+                                       rtol=2e-6, atol=1e-6)
+            previous = v1
+
+    def test_joint_stage_refuses_a_foreign_or_stale_latent(self):
+        m = model()
+        source = masked_latent(73, 4, 6)
+        groups = {f"positive_{i}": prompt(i) for i in range(2)}
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(m, 39, 5, groups, latent=source)
+        sigmas = comfy.samplers.calculate_sigmas(seq.get_model_object("model_sampling"), "simple", 8)
+        high, low = custom.SplitSigmas.execute(sigmas, 6)
+        warm = custom.SamplerCustomAdvanced.execute(
+            custom.Noise_RandomNoise(123), custom.BasicGuider.execute(seq, cond)[0],
+            custom.KSamplerSelect.execute("euler")[0], high, prepared)
+        with self.assertRaisesRegex(ValueError, "output"):  # denoised_output, not output
+            custom.SamplerCustomAdvanced.execute(
+                custom.Noise_EmptyNoise(), custom.BasicGuider.execute(joint, cond)[0],
+                custom.KSamplerSelect.execute("euler")[0], low, warm[1])
+        fresh_seq, fresh_joint, fresh_cond, _, fresh_prepared, _ = hybrid.H3HybridWindows.execute(
+            model(), 39, 5, groups, latent=source)
+        with self.assertRaisesRegex(ValueError, "no warmup state"):
+            custom.SamplerCustomAdvanced.execute(
+                custom.Noise_EmptyNoise(), custom.BasicGuider.execute(fresh_joint, fresh_cond)[0],
+                custom.KSamplerSelect.execute("euler")[0], low, warm[0])
+
+    def test_stashed_state_is_the_leftover_latent_rescaled(self):
+        """The handoff identity: x_sigma = (1-sigma) * process_latent_in(leftover)."""
+        m = model()
+        source = masked_latent(73)
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {f"positive_{i}": prompt(i) for i in range(2)}, latent=source)
+        sigmas = comfy.samplers.calculate_sigmas(seq.get_model_object("model_sampling"), "simple", 8)
+        high, _ = custom.SplitSigmas.execute(sigmas, 6)
+        warm = custom.SamplerCustomAdvanced.execute(
+            custom.Noise_RandomNoise(123), custom.BasicGuider.execute(seq, cond)[0],
+            custom.KSamplerSelect.execute("euler")[0], high, prepared)[0]
+        run = seq.wrappers[comfy.patcher_extension.WrappersMP.OUTER_SAMPLE]["hybrid_sequential"][0].run
+        leftover = comfy.utils.pack_latents(
+            m.model.process_latent_in(warm["samples"]).unbind())[0]
+        rebuilt = (1 - float(high[-1])) * leftover
+        torch.testing.assert_close(run.stash.raw_state, rebuilt, rtol=2e-6, atol=2e-6)
+
+    def test_all_accepted_needs_no_sampling(self):
+        m = model()
+        source = masked_latent(39)
+        seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {"positive_0": prompt()}, latent=source, accepted_prefix_frames=39)
+        result = custom_sample(seq, joint, prepared, cond)
+        self.assertEqual(m.model.seen, [])
+        for got, want in zip(result["samples"].unbind(), source["samples"].unbind()):
+            torch.testing.assert_close(got, want, rtol=0, atol=0)
+
+    def test_cond_set_drives_the_windows(self):
+        m = model()
+        cond_set = {"conds": [prompt(i) for i in range(3)], "prompts": ["a", "b", "c"]}
+        _, _, bound, total, _, _ = hybrid.H3HybridWindows.execute(m, 243, 39, cond_set=cond_set)
+        self.assertEqual([float(c[0].mean()) for c in bound], [0, 1, 2])
+        self.assertEqual([c[1][windows.WINDOW_KEY] for c in bound], [0, 1, 2])
+        self.assertEqual(total, 651)
+        with self.assertRaisesRegex(ValueError, "not both"):
+            hybrid.H3HybridWindows.execute(m, 243, 39, {"positive_0": prompt()}, cond_set=cond_set)
+        with self.assertRaisesRegex(ValueError, "one conditioning per window"):
+            hybrid.H3HybridWindows.execute(m, 243, 39)
+
+    def test_short_master_slides_the_last_window_back(self):
+        plan = windows.plan_windows(39, 5, 3)
+        rigid = video_latent_t(39 + 2 * (39 - 5))
+        short = rigid - 2
+        shapes = [(1, 24, short, 2, 2), (1, 32, 2, round(windows.frame_at(short) * 40 / 24))]
+        spans = plan.spans(shapes)
+        self.assertEqual(spans[-1][1], short)
+        self.assertEqual(spans[-1][1] - spans[-1][0], plan.length)
+        with self.assertRaisesRegex(ValueError, "video latents"):
+            plan.spans([(1, 24, rigid + 1, 2, 2), (1, 32, 2, 200)])
+
+    def test_prefix_pin_matches_a_hand_built_mask(self):
+        source = masked_latent(73, 2, 3)
+        video, audio = source["samples"].unbind()
+        pinned = windows.pin_prefix(source["noise_mask"], video, audio, 6, 10)
+        vm, am = pinned.unbind()
+        self.assertEqual(float(vm[:, :, :6].max()), 0.0)
+        self.assertEqual(float(am[:, :, :, :10].max()), 0.0)
+        self.assertEqual(float(vm[:, :, 6:].min()), 1.0)
+        # keep-wins: the master's own pins are still there.
+        original = source["noise_mask"].unbind()[0]
+        self.assertEqual(float(original[:, :, :2].max()), 0.0)
 
 
 if __name__ == "__main__":
