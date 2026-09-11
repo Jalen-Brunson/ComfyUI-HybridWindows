@@ -35,6 +35,22 @@ MASK_MODES = ["max", "min", "mean", "last"]
 NOISE_MODES = ["global", "per_window"]
 
 
+def add_outermost_wrapper(patcher, kind, key, wrapper):
+    """Register `wrapper` so it runs outside every other wrapper of `kind`.
+
+    Core calls wrappers in registration order, first registered outermost. The
+    window loop has to be the outermost OUTER_SAMPLE wrapper: previews, caches
+    and other per-sample hooks registered anywhere in the graph then enter once
+    per window, with the window's own noise, sigmas and latent shapes, instead
+    of once around the whole loop where they never see the inner samples.
+    """
+    slot = patcher.wrappers.setdefault(kind, {})
+    others = {k: v for k, v in slot.items() if k != key}
+    slot.clear()
+    slot[key] = [wrapper]
+    slot.update(others)
+
+
 def latent_signature(packed, shapes):
     """Cheap identity of a packed latent, for the stage-1 -> stage-2 handoff.
 
@@ -167,6 +183,7 @@ class SequentialWindows:
             noises = [torch.empty_like(x, device="cpu", dtype=torch.float32) for x in clean]
         previous = (0, 0)
         steps = len(sigmas) - 1
+        total_calls = len(spans) * steps
         try:
             for index, span in enumerate(spans):
                 comfy.model_management.throw_exception_if_processing_interrupted()
@@ -203,12 +220,27 @@ class SequentialWindows:
                                 for key, group in original_conds.items()}
                 guider.model_options = window_options(original_options, span)
                 last_prediction = None
+                # Accepted rows keep the source; only fresh rows take a prediction.
+                write_v, write_a = max(span[0], run.accepted_v), max(span[2], run.accepted_a)
+
+                def splice(target, prediction):
+                    target[0][:, :, write_v:span[1]] = prediction[0][:, :, write_v-span[0]:].to(target[0])
+                    target[1][:, :, :, write_a:span[3]] = prediction[1][:, :, :, write_a-span[2]:].to(target[1])
 
                 def capture(step, x0, x, total_steps):
                     nonlocal last_prediction
                     # Native process_latent_out also removes H3's carried-audio scale.
                     last_prediction = guider.inner_model.process_latent_out(x0).to(
                         device=latent_image.device, dtype=torch.float32).clone()
+                    if callback is not None:
+                        # The sampler node's callback (progress bar, previews, the
+                        # denoised output) belongs to the whole master: core unpacks
+                        # it with the master's shapes. Hand it the master with this
+                        # window's prediction spliced in, every step.
+                        preview = [c.clone() for c in clean]
+                        splice(preview, comfy.utils.unpack_latents(last_prediction, sub_shapes))
+                        packed = comfy.utils.pack_latents(preview)[0]
+                        callback(index*steps + step, packed, packed, total_calls)
 
                 logging.info("[Hybrid Windows] sequential window %d/%d, %d steps", index + 1, len(spans), steps)
                 segment = EulerSegment(sampler, capture=stash_state)
@@ -222,15 +254,8 @@ class SequentialWindows:
                               span, previous)
                     write_new(noises, comfy.utils.unpack_latents(noise_packed, sub_shapes),
                               span, previous)
-                prediction = comfy.utils.unpack_latents(last_prediction, sub_shapes)
-                # Accepted rows keep the source; only fresh rows take a prediction.
-                write_v, write_a = max(span[0], run.accepted_v), max(span[2], run.accepted_a)
-                clean[0][:, :, write_v:span[1]] = prediction[0][:, :, write_v-span[0]:].to(clean[0])
-                clean[1][:, :, :, write_a:span[3]] = prediction[1][:, :, :, write_a-span[2]:].to(clean[1])
+                splice(clean, comfy.utils.unpack_latents(last_prediction, sub_shapes))
                 previous = (span[1], span[3])
-                if callback is not None:
-                    preview = comfy.utils.pack_latents(clean)[0]
-                    callback((index+1)*steps-1, preview, preview, len(spans)*steps)
         finally:
             guider.conds, guider.model_options = original_conds, original_options
         # At the full split the second stock sampler is an exact passthrough.
@@ -480,10 +505,10 @@ class H3HybridWindows(io.ComfyNode):
                                   denoise_mask_mode, accepted_prefix_frames)
         report = run_report(run, count, prepared)
         sequential = model.clone()
-        sequential.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(run))
+        add_outermost_wrapper(sequential, WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(run))
         joint = model.clone()
         joint.model_options["context_handler"] = JointWindows(plan)
-        joint.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "hybrid_joint", JointStage(run))
+        add_outermost_wrapper(joint, WrappersMP.OUTER_SAMPLE, "hybrid_joint", JointStage(run))
         joint.add_wrapper_with_key(WrappersMP.PREPARE_SAMPLING, "hybrid_joint_memory", prepare_joint)
         logging.info("[Hybrid Windows] %s", report)
         return io.NodeOutput(sequential, joint, bound, plan.total_frames, prepared, report)

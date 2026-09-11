@@ -423,6 +423,92 @@ class NativeSourceTests(unittest.TestCase):
         # The input latent itself is never written to.
         torch.testing.assert_close(source["samples"].unbind()[0], src_v, rtol=0, atol=0)
 
+    def test_outer_sample_wrappers_enter_once_per_window_wherever_registered(self):
+        # Previews, caches and other per-sample hooks must see every window's own
+        # sample. A wrapper registered before the node and one registered after
+        # it must both sit inside the window loop.
+        entries = []
+
+        def probe(name):
+            def wrapper(executor, *args, **kwargs):
+                entries.append((name, len(args[3]), [tuple(x) for x in kwargs["latent_shapes"]]))
+                return executor(*args, **kwargs)
+            return wrapper
+
+        m = model()
+        m.add_wrapper_with_key(comfy.patcher_extension.WrappersMP.OUTER_SAMPLE, "before", probe("before"))
+        seq, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {f"positive_{i}": prompt(i) for i in range(3)})
+        seq.add_wrapper_with_key(comfy.patcher_extension.WrappersMP.OUTER_SAMPLE, "after", probe("after"))
+        joint.add_wrapper_with_key(comfy.patcher_extension.WrappersMP.OUTER_SAMPLE, "after", probe("after"))
+        self.assertEqual(list(seq.wrappers[comfy.patcher_extension.WrappersMP.OUTER_SAMPLE])[0], "hybrid_sequential")
+        self.assertEqual(list(joint.wrappers[comfy.patcher_extension.WrappersMP.OUTER_SAMPLE])[0], "hybrid_joint")
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+        custom_sample(seq, joint, latent, cond)
+        master = [tuple(x.shape) for x in latent["samples"].unbind()]
+        window_video = (1, 24, video_latent_t(39)) + master[0][3:]
+        warm = [e for e in entries if e[1] == 7]
+        finish = [e for e in entries if e[1] == 3]
+        self.assertEqual(len(entries), len(warm) + len(finish))
+        # Stage 1: three windows, each entered once by both probes with the window's shapes.
+        self.assertEqual([e[0] for e in warm], ["before", "after"] * 3)
+        for _, _, shapes in warm:
+            self.assertEqual(shapes[0], window_video)
+            self.assertLess(shapes[1][3], master[1][3])
+        # Stage 2: one joint sample over the master.
+        self.assertEqual([e[0] for e in finish], ["before", "after"])
+        for _, _, shapes in finish:
+            self.assertEqual(shapes, master)
+
+    def test_warmup_forwards_every_step_to_the_sampler_callback(self):
+        calls = []
+
+        def recorder(model, steps, x0_output_dict=None):
+            def callback(step, x0, x, total_steps):
+                calls.append((step, [t.clone() for t in x0.unbind()], total_steps))
+            return callback
+
+        m = model()
+        seq, joint, cond, total, *_ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {f"positive_{i}": prompt(i) for i in range(3)})
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+        source = [x.clone() for x in latent["samples"].unbind()]
+        with patch("latent_preview.prepare_callback", side_effect=recorder):
+            custom_sample(seq, joint, latent, cond)
+        warm, finish = calls[:18], calls[18:]
+        # 3 windows x 6 steps, a monotone global step index, one shared total.
+        self.assertEqual([c[0] for c in warm], list(range(18)))
+        self.assertEqual({c[2] for c in warm}, {18})
+        self.assertEqual([c[0] for c in finish], [0, 1])
+        for _, parts, _ in calls:
+            # Core unpacked the packed master with the master's own shapes.
+            self.assertEqual([tuple(p.shape) for p in parts], [tuple(s.shape) for s in source])
+        v1 = video_latent_t(39)
+        # While window 1 samples, rows beyond it are still the untouched master.
+        for _, parts, _ in warm[:6]:
+            torch.testing.assert_close(parts[0][:, :, v1:], source[0][:, :, v1:], rtol=0, atol=0)
+            self.assertFalse(torch.equal(parts[0][:, :, :v1], source[0][:, :, :v1]))
+        # Each step within a window changes the preview; window 2 then fills its rows.
+        self.assertFalse(torch.equal(warm[0][1][0], warm[1][1][0]))
+        self.assertFalse(torch.equal(warm[11][1][0][:, :, v1:], source[0][:, :, v1:]))
+
+    def test_accepted_windows_send_no_callback(self):
+        calls = []
+
+        def recorder(model, steps, x0_output_dict=None):
+            return lambda step, x0, x, total_steps: calls.append((step, total_steps))
+
+        source = masked_latent(73)
+        m = model()
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+            m, 39, 5, {f"positive_{i}": prompt(i) for i in range(2)},
+            latent=source, accepted_prefix_frames=39, start_window=3)
+        with patch("latent_preview.prepare_callback", side_effect=recorder):
+            custom_sample(seq, joint, prepared, cond)
+        # Window 1 is the accepted prefix: only window 2's six steps report, numbered
+        # on the two-window grid, followed by the joint stage's two.
+        self.assertEqual(calls, [(s, 12) for s in range(6, 12)] + [(0, 2), (1, 2)])
+
     def test_accepted_prefix_off_grid_is_refused(self):
         with self.assertRaisesRegex(ValueError, r"5\+17k"):
             hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": prompt()},

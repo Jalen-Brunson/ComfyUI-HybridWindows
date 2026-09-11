@@ -361,6 +361,23 @@ Sampling uses one native noise draw for the complete timeline, sliced into
 windows. Reduced mottling remains an empirical question for real renders,
 not a guarantee of this implementation.
 
+### Previews and progress during the first sampler
+
+Each window's steps are reported to the sampler node as one continuous run:
+`windows x steps` total, counted from the first sampled window. The preview
+latent is the whole timeline with the current window's prediction written into
+it, so a preview shows finished windows, the window being sampled, and the
+untouched remainder. Windows inside an accepted prefix are skipped and report
+nothing. ComfyUI's built-in previewers render the first latent frame of what
+they are given, so on a resume that frame belongs to the accepted prefix and
+does not change; a preview node that decodes a clip, such as KJNodes' **Model
+Preview Override**, shows the window.
+
+The window loop is registered as the outermost `OUTER_SAMPLE` wrapper of both
+stage models. Other wrappers -- preview overrides, caches -- therefore run once
+per sampled window and receive that window's noise, sigmas and latent shapes,
+whether they were added before or after this node in the graph.
+
 ## Research credit
 
 Credit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for
