@@ -1,0 +1,268 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "H3 Ref2VA base"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors",
+      "strength_model": 1.0,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Ref2VA 8-step PDD"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": [
+        "2",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Video / audio sigma shifts"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "H3 text encoder"
+    }
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "7": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "hybrid_windows/ref2va_stock_portrait.jpg"
+    },
+    "_meta": {
+      "title": "Reference appearance - Picture 1"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "prompt": "A continuous portrait shot of the person in <Picture 1>. Preserve their appearance and clothing. They gently glance to the side and return their gaze toward the camera, blinking and breathing naturally. Fixed camera, consistent framing and soft daylight throughout. Quiet room ambience.",
+      "width": 832,
+      "height": 480,
+      "length": 243,
+      "ref_image_size": "match",
+      "clip": [
+        "4",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Native reference-image conditioning"
+    }
+  },
+  "9": {
+    "class_type": "MMH3CondToSet",
+    "inputs": {
+      "count": 3,
+      "conditioning": [
+        "8",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Same reference and prompt for 3 windows"
+    }
+  },
+  "10": {
+    "class_type": "EmptyMiniMaxH3LatentAV",
+    "inputs": {
+      "width": 832,
+      "height": 480,
+      "length": 651
+    },
+    "_meta": {
+      "title": "Full timeline: 651 frames"
+    }
+  },
+  "11": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 123
+    },
+    "_meta": {
+      "title": "Seed + window index"
+    }
+  },
+  "12": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "_meta": {
+      "title": "Plain Euler"
+    }
+  },
+  "13": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1.0,
+      "model": [
+        "3",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "8-step schedule"
+    }
+  },
+  "14": {
+    "class_type": "MMH3HybridWindowSampler",
+    "inputs": {
+      "window_frames": 243,
+      "overlap_frames": 39,
+      "sequential_steps": 6,
+      "accumulator_device": "gpu",
+      "denoise_mask_mode": "max",
+      "accepted_prefix_frames": 0,
+      "start_window": 0,
+      "model": [
+        "3",
+        0
+      ],
+      "noise": [
+        "11",
+        0
+      ],
+      "sampler": [
+        "12",
+        0
+      ],
+      "sigmas": [
+        "13",
+        0
+      ],
+      "cond_set": [
+        "9",
+        0
+      ],
+      "latent": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "6 sequential + 2 joint steps"
+    }
+  },
+  "15": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "14",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode video"
+    }
+  },
+  "16": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "14",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode audio"
+    }
+  },
+  "17": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "fps": 24.0,
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "images": [
+        "15",
+        0
+      ],
+      "audio": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Video + generated audio"
+    }
+  },
+  "18": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "filename_prefix": "video/HybridSampler_Ref2VA",
+      "format": "mp4",
+      "format.codec": "h264",
+      "format.codec.encoding": "re-encode",
+      "format.codec.encoding.crf": 16.0,
+      "codec": "auto",
+      "video": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Save reference-image hybrid"
+    }
+  }
+}

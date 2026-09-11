@@ -68,6 +68,43 @@ saturation nudged back toward each clip's first eight seconds, following the sou
 trajectory; brightness, contrast, texture and audio untouched). The exact API payloads of both arms,
 the builder that produced them and the colour-grade command are in
 [docs/examples/compare_stream00170](docs/examples/compare_stream00170/).
+## Single-sampler reference-image example
+
+Open [H3 Hybrid R2V - single sampler.json](example_workflows/H3%20Hybrid%20R2V%20-%20single%20sampler.json) in ComfyUI. An [API graph](example_workflows/H3%20Hybrid%20R2V%20-%20single%20sampler.api.json) is included.
+
+This sampler moved from **ComfyUI-MMH3Tools** into this repository. Its node ID remains `MMH3HybridWindowSampler`, so existing workflows keep their connections. Update both packs and restart to avoid duplicate registration. The single sampler requires MMH3Tools for its shared window, conditioning and mask helpers; the original two-KSampler examples do not.
+
+The example has **16 native nodes**, **MMH3 Cond To Set**, and **H3 Hybrid Window Sampler**. Native H3 Ref2VA conditioning receives the loaded reference image; Cond To Set reuses that conditioning across three windows. Native noise, Euler selection and sigma scheduling feed the sampler, followed by native video/audio decoding and Save Video.
+
+1. Copy the bundled [reference portrait](example_workflows/assets/ref2va_stock_portrait.jpg) into `ComfyUI/input/hybrid_windows/`, or upload your own image in Load Image. Asset credits are in the assets folder.
+2. Select the Ref2VA base, matching PDD LoRA, H3 text encoder and both VAEs listed below. Edit the native conditioning prompt; `<Picture 1>` identifies the reference.
+3. Queue to generate **651 frames at 832 × 480, 24 fps** with **243-frame windows / 39-frame overlap**, **6 sequential + 2 joint Euler steps**, CFG 1, and video/audio shifts 12/3. Output saves under `output/video/HybridSampler_Ref2VA`.
+
+Set `sequential_steps = 8` for the sequential baseline. For another duration, match Cond To Set's count and the empty latent length: `total = window + (count - 1) × (window - overlap)`. Keep conditioning and latent dimensions identical. Connect the model before any Context Windows node; this sampler owns windowing. The sample starts fresh with accepted prefix and start window both zero.
+
+Rebuild with `python build_sampler_workflow.py`. Validate with `python tests/validate_sampler_workflow.py` and run the sampler state tests with `python tests/test_hybrid_sampler.py` from this repository in the ComfyUI environment. Graph validation and CPU sampler tests do not establish rendered visual quality.
+
+## Single hybrid sampler
+
+**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. Plain Euler with zero churn is required. The default is six sequential steps followed by two joint steps.
+
+## Accessible 05 workflow
+
+[05A Hybrid - accessible fresh inpaint](example_workflows/05A%20Hybrid%20-%20accessible%20fresh%20inpaint.json) starts with **Load source video → Write prompt → Add reference images → Define blur**, followed by Queue. Its instruction panels include [model download links and folders, chunks, blur/noise, optional hair segmentation, masks and audio](docs/accessible-workflow.md).
+
+Install **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod). Face analysis needs InsightFace/buffalo_l and a compatible ONNX Runtime. The Sapiens2 checkpoint is needed only when enabling hair segmentation. None of the excluded `vlm_video_prompt`, `wan_chunk_io`, `path_tools`, `minimax_h3_mask_tools` or `MaskVidExperiments` nodes is used.
+
+The clear source feeds video/audio encoding. A second branch runs **face blur → native Image Add Noise (0.10) → Image Composite Masked → Control 1**. The source therefore supplies the first control automatically. **Inpaint mask**, **Control 2**, and **Sapiens2 Hair region mask** are separate optional groups, all muted by default. Enable a group by setting all its nodes to Always. Disabled groups need no input files or model execution.
+
+The inpaint mask, when enabled, controls both sampler preservation and where noise is composited into Control 1. Without it, the full picture may regenerate and noise affects the full control image. Sapiens2 extracts Hair from the clear source and feeds the face node's region_mask, without an external hair-mask loader. It does not replace the inpaint mask.
+
+The optional **Load H3 RefMods → Apply H3 RefMods to Cond Set** branch applies saved mods to every chunk before the control references. All loader slots default to `(none)`, which leaves conditioning unchanged. No trainer/extractor is included; see the workflow’s RefMods instruction panel.
+
+Defaults: **832 × 480, two 124-frame windows, 39-frame overlap, 209 frames at 24 fps, Euler/simple, 6+2 steps**, with the 05 flow's DMD Turbo LoRA. The original beta57 schedule needs an extra extension and is not reproduced here. Enter one pipe-separated prompt per window. Source audio is preserved by default; the output uses the original loaded soundtrack directly.
+
+This fresh-run edition omits automatic project/prompt-file handling, accepted-prefix resume/master assembly, persistent source-encode caching, delayed schedules, audio frame ranges and diagnostic branches. RefMod loading and application are included; the trainer/extractor, background removal and custom attention patches are omitted. The original 05 is unchanged.
+
+`python build_accessible_workflow.py` rebuilds the shareable UI/API examples and local copy in `user/default/workflows/H3 Diagnostics/`, preserving local widget settings where node titles match. The repo example uses placeholder paths. `python tests/validate_accessible_workflow.py` checks optional branch combinations, excluded imports, layout, mask behavior, noise compositing and Hair extraction on CPU. It does not perform a GPU render or segmentation-model inference.
 
 ## Speed LoRA, sampler and scheduler compatibility
 
@@ -95,10 +132,6 @@ passes the completed latent through unchanged. The shared **Total steps** value
 also connects to Hybrid Windows. Use this baseline to compare sequential carry
 with joint finishing while keeping the seed, prompts and inputs fixed.
 
-## Single hybrid sampler
-
-**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. Plain Euler with zero churn is required. The default is six sequential steps followed by two joint steps.
-
 ## Included custom nodes
 
 The pack installs **four custom nodes**. The H3 nodes are under
@@ -106,7 +139,8 @@ The pack installs **four custom nodes**. The H3 nodes are under
 
 | Node | What it does | Used in the examples |
 |---|---|---|
-| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | — |
+| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, including source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA |
+| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | Accessible 05A |
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
@@ -158,10 +192,16 @@ share one **Output FPS** value between the color node and Create Video.
 The color math assumes SDR/sRGB frames with BT.709 luma coefficients.
 
 Defaults are **enabled**, **strength 0.85**, **reference 1–8 seconds** and
-**smoothing 2 seconds**. Disable the node or set strength to zero for exact
+**smoothing 2 seconds**, with **max_tint_shift 0.06**. Disable the node or set strength to zero for exact
 frame passthrough. The reference interval is preserved; correction ramps in
 over two seconds outside it. Use the generated opening as the reference rather
 than an appearance-conditioning portrait with potentially different lighting.
+
+For strong accumulated tint drift, use strength **1.0**. `max_tint_shift`
+limits each Cb/Cr correction before strength is applied; 0.06 allows about
+15 levels on a 0–255 scale. The previous fixed 0.025 limit could leave a
+visible cast on long clips. This adjusts decoded output, not the latent
+carried into the next generation window.
 
 Without `source_frames`, the target is the opening's median tint and color
 spread. Optionally connect original video frames **before noise or effects**,

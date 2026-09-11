@@ -84,6 +84,17 @@ class ColorTests(unittest.TestCase):
         torch.testing.assert_close(means(corrected)[-32:], means(clean)[-32:], rtol=0, atol=2e-5)
         self.assertGreater(float((means(without_source)[-32:] - means(clean)[-32:]).abs().mean()), .005)
 
+    def test_strong_blue_drift_is_not_stopped_by_old_hidden_limit(self):
+        drift = np.clip((np.arange(320) - 40) / 180., 0., 1.)
+        source = clip(-.004 * drift, .008 * drift)
+        clean = clip(-.004 * drift + .006, .008 * drift + .009)
+        images = clip(.041 * drift + .006, -.022 * drift + .009)
+        corrected = run(images, strength=1., source_frames=source)
+        limited = run(images, strength=1., source_frames=source, max_tint_shift=.025)
+        torch.testing.assert_close(means(corrected)[-32:], means(clean)[-32:], rtol=0, atol=2e-5)
+        self.assertGreater(float((means(limited)[-32:, 0] - means(clean)[-32:, 0]).mean()), .019)
+        torch.testing.assert_close(luma(corrected), luma(images), rtol=0, atol=2e-7)
+
     def test_temporal_correction_has_no_step_at_a_chunk_boundary(self):
         drift = np.where(np.arange(320) < 160, 0., .018)
         images = clip(drift)

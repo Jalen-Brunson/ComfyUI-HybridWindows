@@ -32,7 +32,8 @@ def smooth_colors(stats, fps, seconds):
     return smoothed
 
 
-def color_plan(stats, source_stats, fps, reference_start, reference_end, smoothing, strength):
+def color_plan(stats, source_stats, fps, reference_start, reference_end, smoothing, strength,
+               max_tint_shift=.06):
     count = len(stats)
     start = max(0, min(round(reference_start * fps), count - 1))
     end = max(start + 1, min(round(reference_end * fps), count))
@@ -52,7 +53,7 @@ def color_plan(stats, source_stats, fps, reference_start, reference_end, smoothi
                       np.clip((start - frame) / ramp_frames, 0., 1.))
     amount = strength * ramp
     gain = 1. + amount * (np.clip(target[:, 2] / np.maximum(smoothed[:, 2], 1e-6), .9, 1.4) - 1.)
-    shift = amount[:, None] * np.clip(target[:, :2] - smoothed[:, :2], -.025, .025)
+    shift = amount[:, None] * np.clip(target[:, :2] - smoothed[:, :2], -max_tint_shift, max_tint_shift)
     return smoothed[:, :2], gain, shift
 
 
@@ -99,13 +100,19 @@ class VideoColorStabilize(io.ComfyNode):
                                tooltip="Optional original source frames, before added noise or color effects. "
                                        "Must have the same frame count and timing as images. "
                                        "Leave disconnected for image-conditioned generation."),
+                io.Float.Input("max_tint_shift", default=.06, min=0., max=.5, step=.005,
+                               optional=True,
+                               tooltip="Maximum Cb/Cr offset before strength is applied. "
+                                       "0.06 allows about 15 levels on a 0–255 scale. "
+                                       "A lower limit can leave strong drift uncorrected. "
+                                       "Use strength 1 for full correction toward the source-relative target."),
             ],
             outputs=[io.Image.Output(display_name="images")],
         )
 
     @classmethod
     def execute(cls, images, enabled=True, strength=.85, fps=24., reference_start_seconds=1.,
-                reference_end_seconds=8., smoothing_seconds=2., source_frames=None):
+                reference_end_seconds=8., smoothing_seconds=2., source_frames=None, max_tint_shift=.06):
         if not enabled or strength == 0 or len(images) == 0:
             return io.NodeOutput(images)
         if images.ndim != 4 or images.shape[-1] != 3:
@@ -120,7 +127,7 @@ class VideoColorStabilize(io.ComfyNode):
         stats = color_stats(images, progress)
         source_stats = color_stats(source_frames, progress) if source_frames is not None else None
         centers, gains, shifts = color_plan(stats, source_stats, fps, reference_start_seconds,
-                                           reference_end_seconds, smoothing_seconds, strength)
+                                           reference_end_seconds, smoothing_seconds, strength, max_tint_shift)
         output = torch.empty_like(images)
         for i, image in enumerate(images):
             comfy.model_management.throw_exception_if_processing_interrupted()

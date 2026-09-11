@@ -1161,6 +1161,30 @@
           "shape": 7
         },
         {
+          "name": "cond_set",
+          "type": "MMH3_COND_SET",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "denoise_mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "audio_denoise_mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        },
+        {
           "name": "window_frames",
           "type": "INT",
           "link": 23,
@@ -1183,6 +1207,42 @@
           "shape": 7,
           "widget": {
             "name": "total_steps"
+          }
+        },
+        {
+          "name": "denoise_mask_mode",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "denoise_mask_mode"
+          }
+        },
+        {
+          "name": "accepted_prefix_frames",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "accepted_prefix_frames"
+          }
+        },
+        {
+          "name": "start_window",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "start_window"
+          }
+        },
+        {
+          "name": "noise_mode",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "noise_mode"
           }
         }
       ],
@@ -1216,6 +1276,16 @@
           "links": [
             30
           ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
         }
       ],
       "title": "Hybrid windows",
@@ -1225,12 +1295,20 @@
       "widgets_values": [
         243,
         39,
-        8
+        8,
+        "max",
+        0,
+        0,
+        "global"
       ],
       "widgets_values_named": {
         "window_frames": 243,
         "overlap_frames": 39,
-        "total_steps": 8
+        "total_steps": 8,
+        "denoise_mask_mode": "max",
+        "accepted_prefix_frames": 0,
+        "start_window": 0,
+        "noise_mode": "global"
       }
     },
     {
@@ -1835,6 +1913,15 @@
           "widget": {
             "name": "smoothing_seconds"
           }
+        },
+        {
+          "name": "max_tint_shift",
+          "type": "FLOAT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "max_tint_shift"
+          }
         }
       ],
       "outputs": [
@@ -1856,7 +1943,8 @@
         24.0,
         1.0,
         8.0,
-        2.0
+        2.0,
+        0.06
       ],
       "widgets_values_named": {
         "enabled": true,
@@ -1864,7 +1952,8 @@
         "fps": 24.0,
         "reference_start_seconds": 1.0,
         "reference_end_seconds": 8.0,
-        "smoothing_seconds": 2.0
+        "smoothing_seconds": 2.0,
+        "max_tint_shift": 0.06
       }
     },
     {
@@ -2255,7 +2344,7 @@
       11,
       0,
       20,
-      4,
+      8,
       "INT"
     ],
     [
@@ -2263,7 +2352,7 @@
       13,
       0,
       20,
-      6,
+      10,
       "INT"
     ],
     [
