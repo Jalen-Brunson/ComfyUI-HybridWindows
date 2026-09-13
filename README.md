@@ -1,11 +1,10 @@
-# Hybrid Windows for ComfyUI
+# Hybrid Windows for ComfyUI - long Minimax H3 generations without video degradation thorough rolling diffusion and context frame control.
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes** or a **single Hybrid Window Sampler**.
 
-The bundled hybrid workflows use **5 pinned video context frames** inside a
-**39-frame overlap**, with `overlap_pin = tail_custom`. Both the native chain and
-the single-node sampler expose this setting; existing nodes default to `full`.
-See [pinned context and overlap](docs/pinned-context.md) for the distinction.
+The bundled hybrid workflows use 5 pinned video context frames inside a
+39-frame overlap. Both the native chain and
+the single-node sampler expose this setting.
 
 The supplied PDD examples retain **Euler / simple, 8 steps, 6+2**. Hybrid sampling
 also accepts other solvers and schedules and does not require PDD or a speed
