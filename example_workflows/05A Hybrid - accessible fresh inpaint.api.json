@@ -562,7 +562,10 @@
       "audio_denoise_mask": [
         "47",
         0
-      ]
+      ],
+      "feather_latents": 0,
+      "overlap_pin": "tail_custom",
+      "context_frames": 5
     },
     "_meta": {
       "title": "5. Hybrid \u2014 6 sequential + 2 joint"

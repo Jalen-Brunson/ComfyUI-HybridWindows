@@ -1,7 +1,10 @@
-"""Build two matched API prompts for stream_00170: native HybridWindows (6+2) vs MMH3LoopingSampler (8 sequential).
-Everything but the sampler is identical: same source decode + noise, same ref image, same model chain, dims, windows, seed, prompt."""
-import json, sys
-OUT = "/workspace/analysis/hybrid_vs_looping_stream00170_2026-09-10"
+"""Build stream_00170 prompts: context-5 HybridWindows (6+2) and the Looping baseline.
+Both use the same source decode + noise, reference image, model chain, dimensions,
+windows, seed and prompt. The original full-pin hybrid prompt is linked in README.md."""
+import json
+from pathlib import Path
+
+OUT = Path(__file__).resolve().parent
 SRC_FILE = "stream_00170.mp4"          # ComfyUI/input
 REF_IMAGE = "hybrid_man_reference.png" # ComfyUI/input
 W, H = 768, 576                        # source native dims (both /32)
@@ -48,7 +51,8 @@ def save_chain(p, samples_node, prefix):
 
 def hybrid_native():
     p = common()
-    hw = {"class_type": "H3HybridWindows", "inputs": {"model": ["4", 0], "window_frames": L, "overlap_frames": OV, "total_steps": STEPS}}
+    hw = {"class_type": "H3HybridWindows", "inputs": {"model": ["4", 0], "window_frames": L, "overlap_frames": OV, "total_steps": STEPS,
+                                                     "overlap_pin": "tail_custom", "context_frames": 5}}
     for i in range(N_WIN):
         sid, cid = str(200 + i), str(300 + i)
         p[sid] = {"class_type": "ImageFromBatch", "inputs": {"image": ["104", 0], "batch_index": i * (L - OV), "length": L}}
@@ -63,7 +67,7 @@ def hybrid_native():
                "start_at_step": 0, "end_at_step": SWITCH, "return_with_leftover_noise": "enable", "positive": ["19", 2], "negative": ["21", 0], "model": ["19", 0], "latent_image": ["20", 0]}}
     p["23"] = {"class_type": "KSamplerAdvanced", "inputs": {"add_noise": "disable", "noise_seed": SEED, "steps": STEPS, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple",
                "start_at_step": SWITCH, "end_at_step": STEPS, "return_with_leftover_noise": "disable", "positive": ["19", 2], "negative": ["21", 0], "model": ["19", 1], "latent_image": ["22", 0]}}
-    save_chain(p, "23", "video/compare_stream00170/hybrid_native_6p2")
+    save_chain(p, "23", "video/compare_stream00170/hybrid_native_context5_6p2")
     return p
 
 def mmh3_looping():

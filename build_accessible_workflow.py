@@ -245,12 +245,15 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
     euler = add("KSamplerSelect", "Plain Euler", (4080, 310), (380, 110), {"sampler_name": "euler"})
     sigmas = add("BasicScheduler", "8-step Turbo schedule", (4080, 500), (380, 210),
                  {"model": (shift, 0), "scheduler": "simple", "steps": 8, "denoise": 1.})
-    sampled = add("MMH3HybridWindowSampler", "5. Hybrid — 6 sequential + 2 joint", (4560, 100), (470, 610),
+    sampled = add("MMH3HybridWindowSampler", "5. Hybrid — 6 sequential + 2 joint", (4560, 100), (470, 700),
                   {"model": (shift, 0), "noise": (noise, 0), "sampler": (euler, 0), "sigmas": (sigmas, 0),
                    "cond_set": (mod_cond, 0), "latent": (packed, 0), "window_frames": (window, 0),
                    "overlap_frames": (overlap, 0), "sequential_steps": 6, "accumulator_device": "gpu",
                    "denoise_mask_mode": "max", "denoise_mask": (threshold, 0),
-                   "audio_denoise_mask": (audio_mask, 0), "accepted_prefix_frames": 0, "start_window": 0})
+                   "audio_denoise_mask": (audio_mask, 0), "accepted_prefix_frames": 0, "start_window": 0,
+                   "feather_latents": 0,
+                   # Fresh source preservation requires full pinning when explicitly enabled.
+                   "overlap_pin": "full" if enable_mask else "tail_custom", "context_frames": 5})
     decoded = add("VAEDecode", "Decode video", (5140, 100), (420, 110),
                   {"samples": (sampled, 0), "vae": (vae, 0)})
     decoded_audio = add("VAEDecodeAudio", "Decode generated/preserved audio latent", (5140, 310), (420, 110),

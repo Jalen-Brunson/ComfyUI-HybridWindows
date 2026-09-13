@@ -3756,7 +3756,7 @@
       ],
       "size": [
         470,
-        610
+        700
       ],
       "flags": {},
       "order": 50,
@@ -3861,6 +3861,33 @@
           "widget": {
             "name": "start_window"
           }
+        },
+        {
+          "name": "feather_latents",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "feather_latents"
+          }
+        },
+        {
+          "name": "overlap_pin",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "overlap_pin"
+          }
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "context_frames"
+          }
         }
       ],
       "outputs": [
@@ -3892,7 +3919,10 @@
         "gpu",
         "max",
         0,
-        0
+        0,
+        0,
+        "tail_custom",
+        5
       ],
       "widgets_values_named": {
         "window_frames": 243,
@@ -3901,7 +3931,10 @@
         "accumulator_device": "gpu",
         "denoise_mask_mode": "max",
         "accepted_prefix_frames": 0,
-        "start_window": 0
+        "start_window": 0,
+        "feather_latents": 0,
+        "overlap_pin": "tail_custom",
+        "context_frames": 5
       }
     },
     {
@@ -4395,7 +4428,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# 05A \u2014 Start here\n\n## Basic workflow: four steps\n\n1. **Load source video.** Enter its path in **2. Source video path**. The source automatically supplies Control 1 and the original soundtrack. A separate control video or mask is not required.\n2. **Write your prompt.** Describe the result in **4. Window prompts \u2014 separate with |**. Use `<Video 1>` for source motion. For multiple chunks, enter one prompt per chunk separated by `|`, and set **Number of windows / prompts** to match. The defaults need two prompts.\n3. **Add reference images.** Upload the desired subject in **3. Reference image \u2014 Picture 1**. Connect more Load Image nodes to **Reference pictures** if needed. Refer to them as `<Picture 1>`, `<Picture 2>`, etc., in connection order.\n4. **Define blur.** In **Blur source faces \u2192 Control 1**, choose which faces to affect (`gender` / `all_faces`), whether to keep the mouth, and the blur strength and expansion. **enabled = false** turns face blur off. The separate noise node defaults to **0.10**; set its strength to 0 if unwanted.\n\nThen **Queue**. Output saves under `ComfyUI/output/video/HybridAccessible`. For your first run, leave the optional inpaint-mask, Control 2 and hair-segmentation groups muted. The default span is **209 frames / 8.71 seconds** at 24 fps.\n\n**First-time setup:** get the models from the **Model downloads and folders** panel, select them in the model loaders, and restart/refresh ComfyUI after installation.\n\n## Install and select files\n\nInstall **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod), then restart ComfyUI. Use ComfyUI with native H3 support. The hybrid sampler and its joint-stage helpers come from **ComfyUI-HybridWindows**. MMH3Tools supplies reference conditioning and shared AV/window utilities; no unpublished joint-sampler node is required.\n\nSelect the **H3 Ref2VA base**, **8-step DMD Turbo LoRA**, H3 text encoder, video VAE and audio VAE. Defaults use **Euler / simple**, eight steps, six sequential steps and two joint steps, with video/audio sigma shifts 12/3. This differs from the original 05's extension-provided beta57 schedule.\n\nOnly the Source video path is required by default:\n\n- **Source video:** the original footage whose unmasked areas and soundtrack you want to keep. This example requires a source audio track.\n- **Mask video (optional):** an aligned grayscale video specifying where to regenerate. Its group starts muted.\n- **Motion/reference video (optional Control 2):** an additional aligned control. Its group starts muted. **Control 1 automatically uses the source video through the face-blur node**, so a separate control file is not required. Native noise at **0.10** is composited into this control after blur.\n\nThe source and any enabled optional loaders share **Start time**, frame count, output dimensions and **24 fps**. Use aligned files covering the entire requested interval. If you pre-trim one file, trim the others identically and set Start time to zero. The workflow resizes the videos; it does not repair different crops or timing.\n\nLoad your desired appearance in **Reference image \u2014 Picture 1**. The bundled portrait is a placeholder. Copy it from `example_workflows/assets/` to `ComfyUI/input/hybrid_windows/`, or upload your own image. Add other images to **Reference pictures** if needed.\n\n## Run and save\n\nSet the window count and matching prompts, select a source and reference picture, and queue.\n\nTo use a mask, unmute all nodes in **OPTIONAL Inpaint mask \u2014 enable group to use** (set their mode to Always) and choose a matching mask video. To use a second control, do the same for **OPTIONAL Control 2 \u2014 enable group to use**. To disable either feature, mute the whole group again. Muted groups need no valid file path; they are not executed.\n\n**Without an inpaint mask, the whole picture may regenerate.** The source still guides movement through Control 1, but no source-picture regions are pinned. Source audio remains preserved by default. Output saves under `ComfyUI/output/video/HybridAccessible`.\n\nThe repo copy has placeholder paths. The local copy preserves your selected paths. Verify that any optional mask/control you enable belongs with the source.\n\nThis edition has no automatic resume/master assembly, prompt-file loading, disk source cache, delayed control/mask schedules, audio frame-range editor, or diagnostic branches. RefMod loading and application are included; the trainer/extractor, background removal and custom attention patches are omitted. Face blur and a disabled Sapiens2 hair-segmentation branch are included. No external hair/region-mask video loader is needed. The original 05 remains unchanged."
+        "# 05A \u2014 Start here\n\n## Basic workflow: four steps\n\n1. **Load source video.** Enter its path in **2. Source video path**. The source automatically supplies Control 1 and the original soundtrack. A separate control video or mask is not required.\n2. **Write your prompt.** Describe the result in **4. Window prompts \u2014 separate with |**. Use `<Video 1>` for source motion. For multiple chunks, enter one prompt per chunk separated by `|`, and set **Number of windows / prompts** to match. The defaults need two prompts.\n3. **Add reference images.** Upload the desired subject in **3. Reference image \u2014 Picture 1**. Connect more Load Image nodes to **Reference pictures** if needed. Refer to them as `<Picture 1>`, `<Picture 2>`, etc., in connection order.\n4. **Define blur.** In **Blur source faces \u2192 Control 1**, choose which faces to affect (`gender` / `all_faces`), whether to keep the mouth, and the blur strength and expansion. **enabled = false** turns face blur off. The separate noise node defaults to **0.10**; set its strength to 0 if unwanted.\n\nThen **Queue**. Output saves under `ComfyUI/output/video/HybridAccessible`. For your first run, leave the optional inpaint-mask, Control 2 and hair-segmentation groups muted. The default span is **209 frames / 8.71 seconds** at 24 fps.\n\n**First-time setup:** get the models from the **Model downloads and folders** panel, select them in the model loaders, and restart/refresh ComfyUI after installation.\n\n## Install and select files\n\nInstall **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod), then restart ComfyUI. Use ComfyUI with native H3 support. The hybrid sampler and its joint-stage helpers come from **ComfyUI-HybridWindows**. MMH3Tools supplies reference conditioning and shared AV/window utilities; no unpublished joint-sampler node is required.\n\nSelect the **H3 Ref2VA base**, **8-step DMD Turbo LoRA**, H3 text encoder, video VAE and audio VAE. Defaults use **Euler / simple**, eight steps, six sequential steps and two joint steps, with video/audio sigma shifts 12/3. The sampler selects **overlap_pin = tail_custom / context_frames = 5**, within the unchanged **39-frame overlap**. This differs from the original 05's extension-provided beta57 schedule.\n\nOnly the Source video path is required by default:\n\n- **Source video:** the original footage supplying motion guidance and the soundtrack. Its picture may regenerate unless you enable the optional preservation mask. This example requires a source audio track.\n- **Mask video (optional):** an aligned grayscale video specifying where to regenerate. Its group starts muted.\n- **Motion/reference video (optional Control 2):** an additional aligned control. Its group starts muted. **Control 1 automatically uses the source video through the face-blur node**, so a separate control file is not required. Native noise at **0.10** is composited into this control after blur.\n\nThe source and any enabled optional loaders share **Start time**, frame count, output dimensions and **24 fps**. Use aligned files covering the entire requested interval. If you pre-trim one file, trim the others identically and set Start time to zero. The workflow resizes the videos; it does not repair different crops or timing.\n\nLoad your desired appearance in **Reference image \u2014 Picture 1**. The bundled portrait is a placeholder. Copy it from `example_workflows/assets/` to `ComfyUI/input/hybrid_windows/`, or upload your own image. Add other images to **Reference pictures** if needed.\n\n## Run and save\n\nSet the window count and matching prompts, select a source and reference picture, and queue.\n\nTo use a mask, unmute all nodes in **OPTIONAL Inpaint mask \u2014 enable group to use** (set their mode to Always), choose a matching mask video, and set the sampler's **overlap_pin = full**. Preserving fresh source-picture regions currently requires full pinning. When muting the mask group again, restore **tail_custom / context_frames = 5**. The builder makes this switch automatically when explicitly called with `enable_mask=True`.\n\nTo use a second control, unmute **OPTIONAL Control 2 \u2014 enable group to use**. To disable either feature, mute the whole group again. Muted groups need no valid file path; they are not executed.\n\n**Without an inpaint mask, the whole picture may regenerate.** The source still guides movement through Control 1, but no source-picture regions are pinned. Source audio remains preserved by default. Output saves under `ComfyUI/output/video/HybridAccessible`.\n\nThe repo copy has placeholder paths. The local copy preserves your selected paths. Verify that any optional mask/control you enable belongs with the source.\n\nThis edition has no automatic resume/master assembly, prompt-file loading, disk source cache, delayed control/mask schedules, audio frame-range editor, or diagnostic branches. RefMod loading and application are included; the trainer/extractor, background removal and custom attention patches are omitted. Face blur and a disabled Sapiens2 hair-segmentation branch are included. No external hair/region-mask video loader is needed. The original 05 remains unchanged."
       ]
     },
     {

@@ -4,11 +4,12 @@ Both **H3 Hybrid Windows** (`H3HybridWindows`, native two-sampler chain) and
 **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`, original single-node 05
 sampler) support `overlap_pin = tail_custom` with `context_frames = 5`.
 
-The bundled native Ref2VA/FL2VA and single-sampler Ref2VA examples select five
-frames. Existing nodes and API calls that omit the new options retain `full`
-pinning. The 05N workflow builder also selects five frames. The accessible
-05A inpaint workflow keeps full pinning so its optional source mask remains
-supported.
+All bundled hybrid workflows select five frames: native Ref2VA/FL2VA,
+single-sampler Ref2VA, the accessible 05A default, the 05N builder, and the
+downloadable stream_00170 comparison graph. Existing nodes and API calls that
+omit the new options retain `full` pinning. The optional source-mask mode in
+05A requires switching to `full`; its default has that group muted and uses
+five-frame pinning.
 
 ## Overlap versus context
 
@@ -59,6 +60,11 @@ preservation; multiple fresh windows; resume offsets; shortened final windows;
 and fully sequential or joint finishing. The single-node and native paths are
 compared using the same noise draws and masks.
 
-Five-frame pinning produced a promising six-chunk production result with less
-observed buildup. That comparison also changed other settings, so it does not
-establish a general mottling fix or equivalence to independent no-context chunks.
+The [two-minute stream_00170 comparison](examples/compare_stream00170/) adds a
+five-frame run to the archived Looping and full-overlap Hybrid recordings.
+It retains the original hybrid prompt settings, seed and 243/39-frame windows,
+changing only the pin controls and save prefix. All 14 windows were OK in the
+existing quality readout, with less texture, contrast and saturation drift than
+the archived full-overlap hybrid. This is one clip and one seed, on the current
+implementation and an H100 instead of the baselines' H200. It does not establish
+a general mottling fix or a hardware-matched speed comparison.

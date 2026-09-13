@@ -45,7 +45,7 @@ async def main():
         assert prompt[types['MMH3HybridWindowSampler']['inputs']['cond_set'][0]]['class_type'] == 'H3RefModCondSetApply'
         assert applied['insert_position'] == 'before_controls'
         assert {n['class_type'] for n in prompt.values() if n['class_type'].startswith('MiniMaxH3RefMod')} == {'MiniMaxH3RefModsLoader'}
-        assert 'protect_mask' not in blur
+        assert ('protect_mask' in blur) == hair_on
         source_id = types['MMH3StreamingEncode']['inputs']['images'][0]
         assert blur['images'] == [source_id, 0]
         assert prompt[source_id]['class_type'] == 'VHS_LoadVideoFFmpegPath'

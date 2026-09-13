@@ -2,7 +2,7 @@
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes** or a **single Hybrid Window Sampler**.
 
-The image-conditioned examples use **5 pinned video context frames** inside a
+The bundled hybrid workflows use **5 pinned video context frames** inside a
 **39-frame overlap**, with `overlap_pin = tail_custom`. Both the native chain and
 the single-node sampler expose this setting; existing nodes default to `full`.
 See [pinned context and overlap](docs/pinned-context.md) for the distinction.
@@ -24,56 +24,68 @@ models and samplers.
 
 ## Example: Looping Sampler vs Hybrid on a two-minute clip
 
-Same clip, same reference picture, same model chain, same compute; only the sampler differs.
-Left to right: the motion-reference clip (`stream_00170`, the MMH3Tools example video, its
-person replaced by `<Picture 1>` in both renders), the **MMH3 Looping Sampler** (8 sequential
-steps per chunk) and **Hybrid Windows** (6 sequential + 2 joint steps). 14 windows of 243 frames
-with a 39-frame overlap = 2895 frames / 120.6 s at 768x576, seed 123, Ref2VA int8 + the native
-PDD 8-step LoRA at 1.0, euler / simple, CFG 1, plain SDPA attention, one prompt for every window,
-no post-processing. Both arms run 112 model evaluations; pure sampling time 43:17 vs 43:14.
-These recordings predate the five-frame context setting and used full overlap pinning.
+The comparison now includes **Hybrid with 5 pinned video context frames**, alongside the
+original **full-overlap Hybrid** and **MMH3 Looping Sampler** recordings. Left to right:
+the motion-reference clip (`stream_00170`), Looping, Hybrid (full), and Hybrid context 5.
+The same reference picture replaces the source performer in all three renders.
 
-[![Original | Looping Sampler | Hybrid, 6-second excerpt at 1:32](docs/examples/original_looping_hybrid_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4)
+All runs use 2895 frames / 120.625 s at 768x576 and 24 fps, 14 windows of 243 frames with a
+39-frame overlap, seed 123, Ref2VA int8, the native PDD 8-step LoRA at 1.0, Euler / simple,
+CFG 1, plain SDPA attention, and one prompt for every window. Looping uses 8 sequential
+steps; both hybrids use 6 sequential + 2 joint steps. Context 5 changes only the pinned
+video carry during warmup; the overlap stays at 39 frames.
 
-*6-second excerpt at 1:32 (window 12 of 14). Click it for the full 120-second video with audio
-(track 1: left = Looping, right = Hybrid; track 2: the original's audio).*
+[![Original | Looping | Hybrid full | Hybrid context 5 at 1:32](docs/examples/original_looping_hybrid_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4)
 
-[![Looping Sampler vs Hybrid with the per-window chunk-quality readout](docs/examples/looping_vs_hybrid_metrics_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_chunk_metrics.mp4)
+*Six-second excerpt at 1:32, in window 12 of 14. Click for the full video. Audio tracks
+1–3 are Looping, Hybrid (full), and Hybrid context 5; track 4 is the original audio.*
 
-*The same excerpt with the per-window chunk-quality panels (window 1 is the anchor; amber =
-WATCH). Click for the full video.*
+[![Looping | Hybrid full | Hybrid context 5 with per-window metrics](docs/examples/looping_vs_hybrid_metrics_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_chunk_metrics.mp4)
 
-Full-length videos (release assets):
-[Looping vs Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_clean.mp4) ·
+*The same excerpt with the existing chunk-quality panels. Window 1 is each render’s
+anchor; green = OK, amber = WATCH. Click for the full video, with one audio track per arm.*
+
+Full-length comparisons, with the new context-5 arm added:
+[clean](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_clean.mp4) ·
 [with metrics](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_chunk_metrics.mp4) ·
-[Original | Looping | Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4) ·
-colour-corrected: [Looping vs Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_color_clean.mp4) ·
+[Original first](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4) ·
+colour-corrected: [clean](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_color_clean.mp4) ·
 [with metrics](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Looping_vs_Hybrid_color_chunk_metrics.mp4) ·
-[Original | Looping | Hybrid](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid_color.mp4).
-Stills at 1:40: [original / looping / hybrid](docs/examples/original_looping_hybrid_100s.png),
-[metrics overlay](docs/examples/looping_vs_hybrid_metrics_100s.png),
-[colour-corrected](docs/examples/original_looping_hybrid_color_100s.png),
-[colour-corrected with metrics](docs/examples/looping_vs_hybrid_color_metrics_100s.png).
+[Original first](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid_color.mp4).
 
-| Measured on the finished videos | Looping Sampler (8) | Hybrid (6 + 2) |
-|---|---|---|
-| Pure sampling time | 43:17 | 43:14 |
-| ArcFace likeness to the reference picture, whole clip (median / p10) | 0.649 / 0.581 | 0.736 / 0.693 |
-| Likeness, window 1 → window 14 | 0.72 → 0.56 | 0.75 → 0.71 |
-| Fine texture at window 14 (ratio to the clip's own first window) | ×1.56 | ×1.45 |
-| Skin colour patchiness ("mottle") at window 14 | ×1.54 | ×1.00 |
-| First WATCH verdict of the chunk-quality readout | window 7 | window 9 |
+Individual context-5 render: [raw](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/hybrid_native_context5_6p2_00001_.mp4) ·
+[colour-corrected](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/hybrid_native_context5_6p2_00001__color.mp4).
 
-Both renders drift in the same direction over two minutes (the usual contrast and texture climb
-of chained H3 generation; neither reaches BAD). The hybrid drifts less and, most visibly, keeps
-the reference identity flat across the whole clip where the sequential chain loses it steadily.
-This is one seed on one clip; it isolates the sampler, not a full production pipeline.
+Stills at 1:40: [Original + all three renders](docs/examples/original_looping_hybrid_100s.png) ·
+[metrics](docs/examples/looping_vs_hybrid_metrics_100s.png) ·
+[colour-corrected](docs/examples/original_looping_hybrid_color_100s.png) ·
+[colour-corrected metrics](docs/examples/looping_vs_hybrid_color_metrics_100s.png).
 
-The colour-corrected variants apply the same chroma-only grade to both renders (tint and
-saturation nudged back toward each clip's first eight seconds, following the source's own colour
-trajectory; brightness, contrast, texture and audio untouched). The exact API payloads of both arms,
-the builder that produced them and the colour-grade command are in
-[docs/examples/compare_stream00170](docs/examples/compare_stream00170/).
+| Measured on the finished videos | Looping (8) | Hybrid full (6+2) | Hybrid context 5 (6+2) |
+|---|---|---|---|
+| GPU | H200 | H200 | H100 80GB |
+| Pure sampling time | 43:17 | 43:14 | 45:00 |
+| ArcFace likeness, whole clip (median / p10) | 0.649 / 0.581 | 0.736 / 0.693 | 0.743 / 0.714 |
+| Likeness, window 1 → window 14 | 0.72 → 0.56 | 0.75 → 0.71 | 0.76 → 0.73 |
+| Fine texture at window 14 | ×1.56 | ×1.45 | ×1.29 |
+| Skin colour patchiness (mottle) at window 14 | ×1.54 | ×1.00 | ×1.08 |
+| Contrast at window 14 | ×1.18 | ×1.16 | ×1.09 |
+| Saturation at window 14 | ×1.17 | ×1.13 | ×1.02 |
+| First WATCH verdict | window 7 | window 9 | none |
+
+Context 5 stayed **OK in all 14 windows** in this readout, with less texture, contrast and
+saturation drift than the archived full-overlap hybrid. Likeness was slightly higher.
+Quality ratios use each clip’s own first-window anchor and the source trajectory, so they
+are not absolute quality scores. This is one seed on one clip; the new run used the current
+implementation and an H100, while the September 10 baselines used an H200. All arms use
+112 model evaluations, but the timings are not a direct hardware-matched speed comparison.
+
+The colour-corrected variants apply the same chroma-only settings to all three renders:
+tint and saturation follow the opening 1–8 seconds and the source’s colour trajectory;
+brightness, contrast, texture and audio are left unchanged. The runnable comparison
+hybrid graph now selects context 5. [Exact settings, measurements and original baseline
+provenance](docs/examples/compare_stream00170/).
+
 ## Single-sampler reference-image example
 
 Open [H3 Hybrid R2V - single sampler.json](example_workflows/H3%20Hybrid%20R2V%20-%20single%20sampler.json) in ComfyUI. An [API graph](example_workflows/H3%20Hybrid%20R2V%20-%20single%20sampler.api.json) is included.
@@ -93,24 +105,6 @@ Rebuild with `python build_sampler_workflow.py`. Validate with `python tests/val
 ## Single hybrid sampler
 
 **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. The default is six sequential steps followed by two joint steps. Select `overlap_pin = tail_custom` and `context_frames = 5` for the same pinned-context behavior as the native flow. The published reference-image example selects these values; existing workflows retain `full` pinning until changed.
-
-## Accessible 05 workflow
-
-[05A Hybrid - accessible fresh inpaint](example_workflows/05A%20Hybrid%20-%20accessible%20fresh%20inpaint.json) starts with **Load source video → Write prompt → Add reference images → Define blur**, followed by Queue. Its instruction panels include [model download links and folders, chunks, blur/noise, optional hair segmentation, masks and audio](docs/accessible-workflow.md).
-
-Install **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod). Face analysis needs InsightFace/buffalo_l and a compatible ONNX Runtime. The Sapiens2 checkpoint is needed only when enabling hair segmentation. None of the excluded `vlm_video_prompt`, `wan_chunk_io`, `path_tools`, `minimax_h3_mask_tools` or `MaskVidExperiments` nodes is used.
-
-The clear source feeds video/audio encoding. A second branch runs **face blur → native Image Add Noise (0.10) → Image Composite Masked → Control 1**. The source therefore supplies the first control automatically. **Inpaint mask**, **Control 2**, and **Sapiens2 Hair region mask** are separate optional groups, all muted by default. Enable a group by setting all its nodes to Always. Disabled groups need no input files or model execution.
-
-The inpaint mask, when enabled, controls both sampler preservation and where noise is composited into Control 1. Without it, the full picture may regenerate and noise affects the full control image. Sapiens2 extracts Hair from the clear source and feeds the face node's region_mask, without an external hair-mask loader. It does not replace the inpaint mask.
-
-The optional **Load H3 RefMods → Apply H3 RefMods to Cond Set** branch applies saved mods to every chunk before the control references. All loader slots default to `(none)`, which leaves conditioning unchanged. No trainer/extractor is included; see the workflow’s RefMods instruction panel.
-
-Defaults: **832 × 480, two 124-frame windows, 39-frame overlap, 209 frames at 24 fps, Euler/simple, 6+2 steps**, with the 05 flow's DMD Turbo LoRA. The original beta57 schedule needs an extra extension and is not reproduced here. Enter one pipe-separated prompt per window. Source audio is preserved by default; the output uses the original loaded soundtrack directly.
-
-This fresh-run edition omits automatic project/prompt-file handling, accepted-prefix resume/master assembly, persistent source-encode caching, delayed schedules, audio frame ranges and diagnostic branches. RefMod loading and application are included; the trainer/extractor, background removal and custom attention patches are omitted. The original 05 is unchanged.
-
-`python build_accessible_workflow.py` rebuilds the shareable UI/API examples and local copy in `user/default/workflows/H3 Diagnostics/`, preserving local widget settings where node titles match. The repo example uses placeholder paths. `python tests/validate_accessible_workflow.py` checks optional branch combinations, excluded imports, layout, mask behavior, noise compositing and Hair extraction on CPU. It does not perform a GPU render or segmentation-model inference.
 
 ## Speed LoRA, sampler and scheduler compatibility
 
@@ -149,7 +143,7 @@ Video Color Stabilize is under `image/video`.
 
 | Node | What it does | Used in the examples |
 |---|---|---|
-| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, with adjustable pinned context, source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA and accessible 05A |
+| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, with adjustable pinned context, source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA |
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |

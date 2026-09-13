@@ -15,11 +15,11 @@ Then **Queue**. Output saves under `ComfyUI/output/video/HybridAccessible`. For 
 
 Install **ComfyUI-HybridWindows**, **ComfyUI-MMH3Tools**, **ComfyUI-VideoHelperSuite**, [**h3_face_tools**](https://github.com/Jalen-Brunson/h3_face_tools), **ComfyUI-Sapiens2**, and [**ComfyUI-MiniMaxH3Mod**](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod), then restart ComfyUI. Use ComfyUI with native H3 support. The hybrid sampler and its joint-stage helpers come from **ComfyUI-HybridWindows**. MMH3Tools supplies reference conditioning and shared AV/window utilities; no unpublished joint-sampler node is required.
 
-Select the **H3 Ref2VA base**, **8-step DMD Turbo LoRA**, H3 text encoder, video VAE and audio VAE. Defaults use **Euler / simple**, eight steps, six sequential steps and two joint steps, with video/audio sigma shifts 12/3. This differs from the original 05's extension-provided beta57 schedule.
+Select the **H3 Ref2VA base**, **8-step DMD Turbo LoRA**, H3 text encoder, video VAE and audio VAE. Defaults use **Euler / simple**, eight steps, six sequential steps and two joint steps, with video/audio sigma shifts 12/3. The sampler selects **overlap_pin = tail_custom / context_frames = 5**, within the unchanged **39-frame overlap**. This differs from the original 05's extension-provided beta57 schedule.
 
 Only the Source video path is required by default:
 
-- **Source video:** the original footage whose unmasked areas and soundtrack you want to keep. This example requires a source audio track.
+- **Source video:** the original footage supplying motion guidance and the soundtrack. Its picture may regenerate unless you enable the optional preservation mask. This example requires a source audio track.
 - **Mask video (optional):** an aligned grayscale video specifying where to regenerate. Its group starts muted.
 - **Motion/reference video (optional Control 2):** an additional aligned control. Its group starts muted. **Control 1 automatically uses the source video through the face-blur node**, so a separate control file is not required. Native noise at **0.10** is composited into this control after blur.
 
@@ -31,7 +31,9 @@ Load your desired appearance in **Reference image — Picture 1**. The bundled p
 
 Set the window count and matching prompts, select a source and reference picture, and queue.
 
-To use a mask, unmute all nodes in **OPTIONAL Inpaint mask — enable group to use** (set their mode to Always) and choose a matching mask video. To use a second control, do the same for **OPTIONAL Control 2 — enable group to use**. To disable either feature, mute the whole group again. Muted groups need no valid file path; they are not executed.
+To use a mask, unmute all nodes in **OPTIONAL Inpaint mask — enable group to use** (set their mode to Always), choose a matching mask video, and set the sampler's **overlap_pin = full**. Preserving fresh source-picture regions currently requires full pinning. When muting the mask group again, restore **tail_custom / context_frames = 5**. The builder makes this switch automatically when explicitly called with `enable_mask=True`.
+
+To use a second control, unmute **OPTIONAL Control 2 — enable group to use**. To disable either feature, mute the whole group again. Muted groups need no valid file path; they are not executed.
 
 **Without an inpaint mask, the whole picture may regenerate.** The source still guides movement through Control 1, but no source-picture regions are pinned. Source audio remains preserved by default. Output saves under `ComfyUI/output/video/HybridAccessible`.
 

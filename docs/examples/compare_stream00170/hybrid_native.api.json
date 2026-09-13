@@ -675,7 +675,9 @@
    "prompts.positive_13": [
     "313",
     0
-   ]
+   ],
+   "overlap_pin": "tail_custom",
+   "context_frames": 5
   }
  },
  "20": {
@@ -803,7 +805,7 @@
  "29": {
   "class_type": "SaveVideo",
   "inputs": {
-   "filename_prefix": "video/compare_stream00170/hybrid_native_6p2",
+   "filename_prefix": "video/compare_stream00170/hybrid_native_context5_6p2",
    "format": "mp4",
    "format.codec": "h264",
    "format.codec.encoding": "re-encode",
