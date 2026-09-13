@@ -2,10 +2,15 @@
 
 Experimental H3 hybrid sampling through **two stock KSampler Advanced nodes** or a **single Hybrid Window Sampler**.
 
-**Use plain `euler` in both samplers.** The supplied PDD examples use `simple`.
-Hybrid sampling is not inherently PDD-only: non-PDD DMD Turbo runs have also
-completed with `simple` and `beta57` in the earlier MMH3 hybrid implementation.
-See the compatibility table below for the implementation and test scope.
+The image-conditioned examples use **5 pinned video context frames** inside a
+**39-frame overlap**, with `overlap_pin = tail_custom`. Both the native chain and
+the single-node sampler expose this setting; existing nodes default to `full`.
+See [pinned context and overlap](docs/pinned-context.md) for the distinction.
+
+The supplied PDD examples retain **Euler / simple, 8 steps, 6+2**. Hybrid sampling
+also accepts other solvers and schedules and does not require PDD or a speed
+LoRA. Solver history and stochastic noise need care at the handoff; see the
+compatibility table below for the implementation and test scope.
 
 ![How the H3 hybrid sampler works: six sequential steps followed by two joint steps](docs/images/h3-hybrid-sampler.jpg)
 
@@ -26,6 +31,7 @@ steps per chunk) and **Hybrid Windows** (6 sequential + 2 joint steps). 14 windo
 with a 39-frame overlap = 2895 frames / 120.6 s at 768x576, seed 123, Ref2VA int8 + the native
 PDD 8-step LoRA at 1.0, euler / simple, CFG 1, plain SDPA attention, one prompt for every window,
 no post-processing. Both arms run 112 model evaluations; pure sampling time 43:17 vs 43:14.
+These recordings predate the five-frame context setting and used full overlap pinning.
 
 [![Original | Looping Sampler | Hybrid, 6-second excerpt at 1:32](docs/examples/original_looping_hybrid_92s.gif)](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/releases/download/examples-stream00170/stream00170_Original_Looping_Hybrid.mp4)
 
@@ -86,7 +92,7 @@ Rebuild with `python build_sampler_workflow.py`. Validate with `python tests/val
 
 ## Single hybrid sampler
 
-**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. Plain Euler with zero churn is required. The default is six sequential steps followed by two joint steps.
+**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) and its joint-stage helpers are provided by this repository. It uses the public MMH3Tools window/AV utilities and conditioning type; it does not require `MMH3JointWindowSampler` or local-only MMH3Tools files. Keep the node ID when updating existing workflows. The default is six sequential steps followed by two joint steps. Select `overlap_pin = tail_custom` and `context_frames = 5` for the same pinned-context behavior as the native flow. The published reference-image example selects these values; existing workflows retain `full` pinning until changed.
 
 ## Accessible 05 workflow
 
@@ -110,8 +116,10 @@ This fresh-run edition omits automatic project/prompt-file handling, accepted-pr
 
 “Completed” means the combination produced output in a recorded test. It does
 not establish the best visual quality, long-video stability, or compatibility
-with every H3 conditioning mode. The native adapter does not require a PDD
-LoRA, but it does require **plain Euler without churn or random inpaint noise**.
+with every H3 conditioning mode. Neither hybrid sampler requires PDD, a speed
+LoRA, or Euler. The single-node sampler still uses CFG 1 and a finite, strictly
+descending sigma schedule ending at zero. Random inpaint noise is unsupported
+because it replaces the fixed noise used to restore pinned rows.
 
 | Speed LoRA / setup | Sampler | Scheduler | Steps / split | Evidence and scope |
 |---|---|---|---|---|
@@ -119,8 +127,10 @@ LoRA, but it does require **plain Euler without churn or random inpaint noise**.
 | [MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors) (PDD) | `euler` | `simple` | 8 / 6+2 | Supplied and tested native FL2VA workflow. CFG 1; video/audio shifts 12/3. |
 | [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) (non-PDD) | `euler` | `simple` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, Ref2VA base, LoRA strength 1, CFG 1 and shifts 12/3. Not yet verified in this pack's native adapter. |
 | [minimax_h3_dmd_8step_turbo.safetensors](https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI/blob/main/experimental/minimax_h3_dmd_8step_turbo.safetensors) (non-PDD) | `euler` | `beta57` | 8 / 6+2 | Completed a 243-frame test with the earlier `MMH3HybridWindowSampler`, using the same base, strength, CFG and shifts. Not yet verified in this pack's native adapter. |
-| Other speed LoRAs or scheduler combinations | `euler` | LoRA-specific | LoRA-specific | Not verified. Use the LoRA's intended base model, schedule, step count and CFG; an available dropdown entry is not compatibility evidence. |
-| Any LoRA | `euler_ancestral`, Heun, DPM++, UniPC or other non-Euler solvers | Any | Any | Unsupported by this adapter. Its warmup state handling is specific to plain Euler. |
+| Other speed LoRAs or scheduler combinations | Model/LoRA-specific | Model/LoRA-specific | Model/LoRA-specific | Accepted, quality not verified. Use the intended base, schedule, step count and CFG. |
+| Base model without acceleration | `euler` | `beta57` | 10 / 6+4 | Completed a six-chunk native run; this configuration still developed mottling. More steps did not establish a quality fix. |
+| Any compatible model / LoRA | `heun`, `dpm_2` | Matching schedule | Any valid split | CPU tests verify exact continuation of the solver state in isolation; full H3 visual quality is not established. |
+| Any compatible model / LoRA | Multistep or stochastic solvers | Matching schedule | Any valid split | Accepted. Multistep history restarts at the handoff; stochastic draws are not preserved as one uninterrupted noise process. |
 
 **Both samplers must use the same scheduler, total step count and model sigma
 shifts.** The first sampler's end step must equal the second sampler's start
@@ -134,13 +144,12 @@ with joint finishing while keeping the seed, prompts and inputs fixed.
 
 ## Included custom nodes
 
-The pack installs **four custom nodes**. The H3 nodes are under
-`sampling/hybrid`; Video Color Stabilize is under `image/video`.
+The pack installs four custom nodes. The H3 nodes are under `sampling/hybrid`;
+Video Color Stabilize is under `image/video`.
 
 | Node | What it does | Used in the examples |
 |---|---|---|
-| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, including source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA |
-| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Runs sequential Euler warmup and joint-window finishing in one node. Requires public MMH3Tools utilities. | Accessible 05A |
+| **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, with adjustable pinned context, source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA and accessible 05A |
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
@@ -333,19 +342,24 @@ In Ref2VA, all three prompts share the
 additional reference images. Both examples connect the sigma-shift MODEL
 directly to Hybrid Windows. FL2VA uses prompts, a starting image and generated
 overlap carry, with an optional recurring ending guide.
-The adapter expects unmasked AV latents. Preservation of original
-source masks is outside this version. Native image guides use frame positions
-within their connected window. When adding windows, keep the first-frame
+These examples use unmasked AV latents. For source masks or accepted-prefix
+resume, connect the source latent to Hybrid Windows and sample its prepared
+`latent` output. Partial context currently requires full-frame regeneration
+outside an accepted prefix; use `overlap_pin = full` when protecting fresh source
+video with an inpaint mask. Native image guides use frame positions within their
+connected window. When adding windows, keep the first-frame
 connection only on the first window. In the recurring-end variant, also
 connect the ending guide to each added encoder. Set every conditioning node's
 length to the shared window length.
 
 ## How it works
 
-During the first sampler, each window runs its early Euler steps in order.
+During the first sampler, each window runs its early sampling steps in order.
 The final clean prediction supplies temporary video/audio overlap pins to the
-next window. Every position keeps the partially denoised state from the first
-window that generated it.
+next window. The image-conditioned examples pin only the last five video frames
+of the overlap; all overlap frames remain visible. Audio overlap remains pinned.
+Every position keeps the partially denoised state from the first window that
+generated it.
 
 That state leaves the first sampler in ComfyUI's ordinary leftover-noise LATENT
 format. The second native sampler restores its solver representation with
@@ -354,8 +368,8 @@ noise. Temporary carry masks stay inside the first call.
 
 For each remaining step, all windows read the same evolving timeline. Their
 clean predictions are combined using core's pyramid weights, separately on the
-video and audio temporal axes. The native sampler then takes **one global Euler
-step**. Overlap can change in this stage. No pixels are blended after decoding.
+video and audio temporal axes. The selected solver updates the shared timeline
+from these predictions. Overlap can change in this stage. No pixels are blended after decoding.
 
 Sampling uses one native noise draw for the complete timeline, sliced into
 windows. Reduced mottling remains an empirical question for real renders,

@@ -54,7 +54,8 @@ def master(frames, keep_video=0):
 class ParityTests(unittest.TestCase):
     WINDOW, OVERLAP, SPLIT, STEPS, SEED = 39, 5, 6, 8, 123
 
-    def both(self, frames, count, keep_video=0, accepted=0, start_window=0):
+    def both(self, frames, count, keep_video=0, accepted=0, start_window=0,
+             window=39, overlap=5, split=6, overlap_pin="full", context_frames=5):
         source = master(frames, keep_video)
         conds = [native.prompt(i) for i in range(count)]
         cond_set = {"conds": conds, "prompts": [str(i) for i in range(count)]}
@@ -64,15 +65,17 @@ class ParityTests(unittest.TestCase):
             one.get_model_object("model_sampling"), "simple", self.STEPS)
         reference = single.MMH3HybridWindowSampler.execute(
             one, custom.Noise_RandomNoise(self.SEED), custom.KSamplerSelect.execute("euler")[0],
-            sigmas, cond_set, source, self.WINDOW, self.OVERLAP, self.SPLIT, "cpu", "max",
-            accepted_prefix_frames=accepted, start_window=start_window)[0]
+            sigmas, cond_set, source, window, overlap, split, "cpu", "max",
+            accepted_prefix_frames=accepted, start_window=start_window,
+            overlap_pin=overlap_pin, context_frames=context_frames)[0]
 
         two = native.model()
         seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
-            two, self.WINDOW, self.OVERLAP, cond_set=cond_set, latent=source,
+            two, window, overlap, cond_set=cond_set, latent=source,
             total_steps=self.STEPS, accepted_prefix_frames=accepted,
-            start_window=start_window, noise_mode="per_window")
-        high, low = custom.SplitSigmas.execute(sigmas, self.SPLIT)
+            start_window=start_window, noise_mode="per_window",
+            overlap_pin=overlap_pin, context_frames=context_frames)
+        high, low = custom.SplitSigmas.execute(sigmas, split)
         warm = custom.SamplerCustomAdvanced.execute(
             custom.Noise_RandomNoise(self.SEED), custom.BasicGuider.execute(seq, cond)[0],
             custom.KSamplerSelect.execute("euler")[0], high, prepared)[0]
@@ -108,6 +111,69 @@ class ParityTests(unittest.TestCase):
         source_video = reference["samples"].unbind()[0]
         torch.testing.assert_close(video[:, :, :accepted_v], source_video[:, :, :accepted_v],
                                    rtol=0, atol=0)
+
+    def test_partial_context_matches_native_masks_and_preserves_accepted_av(self):
+        for frames, held in ((0, 0), (5, 2), (6, 3), (9, 3), (17, 5), (39, 12), (100, 12)):
+            with self.subTest(context_frames=frames):
+                one, two, reference, result = self.both(
+                    107, 2, window=73, overlap=39, accepted=73, start_window=3,
+                    overlap_pin="tail_custom", context_frames=frames)
+                self.assert_same(reference, result)
+                warm_one = [c for c in one.model.seen if len(c["sigmas"]) == self.SPLIT + 1]
+                warm_two = [c for c in two.model.seen if len(c["sigmas"]) == self.SPLIT + 1]
+                self.assertEqual(len(warm_one), self.SPLIT)
+                for a, b in zip(warm_one, warm_two, strict=True):
+                    torch.testing.assert_close(a["x"], b["x"], rtol=0, atol=0)
+                    self.assertEqual(a["masks"].keys(), b["masks"].keys())
+                    for key in a["masks"]:
+                        torch.testing.assert_close(a["masks"][key], b["masks"][key], rtol=0, atol=0)
+                if held:
+                    mask = warm_one[0]["masks"]["denoise_mask"]
+                    self.assertTrue(torch.all(mask[:, :, :12-held] == 1))
+                    self.assertTrue(torch.all(mask[:, :, 12-held:12] == 0))
+                else:
+                    self.assertNotIn("denoise_mask", warm_one[0]["masks"])
+                self.assertTrue(torch.all(warm_one[0]["masks"]["audio_denoise_mask"][..., :65] == 0))
+                source = master(107)["samples"].unbind()
+                for output in (reference, result):
+                    video, audio = output["samples"].unbind()
+                    nv = video_latent_t(73)
+                    na = windows.audio_index_at(nv, video.shape[2], audio.shape[3])
+                    torch.testing.assert_close(video[:, :, :nv], source[0][:, :, :nv], rtol=0, atol=0)
+                    torch.testing.assert_close(audio[:, :, :, :na], source[1][:, :, :, :na], rtol=0, atol=0)
+
+    def test_partial_context_matches_across_fresh_resumed_and_sliding_windows(self):
+        for total, accepted in ((209, 0), (209, 73), (192, 73)):
+            for split in (6, 8):
+                with self.subTest(total=total, accepted=accepted, split=split):
+                    _, _, reference, result = self.both(
+                        total, 5, window=73, overlap=39, accepted=accepted, split=split,
+                        start_window=2 if accepted else 0, overlap_pin="tail_custom", context_frames=5)
+                    self.assert_same(reference, result)
+
+    def test_partial_context_refuses_source_pins_outside_accepted_prefix(self):
+        with self.assertRaisesRegex(ValueError, "full-frame regeneration"):
+            self.both(107, 2, window=73, overlap=39, keep_video=25, accepted=73,
+                      overlap_pin="tail_custom", context_frames=5)
+
+    def test_single_node_feather_preserves_source_and_audio_masks(self):
+        source = master(107)
+        video, audio = source["samples"].unbind()
+        mask = windows.ones_mask(video, audio)
+        mask[0][:, :, 22] = 0  # Protect a whole DiT patch, not one cell of its 2x2 pooling.
+        mask[1].zero_()
+        source["noise_mask"] = comfy.nested_tensor.NestedTensor(mask)
+        m = native.model()
+        sigmas = comfy.samplers.calculate_sigmas(m.get_model_object("model_sampling"), "simple", 8)
+        single.MMH3HybridWindowSampler.execute(
+            m, custom.Noise_RandomNoise(self.SEED), custom.KSamplerSelect.execute("euler")[0],
+            sigmas, {"conds": [native.prompt(0), native.prompt(1)]}, source, 73, 39, 8,
+            feather_latents=4)
+        second = next(c for c in m.model.seen if c["prompt"] == 1)
+        vm = second["masks"]["denoise_mask"]
+        torch.testing.assert_close(vm[0, 0, 12:16, 1, 1], torch.tensor([0., .5, .75, 1.]), rtol=0, atol=0)
+        self.assertEqual(float(vm[0, 0, 12, 0, 0]), 0)
+        self.assertTrue(torch.all(second["masks"]["audio_denoise_mask"] == 0))
 
     def test_three_windows_match(self):
         _, _, reference, result = self.both(107, 3)

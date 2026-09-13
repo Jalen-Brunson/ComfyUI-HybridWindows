@@ -284,6 +284,8 @@
       "accepted_prefix_frames": 0,
       "start_window": 0,
       "noise_mode": "global",
+      "overlap_pin": "tail_custom",
+      "context_frames": 5,
       "model": [
         "5",
         0
@@ -302,7 +304,7 @@
       ]
     },
     "_meta": {
-      "title": "Hybrid windows"
+      "title": "Hybrid windows \u2014 pinned video context"
     }
   },
   "21": {
@@ -490,6 +492,7 @@
       ],
       "bit_depth": 8,
       "color_space": "sRGB",
+      "codec": "none",
       "images": [
         "28",
         0

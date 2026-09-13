@@ -100,6 +100,8 @@ async def main():
     named = windows["widgets_values_named"]
     assert named["total_steps"] == derive.TOTAL_STEPS, named
     assert named["noise_mode"] == "per_window", named
+    assert named["overlap_pin"] == "tail_custom", named
+    assert named["context_frames"] == 5, named
     assert split["widgets_values_named"]["step"] == derive.SPLIT_STEP
 
     # Downstream reads the joint stage; the report comes from the node.

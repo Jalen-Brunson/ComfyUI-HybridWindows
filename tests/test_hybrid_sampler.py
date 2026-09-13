@@ -29,7 +29,7 @@ package = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = package
 spec.loader.exec_module(package)
 from hybridwindows_test.sampler import (
-    EulerSegment, FixedNoise, MMH3HybridWindowSampler, _write_new,
+    EulerSegment, FixedNoise, MMH3HybridWindowSampler, SolverSegment, _write_new,
 )
 
 torch.set_num_threads(2)
@@ -42,7 +42,9 @@ class Model:
         sampling = CONST()
         sampling.sigma_max = 1.
         self.inner_model = SimpleNamespace(model_sampling=sampling, scale_latent_inpaint=self.inpaint)
-        self.model_patcher = SimpleNamespace(model=self)
+        # res_multistep and friends reach for get_model_object('model_sampling').
+        self.model_patcher = SimpleNamespace(
+            model=self, get_model_object=lambda name: getattr(self.inner_model, name, None))
         self.cfg = 1.
         self.seen = []
 
@@ -87,6 +89,35 @@ class HybridTests(unittest.TestCase):
                 if mask is not None:
                     torch.testing.assert_close(output[mask == 0], source[mask == 0], rtol=1e-6, atol=3e-7)
 
+    def test_memoryless_solvers_resume_exactly_and_multistep_loses_history(self):
+        """The capture is `x` alone, so exactness depends on the solver's state.
+
+        Memoryless solvers (one step reads only the previous x) resume bit-exact.
+        Multistep solvers also carry `old_denoised`, which is not captured, so the
+        first step after the switch is first-order -- the same thing they do at
+        step 0 of any ordinary run.
+        """
+        generator = torch.Generator().manual_seed(456)
+        noise = torch.randn(1, 1, 240, generator=generator)
+        source = torch.randn(1, 1, 240, generator=generator)
+        split = 6
+        for name in ("heun", "dpm_2"):
+            reference = run(ksampler(name), Model(), SIGMAS, noise, source)
+            first = SolverSegment(ksampler(name), capture=True)
+            run(first, Model(), SIGMAS[:split + 1], noise, source)
+            resumed = run(SolverSegment(ksampler(name), first.final_state),
+                          Model(), SIGMAS[split:], noise, source)
+            torch.testing.assert_close(resumed, reference, rtol=0, atol=0,
+                                       msg=f"{name} must resume exactly from x alone")
+        for name in ("dpmpp_2m", "res_multistep"):
+            reference = run(ksampler(name), Model(), SIGMAS, noise, source)
+            first = SolverSegment(ksampler(name), capture=True)
+            run(first, Model(), SIGMAS[:split + 1], noise, source)
+            resumed = run(SolverSegment(ksampler(name), first.final_state),
+                          Model(), SIGMAS[split:], noise, source)
+            self.assertFalse(torch.equal(resumed, reference),
+                             f"{name} carries history the capture cannot restore")
+
     def test_wrong_resume_from_clean_prediction_is_detectable(self):
         source = torch.full((1, 1, 40), .2)
         noise = torch.linspace(-1, 1, 40).reshape_as(source)
@@ -111,13 +142,17 @@ class HybridTests(unittest.TestCase):
         self.assertTrue(bool((a[..., :207] == 0).all()))
         self.assertTrue(bool((a[..., 207:] == 1).all()))
 
-    def test_rejects_solver_state_we_do_not_implement(self):
-        with self.assertRaisesRegex(ValueError, "plain Euler"):
-            EulerSegment(ksampler("dpmpp_2m"))
-        with self.assertRaisesRegex(ValueError, "churn"):
-            EulerSegment(ksampler("euler", {"s_churn": 1.}))
-        with self.assertRaisesRegex(ValueError, "random"):
-            EulerSegment(ksampler("euler", inpaint_options={"random": True}))
+    def test_accepts_any_solver_but_not_random_inpaint_noise(self):
+        # Other solvers are allowed: the joint stage starts with no history,
+        # which is any multistep solver's ordinary step-0 condition.
+        for name in ("euler", "heun", "dpm_2", "dpmpp_2m", "res_multistep", "euler_ancestral"):
+            segment = SolverSegment(ksampler(name))
+            self.assertIs(segment.solver, ksampler(name).sampler_function)
+        SolverSegment(ksampler("euler", {"s_churn": 1.}))
+        # Random inpaint noise is not a solver preference: it discards the
+        # per-window noise that re-injects pinned rows on both sides of the switch.
+        with self.assertRaisesRegex(ValueError, "random inpaint noise"):
+            SolverSegment(ksampler("euler", inpaint_options={"random": True}))
 
     def test_sampler_module_reload_during_custom_node_startup(self):
         import comfy.k_diffusion.sampling as sampling
@@ -125,7 +160,7 @@ class HybridTests(unittest.TestCase):
         importlib.reload(sampling)  # RES4LYF does this after other packs import.
         self.assertIsNot(old, sampling.sample_euler)
         segment = EulerSegment(ksampler("euler"))
-        self.assertIs(segment.euler, sampling.sample_euler)
+        self.assertIs(segment.solver, sampling.sample_euler)
 
     def test_node_uses_raw_state_releases_only_generated_carry_and_aligns_controls(self):
         import hybridwindows_test.sampler as hybrid

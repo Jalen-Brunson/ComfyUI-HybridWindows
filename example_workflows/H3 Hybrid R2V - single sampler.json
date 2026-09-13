@@ -889,6 +889,33 @@
           "widget": {
             "name": "start_window"
           }
+        },
+        {
+          "name": "feather_latents",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "feather_latents"
+          }
+        },
+        {
+          "name": "overlap_pin",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "overlap_pin"
+          }
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "context_frames"
+          }
         }
       ],
       "outputs": [
@@ -917,7 +944,10 @@
         "gpu",
         "max",
         0,
-        0
+        0,
+        0,
+        "tail_custom",
+        5
       ],
       "widgets_values_named": {
         "window_frames": 243,
@@ -926,7 +956,10 @@
         "accumulator_device": "gpu",
         "denoise_mask_mode": "max",
         "accepted_prefix_frames": 0,
-        "start_window": 0
+        "start_window": 0,
+        "feather_latents": 0,
+        "overlap_pin": "tail_custom",
+        "context_frames": 5
       }
     },
     {
@@ -1066,6 +1099,15 @@
           "widget": {
             "name": "color_space"
           }
+        },
+        {
+          "name": "codec",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "codec"
+          }
         }
       ],
       "outputs": [
@@ -1085,12 +1127,14 @@
       "widgets_values": [
         24.0,
         8,
-        "sRGB"
+        "sRGB",
+        "none"
       ],
       "widgets_values_named": {
         "fps": 24.0,
         "bit_depth": 8,
-        "color_space": "sRGB"
+        "color_space": "sRGB",
+        "codec": "none"
       }
     },
     {
@@ -1212,7 +1256,7 @@
       "title": "Start here",
       "properties": {},
       "widgets_values": [
-        "# Single hybrid sampler \u2014 reference image\nInstall ComfyUI-HybridWindows and ComfyUI-MMH3Tools, then restart ComfyUI. All other processing nodes are native ComfyUI.\n\nCopy example_workflows/assets/ref2va_stock_portrait.jpg into ComfyUI/input/hybrid_windows/, or upload your own image in Load Image. The reference is connected to native H3 Ref2VA conditioning and reused in every window. Edit the prompt to match your image; <Picture 1> refers to it.\n\nSelect your Ref2VA base, matching 8-step PDD LoRA, H3 text encoder and video/audio VAEs in the loaders. Model locations and download links are in this repository's README. Use an unmerged base with the LoRA at strength 1.\n\nDefaults: 832 x 480, 651 frames, 24 fps (27.125 seconds). Three windows of 243 frames overlap by 39. Six sequential Euler steps then two joint steps; CFG is 1. Set sequential_steps to 8 for a fully sequential baseline. Do not add Context Windows to the model.\n\nTo change duration, keep Cond To Set count and Empty H3 Latent length consistent: total = window + (count - 1) * (window - overlap). Window and overlap use 17k+5 frames. Change width/height in BOTH conditioning and empty latent nodes. The conditioning length is one window.\n\nQueue to save MP4 with generated audio under output/video/HybridSampler_Ref2VA. Hybrid quality remains experimental. This workflow starts fresh; accepted_prefix_frames and start_window stay 0.\n"
+        "# Single hybrid sampler \u2014 reference image\nInstall ComfyUI-HybridWindows and ComfyUI-MMH3Tools, then restart ComfyUI. All other processing nodes are native ComfyUI.\n\nCopy example_workflows/assets/ref2va_stock_portrait.jpg into ComfyUI/input/hybrid_windows/, or upload your own image in Load Image. The reference is connected to native H3 Ref2VA conditioning and reused in every window. Edit the prompt to match your image; <Picture 1> refers to it.\n\nSelect your Ref2VA base, matching 8-step PDD LoRA, H3 text encoder and video/audio VAEs in the loaders. Model locations and download links are in this repository's README. Use an unmerged base with the LoRA at strength 1.\n\nDefaults: 832 x 480, 651 frames, 24 fps (27.125 seconds). Three windows of 243 frames overlap by 39. Six sequential Euler steps then two joint steps; CFG is 1. Set sequential_steps to 8 for a fully sequential baseline. Do not add Context Windows to the model.\n\nPinned video context defaults to 5 frames (overlap_pin = tail_custom). The full 39-frame overlap remains visible during warmup: its final 5 frames follow the previous result and the other 34 may regenerate internally. Audio carry, accepted output and the joint finish stay unchanged. Set overlap_pin = full for the previous behavior. Context rounds up to whole latent rows (6 becomes 9), capped by the overlap; 0 releases video pins but retains overlap context. Partial pinning requires full-frame regeneration outside an accepted prefix.\n\nTo change duration, keep Cond To Set count and Empty H3 Latent length consistent: total = window + (count - 1) * (window - overlap). Window and overlap use 17k+5 frames. Change width/height in BOTH conditioning and empty latent nodes. The conditioning length is one window.\n\nQueue to save MP4 with generated audio under output/video/HybridSampler_Ref2VA. Hybrid quality remains experimental. This workflow starts fresh; accepted_prefix_frames and start_window stay 0.\n"
       ]
     }
   ],

@@ -126,7 +126,8 @@ async def build():
                   {"model": (shift, 0), "noise": (noise, 0), "sampler": (euler, 0), "sigmas": (sigmas, 0),
                    "cond_set": (cond_set, 0), "latent": (empty, 0), "window_frames": 243, "overlap_frames": 39,
                    "sequential_steps": 6, "accumulator_device": "gpu", "denoise_mask_mode": "max",
-                   "accepted_prefix_frames": 0, "start_window": 0})
+                   "accepted_prefix_frames": 0, "start_window": 0,
+                   "overlap_pin": "tail_custom", "context_frames": 5})
     decoded = add("VAEDecode", "Decode video", (2570, 100), (400, 110), {"samples": (sampled, 0), "vae": (vae, 0)})
     audio = add("VAEDecodeAudio", "Decode audio", (2570, 280), (400, 110), {"samples": (sampled, 0), "vae": (audio_vae, 0)})
     video = add("CreateVideo", "Video + generated audio", (2570, 470), (400, 220),
@@ -142,6 +143,8 @@ Copy example_workflows/assets/ref2va_stock_portrait.jpg into ComfyUI/input/hybri
 Select your Ref2VA base, matching 8-step PDD LoRA, H3 text encoder and video/audio VAEs in the loaders. Model locations and download links are in this repository's README. Use an unmerged base with the LoRA at strength 1.
 
 Defaults: 832 x 480, 651 frames, 24 fps (27.125 seconds). Three windows of 243 frames overlap by 39. Six sequential Euler steps then two joint steps; CFG is 1. Set sequential_steps to 8 for a fully sequential baseline. Do not add Context Windows to the model.
+
+Pinned video context defaults to 5 frames (overlap_pin = tail_custom). The full 39-frame overlap remains visible during warmup: its final 5 frames follow the previous result and the other 34 may regenerate internally. Audio carry, accepted output and the joint finish stay unchanged. Set overlap_pin = full for the previous behavior. Context rounds up to whole latent rows (6 becomes 9), capped by the overlap; 0 releases video pins but retains overlap context. Partial pinning requires full-frame regeneration outside an accepted prefix.
 
 To change duration, keep Cond To Set count and Empty H3 Latent length consistent: total = window + (count - 1) * (window - overlap). Window and overlap use 17k+5 frames. Change width/height in BOTH conditioning and empty latent nodes. The conditioning length is one window.
 

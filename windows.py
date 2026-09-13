@@ -27,6 +27,15 @@ def frame_at(index):
     return groups * sum(FRAME_PER_TOKEN) + sum(FRAME_PER_TOKEN[:remainder])
 
 
+def tail_context_rows(start, end, frames):
+    """Smallest tail of whole H3 latent rows covering the requested frames."""
+    first = end
+    frame_end = frame_at(end)
+    while first > start and frame_end - frame_at(first) < frames:
+        first -= 1
+    return end - first
+
+
 def audio_index_at(index, total_video, total_audio):
     """Audio latent column at a video latent boundary, clamped to the clip.
 

@@ -16,7 +16,6 @@ import math
 
 import torch
 
-import comfy.k_diffusion.sampling
 import comfy.model_management
 import comfy.sample
 import comfy.utils
@@ -25,9 +24,9 @@ from comfy.patcher_extension import WrappersMP
 from comfy_api.latest import io
 from comfy_extras.nodes_minimax_h3 import video_latent_t
 
-from .segment import EulerSegment
+from .segment import SolverSegment
 from .windows import (JointWindows, WINDOW_KEY, audio_index_at, frame_at, pin_prefix,
-                      plan_windows, select_conditioning, slice_av, window_options, write_new)
+                      plan_windows, select_conditioning, slice_av, tail_context_rows, window_options, write_new)
 
 # Matched by name, so MMH3Tools is never imported for the schema.
 MMH3CondSet = io.Custom("MMH3_COND_SET")
@@ -102,6 +101,8 @@ class HybridRun:
         self.all_accepted = False
         self.expects_mask = False
         self.stash = None
+        self.overlap_pin = "full"
+        self.context_frames = 5
 
     def splice_accepted(self, packed, shapes):
         """Accepted rows come from the input, not from the sampler."""
@@ -139,10 +140,9 @@ class SequentialWindows:
     def __call__(self, executor, noise, latent_image, sampler, sigmas, denoise_mask=None,
                  callback=None, disable_pbar=False, seed=None, latent_shapes=None):
         run = self.run
-        if sampler.sampler_function is not comfy.k_diffusion.sampling.sample_euler:
-            raise ValueError("Hybrid warmup currently supports plain Euler; select euler in the sampler node.")
-        if sampler.extra_options.get("s_churn", 0) or sampler.inpaint_options.get("random", False):
-            raise ValueError("Hybrid warmup needs Euler without churn or random inpaint noise.")
+        if sampler.inpaint_options.get("random", False):
+            raise ValueError("Hybrid warmup cannot use random inpaint noise: pinned rows must be "
+                             "re-noised with the same per-window noise in both stages.")
         if denoise_mask is not None and torch.any(denoise_mask != 1) and run.source is None:
             raise ValueError(
                 "This latent pins rows with a noise mask. Connect the master to H3 Hybrid "
@@ -176,6 +176,9 @@ class SequentialWindows:
         noise_parts = comfy.utils.unpack_latents(noise, shapes)
         mask_parts = (comfy.utils.unpack_latents(denoise_mask, shapes)
                       if denoise_mask is not None else None)
+        if run.overlap_pin == "tail_custom" and mask_parts is not None:
+            if torch.any(mask_parts[0][:, :, run.accepted_v:] != 1):
+                raise ValueError("Partial video pinning needs full-frame regeneration outside the accepted prefix.")
         output = [torch.empty_like(x, dtype=torch.float32) for x in clean]
         stash_state = run.active and not finished
         if stash_state:
@@ -193,7 +196,12 @@ class SequentialWindows:
                 mask = ([m.clone() for m in slice_av(mask_parts, span)] if mask_parts is not None
                         else [torch.ones_like(x) for x in source])
                 carry_v, carry_a = max(0, previous[0]-span[0]), max(0, previous[1]-span[2])
+                original_head = None
                 mask[0][:, :, :carry_v] = 0
+                if run.overlap_pin == "tail_custom" and carry_v:
+                    original_head = source[0][:, :, :carry_v].clone()
+                    held = tail_context_rows(span[0], previous[0], run.context_frames)
+                    mask[0][:, :, :carry_v - held] = 1
                 mask[1][:, :, :, :carry_a] = 0
                 source_packed, sub_shapes = comfy.utils.pack_latents(source)
                 noise_packed, window_seed = self._window_noise(
@@ -232,6 +240,10 @@ class SequentialWindows:
                     # Native process_latent_out also removes H3's carried-audio scale.
                     last_prediction = guider.inner_model.process_latent_out(x0).to(
                         device=latent_image.device, dtype=torch.float32).clone()
+                    if original_head is not None:
+                        prediction = comfy.utils.unpack_latents(last_prediction, sub_shapes)
+                        prediction[0][:, :, :carry_v] = original_head.to(prediction[0])
+                        last_prediction = comfy.utils.pack_latents(prediction)[0]
                     if callback is not None:
                         # The sampler node's callback (progress bar, previews, the
                         # denoised output) belongs to the whole master: core unpacks
@@ -243,7 +255,7 @@ class SequentialWindows:
                         callback(index*steps + step, packed, packed, total_calls)
 
                 logging.info("[Hybrid Windows] sequential window %d/%d, %d steps", index + 1, len(spans), steps)
-                segment = EulerSegment(sampler, capture=stash_state)
+                segment = SolverSegment(sampler, capture=stash_state)
                 result = executor(noise_packed, source_packed, segment, sigmas,
                                   mask_packed, capture, disable_pbar, window_seed, latent_shapes=sub_shapes)
                 # Keep the native leftover-noise representation, owned by the first
@@ -290,8 +302,6 @@ class JointStage:
                              "and feed it the warmup's `output` latent.")
         if denoise_mask is not None and torch.any(denoise_mask != 1) and not active:
             raise ValueError("The joint stage requires an unmasked warmup output.")
-        if sampler.sampler_function is not comfy.k_diffusion.sampling.sample_euler:
-            raise ValueError("Use plain euler in both sampler nodes.")
         if float(sigmas[0]) >= 1:
             raise ValueError("Start the joint stage where the warmup stopped: split the sigmas at "
                              "the warmup's step count.")
@@ -329,7 +339,7 @@ class JointStage:
             if run.source is not None:
                 clean = comfy.utils.pack_latents([x.to(latent_image) for x in run.source])[0]
             out = executor(stash.noise.to(device=latent_image.device, dtype=latent_image.dtype),
-                           clean, EulerSegment(sampler, initial_state=raw), sigmas, denoise_mask,
+                           clean, SolverSegment(sampler, initial_state=raw), sigmas, denoise_mask,
                            callback, disable_pbar, stash.seed, latent_shapes=latent_shapes)
             return run.splice_accepted(out, latent_shapes)
         finally:
@@ -444,6 +454,20 @@ def run_report(run, count, prepared):
                      "stages, its windows skip the warmup, and the output takes them from the input.")
     lines.append("Noise: " + ("per window, seed + %d + window index." % run.start_window
                               if run.noise_mode == "per_window" else "one draw sliced per window."))
+    lines.append(f"Video overlap pin: {run.overlap_pin}.")
+    if run.overlap_pin == "tail_custom":
+        if prepared is None:
+            spans = [(i * run.plan.stride, i * run.plan.stride + run.plan.length)
+                     for i in range(count)]
+        effective = set()
+        for previous, current in zip(spans, spans[1:]):
+            end = previous[1]
+            rows = tail_context_rows(current[0], end, run.context_frames)
+            effective.add(frame_at(end) - frame_at(end - rows))
+        held = ", ".join(map(str, sorted(effective))) if effective else "none (opening only)"
+        lines.append(f"Pinned video context: requested {run.context_frames} frames; effective {held} "
+                     "frames across incoming overlaps. Rounded up to whole latent rows and capped "
+                     "by the available overlap. Only the sequential temporary context changes.")
     lines.append("Split the sigmas at the warmup's step count; the joint stage takes the warmup's "
                  "`output` latent with Disable Noise.")
     lines.append("Experimental: continuity and texture improvement are not established.")
@@ -455,6 +479,7 @@ class H3HybridWindows(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="H3HybridWindows", display_name="H3 Hybrid Windows",
+            not_idempotent=True,  # Each branch owns its warmup/resume state.
             category="sampling/hybrid", is_experimental=True,
             description="Sequential overlap carry followed by joint prediction fusion through two native sampler nodes.",
             inputs=[
@@ -482,6 +507,10 @@ class H3HybridWindows(io.ComfyNode):
                              tooltip="Global index of this run's first window, for per-window seeds. Wire the resume index shift."),
                 io.Combo.Input("noise_mode", options=NOISE_MODES, default="global", optional=True,
                                tooltip="per_window draws seed + start_window + index per window, matching the single-node hybrid sampler; global slices one draw."),
+                io.Combo.Input("overlap_pin", options=["full", "tail_custom"], default="full", optional=True,
+                               tooltip="full preserves the entire warmup overlap. tail_custom pins only context_frames at its end. The full overlap still reaches the model; accepted output stays fixed."),
+                io.Int.Input("context_frames", default=5, min=0, max=3600, optional=True,
+                             tooltip="Used with overlap_pin=tail_custom. Video frames held at the end of the warmup overlap; 0 releases video carry. Rounds up to whole latent rows, capped by overlap. Audio carry and accepted output stay protected."),
             ],
             outputs=[io.Model.Output(display_name="sequential_model"),
                      io.Model.Output(display_name="joint_model"),
@@ -495,12 +524,14 @@ class H3HybridWindows(io.ComfyNode):
     def execute(cls, model, window_frames, overlap_frames, prompts=None, total_steps=8,
                 cond_set=None, latent=None, denoise_mask=None, audio_denoise_mask=None,
                 denoise_mask_mode="max", accepted_prefix_frames=0, start_window=0,
-                noise_mode="global"):
+                noise_mode="global", overlap_pin="full", context_frames=5):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
         bound, count = bind_conditioning(cond_set, prompts)
         plan = plan_windows(window_frames, overlap_frames, count)
         run = HybridRun(plan, total_steps, noise_mode, start_window)
+        run.overlap_pin = overlap_pin
+        run.context_frames = int(context_frames)
         prepared = prepare_source(run, latent, denoise_mask, audio_denoise_mask,
                                   denoise_mask_mode, accepted_prefix_frames)
         report = run_report(run, count, prepared)

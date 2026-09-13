@@ -167,6 +167,9 @@
       "denoise_mask_mode": "max",
       "accepted_prefix_frames": 0,
       "start_window": 0,
+      "feather_latents": 0,
+      "overlap_pin": "tail_custom",
+      "context_frames": 5,
       "model": [
         "3",
         0
@@ -234,6 +237,7 @@
       "fps": 24.0,
       "bit_depth": 8,
       "color_space": "sRGB",
+      "codec": "none",
       "images": [
         "15",
         0

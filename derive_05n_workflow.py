@@ -61,6 +61,11 @@ state the warm-up left. Take its `output` (slot 0), never `denoised_output`.
 
 - `Switch at step` on Split Sigmas is the warm-up's step count. It must match
   `total_steps` on the windows node and the PDD distill's `nfe` (8 = 6+2).
+- `overlap_pin = tail_custom`, `context_frames = 5` pins the last 5 video frames
+  of the full 39-frame overlap during warmup. The other 34 can regenerate
+  internally; accepted output, audio carry and the joint finish stay unchanged.
+  Partial pinning requires full-frame regeneration outside the accepted prefix.
+  Use `overlap_pin = full` for an inpaint mask protecting fresh source video.
 - `noise_mode = per_window` draws seed + resume shift + window index per
   window, the same draws the single-node sampler makes, so a run can be
   compared with one made by 05.
@@ -197,7 +202,7 @@ def derive():
         (3160, -1440), (470, 470),
         {"window_frames": 243, "overlap_frames": 39, "total_steps": TOTAL_STEPS,
          "denoise_mask_mode": "max", "accepted_prefix_frames": 0, "start_window": 0,
-         "noise_mode": "per_window"}))
+         "noise_mode": "per_window", "overlap_pin": "tail_custom", "context_frames": 5}))
     split_id = graph.add_node(node_from_schema(
         "SplitSigmas", first + 1, f"Switch at step {SPLIT_STEP} — PDD Acc sigmas",
         (3700, -1440), (300, 100), {"step": SPLIT_STEP}))

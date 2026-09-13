@@ -168,6 +168,12 @@ Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD alre
 4. Set **Width / Height** (default **{size}**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
 5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
 
+## Pinned context and overlap
+
+The example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.
+
+Context is counted on H3's latent grid: 5, 9, 13, 17, 22 and 39 are useful exact settings for this overlap; 6 rounds up to 9. Set **overlap_pin = full** for the previous behavior. **context_frames = 0** releases all video pins but still passes overlap and audio context. This option currently needs full-frame regeneration outside any accepted prefix.
+
 ## Optional color stabilization
 
 **Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.
@@ -333,9 +339,9 @@ async def build(mode="ref2va", end_guide=False):
             kind, title = "MiniMaxH3ReferenceToVideo", f"Native H3 conditioning {i+1}"
         encoded = add(kind, title, (x, 460), (410, 470), values)
         prompts.append(encoded)
-    setup = add("H3HybridWindows", "Hybrid windows", (2440, 100), (390, 320),
+    setup = add("H3HybridWindows", "Hybrid windows — pinned video context", (2440, 100), (390, 420),
                 {"model": (shift, 0), "window_frames": (window, 0), "overlap_frames": 39,
-                 "total_steps": (steps, 0),
+                 "total_steps": (steps, 0), "overlap_pin": "tail_custom", "context_frames": 5,
                  **{f"prompts.positive_{i}": (p, 0) for i, p in enumerate(prompts)}})
     empty = add("EmptyMiniMaxH3LatentAV", "Full timeline latent", (2870, 100), (360, 180),
                 {"width": (width, 0), "height": (height, 0), "length": (setup, 3)})

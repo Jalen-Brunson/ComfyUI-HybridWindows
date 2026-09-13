@@ -33,6 +33,8 @@ async def main():
             assert module == "nodes" or module.startswith("comfy_extras."), module
     by_type = {n["class_type"]: n["inputs"] for n in api.values()}
     sampler = by_type["MMH3HybridWindowSampler"]
+    assert sampler["overlap_pin"] == "tail_custom"
+    assert sampler["context_frames"] == 5
     count = by_type["MMH3CondToSet"]["count"]
     assert by_type["EmptyMiniMaxH3LatentAV"]["length"] == sampler["window_frames"] + (count-1)*(sampler["window_frames"]-sampler["overlap_frames"])
     ref = by_type["MiniMaxH3ReferenceToVideo"]["ref_images.ref_image_0"]

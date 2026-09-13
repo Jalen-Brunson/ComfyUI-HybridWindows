@@ -43,6 +43,8 @@ async def validate(mode, end_guide=False):
     assert types.count("KSamplerAdvanced") == 2
     assert types.count("PrimitiveStringMultiline") == 3
     hybrid_inputs = next(n["inputs"] for n in api.values() if n["class_type"] == "H3HybridWindows")
+    assert hybrid_inputs["overlap_pin"] == "tail_custom"
+    assert hybrid_inputs["context_frames"] == 5
     samplers = [n["inputs"] for n in api.values() if n["class_type"] == "KSamplerAdvanced"]
     assert samplers[0]["steps"] == samplers[1]["steps"] == hybrid_inputs["total_steps"]
     assert samplers[0]["end_at_step"] == samplers[1]["start_at_step"]
