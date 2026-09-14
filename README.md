@@ -21,6 +21,21 @@ native PDD LoRA loading, native AV decoding, optional color stabilization and Sa
 Hybrid sampling supports H3. The decoded-frame color node can be used with other
 models and samplers.
 
+## V2V Hybrid Sampling with inpainting option
+
+[Download the workflow](example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.json) · [Setup and usage guide](docs/v2v-workflow.md) · [API graph](example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.api.json)
+
+Transform a source video with reference images and prompts using two native samplers.
+Start fresh or continue from accepted chunks: each save includes the complete video
+and its matching raw latent master, selected together by project on the next run.
+Sapiens2 face/hair segmentation drives the existing blur with mouth protection;
+face detection and InsightFace likeness measurement are disabled. Optional inpainting
+uses an aligned mask video and selects full overlap pinning automatically.
+
+Defaults are 8 steps, 6 sequential + 2 joint, five context frames, and two new chunks
+per queue. The workflow includes editable controls and setup notes. Install the
+additional node packs and model files listed in the guide before running it.
+
 ## Example: Looping Sampler vs Hybrid on a two-minute clip
 
 The comparison now includes **Hybrid with 5 pinned video context frames**, alongside the
@@ -137,8 +152,9 @@ with joint finishing while keeping the seed, prompts and inputs fixed.
 
 ## Included custom nodes
 
-The pack installs four custom nodes. The H3 nodes are under `sampling/hybrid`;
-Video Color Stabilize is under `image/video`.
+The pack installs ten custom nodes. Sampling nodes are under `sampling/hybrid`,
+continuation helpers under `sampling/hybrid/continuation`, and color/blur nodes
+under `image/video`.
 
 | Node | What it does | Used in the examples |
 |---|---|---|
@@ -146,6 +162,11 @@ Video Color Stabilize is under `image/video`.
 | **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
+
+The V2V workflow also includes **V2V Run Plan**, **Load V2V Continuation**,
+**Prepare V2V and Inpainting**, **Assemble V2V Continuation**, **Save V2V Video
+and Continuation**, and **Blur Segmented Face and Hair**. See the
+[V2V guide](docs/v2v-workflow.md) for their controls and dependencies.
 
 The model/LoRA loaders, image loaders, prompt text boxes, H3 conditioning,
 KSampler Advanced, VAE decoders and video output nodes in the examples are

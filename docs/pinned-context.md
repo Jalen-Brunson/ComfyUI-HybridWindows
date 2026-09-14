@@ -1,15 +1,13 @@
 # Pinned video context
 
 Both **H3 Hybrid Windows** (`H3HybridWindows`, native two-sampler chain) and
-**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`, original single-node 05
-sampler) support `overlap_pin = tail_custom` with `context_frames = 5`.
+**H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`, single-node sampler)
+support `overlap_pin = tail_custom` with `context_frames = 5`.
 
-All bundled hybrid workflows select five frames: native Ref2VA/FL2VA,
-single-sampler Ref2VA, the accessible 05A default, the 05N builder, and the
-downloadable stream_00170 comparison graph. Existing nodes and API calls that
-omit the new options retain `full` pinning. The optional source-mask mode in
-05A requires switching to `full`; its default has that group muted and uses
-five-frame pinning.
+The bundled Ref2VA/FL2VA examples and **V2V Hybrid Sampling with inpainting option**
+select five context frames. Existing nodes and API calls that omit these options
+retain full pinning. In the V2V workflow, enabling inpainting automatically selects
+full overlap pinning; disabling it restores five-frame context.
 
 ## Overlap versus context
 

@@ -1,0 +1,1249 @@
+{
+  "1": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "input/source.mp4"
+    },
+    "_meta": {
+      "title": "Source video path"
+    }
+  },
+  "2": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "my_v2v_project"
+    },
+    "_meta": {
+      "title": "Project name \u2014 keep this name when continuing"
+    }
+  },
+  "3": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "The person in <Picture 1> follows the movement and timing in <Video 1>. Preserve the composition, background, lighting and lip movement of the source video. Natural movement and consistent appearance throughout one uninterrupted shot."
+    },
+    "_meta": {
+      "title": "Prompt \u2014 one for all chunks, or separate global chunk prompts with |"
+    }
+  },
+  "4": {
+    "class_type": "H3HybridRunPlan",
+    "inputs": {
+      "source_video": [
+        "1",
+        0
+      ],
+      "prompts": [
+        "3",
+        0
+      ],
+      "accepted_chunks": 0,
+      "new_chunks": 2,
+      "chunk_frames": [
+        "9",
+        0
+      ],
+      "overlap_frames": [
+        "10",
+        0
+      ],
+      "source_start_seconds": 0.0,
+      "max_frames": 0
+    },
+    "_meta": {
+      "title": "Run controls \u2014 fresh, continue, or redo later chunks"
+    }
+  },
+  "5": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 832
+    },
+    "_meta": {
+      "title": "Output width"
+    }
+  },
+  "6": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 480
+    },
+    "_meta": {
+      "title": "Output height"
+    }
+  },
+  "7": {
+    "class_type": "PrimitiveBoolean",
+    "inputs": {
+      "value": false
+    },
+    "_meta": {
+      "title": "Enable inpainting"
+    }
+  },
+  "8": {
+    "class_type": "PrimitiveBoolean",
+    "inputs": {
+      "value": true
+    },
+    "_meta": {
+      "title": "Enable segmentation blur"
+    }
+  },
+  "9": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 243
+    },
+    "_meta": {
+      "title": "Window frames \u2014 link also feeds Run controls"
+    }
+  },
+  "10": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 39
+    },
+    "_meta": {
+      "title": "Overlap frames"
+    }
+  },
+  "11": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "4",
+        8
+      ]
+    },
+    "_meta": {
+      "title": "Run plan and next accepted-chunk count"
+    }
+  },
+  "12": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "H3 Ref2VA model"
+    }
+  },
+  "13": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors",
+      "strength_model": 1.0,
+      "model": [
+        "12",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Native PDD eight-step LoRA"
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Video / audio sigma shifts"
+    }
+  },
+  "15": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "H3 text encoder"
+    }
+  },
+  "16": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "17": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "18": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 123
+    },
+    "_meta": {
+      "title": "Seed \u2014 keep fixed when comparing or continuing"
+    }
+  },
+  "19": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 8
+    },
+    "_meta": {
+      "title": "Total sampling steps"
+    }
+  },
+  "20": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 6
+    },
+    "_meta": {
+      "title": "Switch to joint sampling at step"
+    }
+  },
+  "21": {
+    "class_type": "VHS_LoadVideoFFmpegPath",
+    "inputs": {
+      "video": [
+        "1",
+        0
+      ],
+      "force_rate": 24.0,
+      "custom_width": [
+        "5",
+        0
+      ],
+      "custom_height": [
+        "6",
+        0
+      ],
+      "frame_load_cap": [
+        "4",
+        2
+      ],
+      "start_time": [
+        "4",
+        1
+      ],
+      "format": "None"
+    },
+    "_meta": {
+      "title": "Load this run from the clear source + audio"
+    }
+  },
+  "22": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "input/mask.webm"
+    },
+    "_meta": {
+      "title": "Inpaint mask path \u2014 used only when enabled"
+    }
+  },
+  "23": {
+    "class_type": "VHS_LoadVideoFFmpegPath",
+    "inputs": {
+      "video": [
+        "22",
+        0
+      ],
+      "force_rate": 24.0,
+      "custom_width": [
+        "5",
+        0
+      ],
+      "custom_height": [
+        "6",
+        0
+      ],
+      "frame_load_cap": [
+        "4",
+        2
+      ],
+      "start_time": [
+        "4",
+        1
+      ],
+      "format": "None"
+    },
+    "_meta": {
+      "title": "Inpaint mask video \u2014 only loaded when enabled"
+    }
+  },
+  "24": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "23",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Read mask red channel"
+    }
+  },
+  "25": {
+    "class_type": "ThresholdMask",
+    "inputs": {
+      "value": 0.5,
+      "mask": [
+        "24",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "White regenerates / black preserves"
+    }
+  },
+  "27": {
+    "class_type": "MMH3StreamingEncode",
+    "inputs": {
+      "frames_per_chunk": 85,
+      "offload_latents": true,
+      "images": [
+        "21",
+        0
+      ],
+      "vae": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Encode the clear source"
+    }
+  },
+  "28": {
+    "class_type": "VAEEncodeAudio",
+    "inputs": {
+      "audio": [
+        "21",
+        2
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Encode source audio"
+    }
+  },
+  "29": {
+    "class_type": "MMH3PackAV",
+    "inputs": {
+      "video_latent": [
+        "27",
+        0
+      ],
+      "audio_latent": [
+        "28",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Pack source video and audio"
+    }
+  },
+  "30": {
+    "class_type": "H3HybridResumeLoad",
+    "inputs": {
+      "project": [
+        "2",
+        0
+      ],
+      "saved_run": "Latest completed run",
+      "run": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Select continuation \u2014 latest completed run for this project"
+    }
+  },
+  "31": {
+    "class_type": "VHS_LoadVideoFFmpegPath",
+    "inputs": {
+      "video": [
+        "30",
+        1
+      ],
+      "force_rate": 24.0,
+      "custom_width": [
+        "5",
+        0
+      ],
+      "custom_height": [
+        "6",
+        0
+      ],
+      "frame_load_cap": [
+        "4",
+        6
+      ],
+      "start_time": 0.0,
+      "format": "None"
+    },
+    "_meta": {
+      "title": "Load accepted prefix \u2014 skipped on fresh runs"
+    }
+  },
+  "32": {
+    "class_type": "H3HybridResumeLatent",
+    "inputs": {
+      "inpainting": [
+        "7",
+        0
+      ],
+      "source": [
+        "29",
+        0
+      ],
+      "run": [
+        "4",
+        0
+      ],
+      "prior": [
+        "30",
+        0
+      ],
+      "mask": [
+        "25",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Prepare source preservation and the pinned continuation window"
+    }
+  },
+  "33": {
+    "class_type": "Sapiens2Loader",
+    "inputs": {
+      "checkpoint": "sapiens2_5b_seg.safetensors"
+    },
+    "_meta": {
+      "title": "Sapiens2 segmentation model"
+    }
+  },
+  "34": {
+    "class_type": "Sapiens2Seg",
+    "inputs": {
+      "frames_per_batch": 1,
+      "image": [
+        "21",
+        0
+      ],
+      "sapiens2_model": [
+        "33",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Segment clear source \u2014 skipped when blur is off"
+    }
+  },
+  "35": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Face_Neck",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Face_Neck"
+    }
+  },
+  "36": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Hair",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Hair"
+    }
+  },
+  "37": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Eyeglass",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Eyeglass"
+    }
+  },
+  "38": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Upper_Lip",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Upper_Lip"
+    }
+  },
+  "39": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Lower_Lip",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Lower_Lip"
+    }
+  },
+  "40": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Upper_Teeth",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Upper_Teeth"
+    }
+  },
+  "41": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Lower_Teeth",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Lower_Teeth"
+    }
+  },
+  "42": {
+    "class_type": "Sapiens2SegExtract",
+    "inputs": {
+      "class_name": "Tongue",
+      "invert": false,
+      "num_classes": 29,
+      "class_id_mask": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Tongue"
+    }
+  },
+  "43": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "35",
+        0
+      ],
+      "source": [
+        "36",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Face + hair"
+    }
+  },
+  "44": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "43",
+        0
+      ],
+      "source": [
+        "37",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Face + hair + glasses \u2192 blur"
+    }
+  },
+  "45": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "38",
+        0
+      ],
+      "source": [
+        "39",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Lips \u2192 protect"
+    }
+  },
+  "46": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "40",
+        0
+      ],
+      "source": [
+        "41",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Teeth \u2192 protect"
+    }
+  },
+  "47": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "45",
+        0
+      ],
+      "source": [
+        "46",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Lips + teeth \u2192 protect"
+    }
+  },
+  "48": {
+    "class_type": "MaskComposite",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "operation": "add",
+      "destination": [
+        "47",
+        0
+      ],
+      "source": [
+        "42",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Mouth protection"
+    }
+  },
+  "49": {
+    "class_type": "H3SegmentedVideoBlur",
+    "inputs": {
+      "enabled": [
+        "8",
+        0
+      ],
+      "strength": 0.5,
+      "region_grow": 2,
+      "protect_grow": 2,
+      "min_component": 0.05,
+      "images": [
+        "21",
+        0
+      ],
+      "region_mask": [
+        "44",
+        0
+      ],
+      "protect_mask": [
+        "48",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Segmentation blur \u2014 preserve lips, hands and props"
+    }
+  },
+  "50": {
+    "class_type": "ImageAddNoise",
+    "inputs": {
+      "seed": [
+        "18",
+        0
+      ],
+      "strength": 0.1,
+      "image": [
+        "49",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Control image noise"
+    }
+  },
+  "51": {
+    "class_type": "ImageCompositeMasked",
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "resize_source": false,
+      "destination": [
+        "49",
+        0
+      ],
+      "source": [
+        "50",
+        0
+      ],
+      "mask": [
+        "32",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Noise follows the inpaint region when enabled"
+    }
+  },
+  "52": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "hybrid_windows/ref2va_stock_portrait.jpg"
+    },
+    "_meta": {
+      "title": "Reference image \u2014 Picture 1"
+    }
+  },
+  "53": {
+    "class_type": "MMH3ImageList",
+    "inputs": {
+      "images.image_0": [
+        "52",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Reference pictures \u2014 connect additional images here"
+    }
+  },
+  "54": {
+    "class_type": "MMH3ReferenceMultiPrompt",
+    "inputs": {
+      "width": [
+        "5",
+        0
+      ],
+      "height": [
+        "6",
+        0
+      ],
+      "length": [
+        "4",
+        2
+      ],
+      "ref_image_size": "match",
+      "prompts": [
+        "4",
+        7
+      ],
+      "use_input_audio": false,
+      "unload_text_encoder": true,
+      "window_ref_video": true,
+      "chunk_frames": [
+        "9",
+        0
+      ],
+      "overlap_frames": [
+        "10",
+        0
+      ],
+      "embeddings": "",
+      "clip": [
+        "15",
+        0
+      ],
+      "vae": [
+        "16",
+        0
+      ],
+      "audio_vae": [
+        "17",
+        0
+      ],
+      "ref_images": [
+        "53",
+        0
+      ],
+      "ref_videos.ref_video_0": [
+        "51",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Encode the planned prompts and aligned controls"
+    }
+  },
+  "55": {
+    "class_type": "MiniMaxH3RefModsLoader",
+    "inputs": {
+      "show_info": false,
+      "mod_1": "(none)",
+      "strength_1": 1.0,
+      "copies_1": 1,
+      "mod_2": "(none)",
+      "strength_2": 1.0,
+      "copies_2": 1,
+      "mod_3": "(none)",
+      "strength_3": 1.0,
+      "copies_3": 1,
+      "mod_4": "(none)",
+      "strength_4": 1.0,
+      "copies_4": 1,
+      "mod_5": "(none)",
+      "strength_5": 1.0,
+      "copies_5": 1,
+      "mod_6": "(none)",
+      "strength_6": 1.0,
+      "copies_6": 1,
+      "mod_7": "(none)",
+      "strength_7": 1.0,
+      "copies_7": 1,
+      "mod_8": "(none)",
+      "strength_8": 1.0,
+      "copies_8": 1,
+      "max_total_tokens": 0,
+      "components_1": "All",
+      "visual_strength_1": 1.0,
+      "audio_strength_1": 1.0,
+      "components_2": "All",
+      "visual_strength_2": 1.0,
+      "audio_strength_2": 1.0,
+      "components_3": "All",
+      "visual_strength_3": 1.0,
+      "audio_strength_3": 1.0,
+      "components_4": "All",
+      "visual_strength_4": 1.0,
+      "audio_strength_4": 1.0,
+      "components_5": "All",
+      "visual_strength_5": 1.0,
+      "audio_strength_5": 1.0,
+      "components_6": "All",
+      "visual_strength_6": 1.0,
+      "audio_strength_6": 1.0,
+      "components_7": "All",
+      "visual_strength_7": 1.0,
+      "audio_strength_7": 1.0,
+      "components_8": "All",
+      "visual_strength_8": 1.0,
+      "audio_strength_8": 1.0
+    },
+    "_meta": {
+      "title": "Optional RefMods \u2014 leave unused slots at (none)"
+    }
+  },
+  "56": {
+    "class_type": "H3RefModCondSetApply",
+    "inputs": {
+      "retention": 1.0,
+      "insert_position": "before_controls",
+      "controls_override": -1,
+      "cond_set": [
+        "54",
+        0
+      ],
+      "mods": [
+        "55",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Apply selected RefMods to every window"
+    }
+  },
+  "57": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "55",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "RefMod prompt hint"
+    }
+  },
+  "58": {
+    "class_type": "SolidMask",
+    "inputs": {
+      "value": 0.0,
+      "width": 1,
+      "height": 1
+    },
+    "_meta": {
+      "title": "Audio mask \u2014 0 keeps source / 1 regenerates"
+    }
+  },
+  "59": {
+    "class_type": "H3HybridWindows",
+    "inputs": {
+      "window_frames": [
+        "9",
+        0
+      ],
+      "overlap_frames": [
+        "10",
+        0
+      ],
+      "total_steps": [
+        "19",
+        0
+      ],
+      "denoise_mask_mode": "max",
+      "accepted_prefix_frames": [
+        "4",
+        5
+      ],
+      "start_window": [
+        "4",
+        4
+      ],
+      "noise_mode": "per_window",
+      "overlap_pin": [
+        "32",
+        2
+      ],
+      "context_frames": 5,
+      "model": [
+        "14",
+        0
+      ],
+      "cond_set": [
+        "56",
+        0
+      ],
+      "latent": [
+        "32",
+        0
+      ],
+      "denoise_mask": [
+        "32",
+        1
+      ],
+      "audio_denoise_mask": [
+        "58",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Hybrid sampling \u2014 context 5, automatic inpaint pinning"
+    }
+  },
+  "60": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "59",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Empty negative conditioning"
+    }
+  },
+  "61": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": [
+        "18",
+        0
+      ],
+      "steps": [
+        "19",
+        0
+      ],
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": [
+        "20",
+        0
+      ],
+      "return_with_leftover_noise": "enable",
+      "positive": [
+        "59",
+        2
+      ],
+      "negative": [
+        "60",
+        0
+      ],
+      "model": [
+        "59",
+        0
+      ],
+      "latent_image": [
+        "59",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "Sequential stage"
+    }
+  },
+  "62": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": [
+        "18",
+        0
+      ],
+      "steps": [
+        "19",
+        0
+      ],
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": [
+        "20",
+        0
+      ],
+      "end_at_step": [
+        "19",
+        0
+      ],
+      "return_with_leftover_noise": "disable",
+      "positive": [
+        "59",
+        2
+      ],
+      "negative": [
+        "60",
+        0
+      ],
+      "model": [
+        "59",
+        1
+      ],
+      "latent_image": [
+        "61",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Joint finishing stage"
+    }
+  },
+  "63": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "59",
+        5
+      ]
+    },
+    "_meta": {
+      "title": "Hybrid sampler report"
+    }
+  },
+  "64": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "62",
+        0
+      ],
+      "vae": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode this run"
+    }
+  },
+  "65": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "62",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode generated audio"
+    }
+  },
+  "66": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": true,
+      "on_true": [
+        "21",
+        2
+      ],
+      "on_false": [
+        "65",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Use source soundtrack? True keeps the original waveform"
+    }
+  },
+  "67": {
+    "class_type": "H3HybridResumeOutput",
+    "inputs": {
+      "images": [
+        "64",
+        0
+      ],
+      "audio": [
+        "66",
+        0
+      ],
+      "run": [
+        "4",
+        0
+      ],
+      "prefix_images": [
+        "31",
+        0
+      ],
+      "prefix_audio": [
+        "31",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Preserve accepted pixels/audio and append new frames"
+    }
+  },
+  "68": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "fps": 24.0,
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": [
+        "67",
+        0
+      ],
+      "audio": [
+        "67",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Complete video"
+    }
+  },
+  "69": {
+    "class_type": "H3HybridSaveRun",
+    "inputs": {
+      "filename_prefix": "video/V2V_Hybrid",
+      "format": "mp4",
+      "format.codec": "h264",
+      "format.codec.encoding": "re-encode",
+      "format.codec.encoding.crf": 16.0,
+      "project": [
+        "2",
+        0
+      ],
+      "codec": "auto",
+      "video": [
+        "68",
+        0
+      ],
+      "latent": [
+        "62",
+        0
+      ],
+      "prior": [
+        "30",
+        0
+      ],
+      "run": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Save full video + matching continuation master"
+    }
+  },
+  "70": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "69",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "Saved run and next continuation setting"
+    }
+  }
+}
