@@ -765,22 +765,10 @@
       "image": "hybrid_windows/ref2va_stock_portrait.jpg"
     },
     "_meta": {
-      "title": "Reference image \u2014 Picture 1"
+      "title": "Reference image \u2014 Picture 1 (optional; mute or bypass for RefMod only)"
     }
   },
   "53": {
-    "class_type": "MMH3ImageList",
-    "inputs": {
-      "images.image_0": [
-        "52",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Reference pictures \u2014 connect additional images here"
-    }
-  },
-  "54": {
     "class_type": "MMH3ReferenceMultiPrompt",
     "inputs": {
       "width": [
@@ -825,7 +813,7 @@
         0
       ],
       "ref_images": [
-        "53",
+        "52",
         0
       ],
       "ref_videos.ref_video_0": [
@@ -837,7 +825,7 @@
       "title": "Encode the planned prompts and aligned controls"
     }
   },
-  "55": {
+  "54": {
     "class_type": "MiniMaxH3RefModsLoader",
     "inputs": {
       "show_info": false,
@@ -895,18 +883,18 @@
       "title": "Optional RefMods \u2014 leave unused slots at (none)"
     }
   },
-  "56": {
+  "55": {
     "class_type": "H3RefModCondSetApply",
     "inputs": {
       "retention": 1.0,
       "insert_position": "before_controls",
       "controls_override": -1,
       "cond_set": [
-        "54",
+        "53",
         0
       ],
       "mods": [
-        "55",
+        "54",
         0
       ]
     },
@@ -914,11 +902,11 @@
       "title": "Apply selected RefMods to every window"
     }
   },
-  "57": {
+  "56": {
     "class_type": "PreviewAny",
     "inputs": {
       "source": [
-        "55",
+        "54",
         1
       ]
     },
@@ -926,7 +914,7 @@
       "title": "RefMod prompt hint"
     }
   },
-  "58": {
+  "57": {
     "class_type": "SolidMask",
     "inputs": {
       "value": 0.0,
@@ -937,7 +925,7 @@
       "title": "Audio mask \u2014 0 keeps source / 1 regenerates"
     }
   },
-  "59": {
+  "58": {
     "class_type": "H3HybridWindows",
     "inputs": {
       "window_frames": [
@@ -972,7 +960,7 @@
         0
       ],
       "cond_set": [
-        "56",
+        "55",
         0
       ],
       "latent": [
@@ -984,7 +972,7 @@
         1
       ],
       "audio_denoise_mask": [
-        "58",
+        "57",
         0
       ]
     },
@@ -992,11 +980,11 @@
       "title": "Hybrid sampling \u2014 context 5, automatic inpaint pinning"
     }
   },
-  "60": {
+  "59": {
     "class_type": "ConditioningZeroOut",
     "inputs": {
       "conditioning": [
-        "59",
+        "58",
         2
       ]
     },
@@ -1004,7 +992,7 @@
       "title": "Empty negative conditioning"
     }
   },
-  "61": {
+  "60": {
     "class_type": "KSamplerAdvanced",
     "inputs": {
       "add_noise": "enable",
@@ -1026,19 +1014,19 @@
       ],
       "return_with_leftover_noise": "enable",
       "positive": [
-        "59",
+        "58",
         2
       ],
       "negative": [
-        "60",
+        "59",
         0
       ],
       "model": [
-        "59",
+        "58",
         0
       ],
       "latent_image": [
-        "59",
+        "58",
         4
       ]
     },
@@ -1046,7 +1034,7 @@
       "title": "Sequential stage"
     }
   },
-  "62": {
+  "61": {
     "class_type": "KSamplerAdvanced",
     "inputs": {
       "add_noise": "disable",
@@ -1071,19 +1059,19 @@
       ],
       "return_with_leftover_noise": "disable",
       "positive": [
-        "59",
+        "58",
         2
       ],
       "negative": [
-        "60",
+        "59",
         0
       ],
       "model": [
-        "59",
+        "58",
         1
       ],
       "latent_image": [
-        "61",
+        "60",
         0
       ]
     },
@@ -1091,11 +1079,11 @@
       "title": "Joint finishing stage"
     }
   },
-  "63": {
+  "62": {
     "class_type": "PreviewAny",
     "inputs": {
       "source": [
-        "59",
+        "58",
         5
       ]
     },
@@ -1103,11 +1091,11 @@
       "title": "Hybrid sampler report"
     }
   },
-  "64": {
+  "63": {
     "class_type": "VAEDecode",
     "inputs": {
       "samples": [
-        "62",
+        "61",
         0
       ],
       "vae": [
@@ -1119,11 +1107,11 @@
       "title": "Decode this run"
     }
   },
-  "65": {
+  "64": {
     "class_type": "VAEDecodeAudio",
     "inputs": {
       "samples": [
-        "62",
+        "61",
         0
       ],
       "vae": [
@@ -1135,7 +1123,7 @@
       "title": "Decode generated audio"
     }
   },
-  "66": {
+  "65": {
     "class_type": "ComfySwitchNode",
     "inputs": {
       "switch": true,
@@ -1144,7 +1132,7 @@
         2
       ],
       "on_false": [
-        "65",
+        "64",
         0
       ]
     },
@@ -1152,15 +1140,15 @@
       "title": "Use source soundtrack? True keeps the original waveform"
     }
   },
-  "67": {
+  "66": {
     "class_type": "H3HybridResumeOutput",
     "inputs": {
       "images": [
-        "64",
+        "63",
         0
       ],
       "audio": [
-        "66",
+        "65",
         0
       ],
       "run": [
@@ -1180,7 +1168,7 @@
       "title": "Preserve accepted pixels/audio and append new frames"
     }
   },
-  "68": {
+  "67": {
     "class_type": "CreateVideo",
     "inputs": {
       "fps": 24.0,
@@ -1188,11 +1176,11 @@
       "color_space": "sRGB",
       "codec": "none",
       "images": [
-        "67",
+        "66",
         0
       ],
       "audio": [
-        "67",
+        "66",
         1
       ]
     },
@@ -1200,7 +1188,7 @@
       "title": "Complete video"
     }
   },
-  "69": {
+  "68": {
     "class_type": "H3HybridSaveRun",
     "inputs": {
       "filename_prefix": "video/V2V_Hybrid",
@@ -1214,11 +1202,11 @@
       ],
       "codec": "auto",
       "video": [
-        "68",
+        "67",
         0
       ],
       "latent": [
-        "62",
+        "61",
         0
       ],
       "prior": [
@@ -1234,11 +1222,11 @@
       "title": "Save full video + matching continuation master"
     }
   },
-  "70": {
+  "69": {
     "class_type": "PreviewAny",
     "inputs": {
       "source": [
-        "69",
+        "68",
         3
       ]
     },

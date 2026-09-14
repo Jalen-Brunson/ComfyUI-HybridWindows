@@ -16,7 +16,7 @@ NAME = "V2V Hybrid Sampling with inpainting option"
 
 
 
-async def build(source_video="input/source.mp4", mask_video_path="input/mask.webm", control_video="input/control.mp4", *, enable_mask=False, enable_control2=False, enable_blur=True):
+async def build(source_video="input/source.mp4", mask_video_path="input/mask.webm", control_video="input/control.mp4", *, enable_mask=False, enable_control2=False, enable_blur=True, reference_mode=0):
     server.PromptServer(asyncio.get_running_loop())
     nodes.NODE_CLASS_MAPPINGS.update(nodes_preview_any.NODE_CLASS_MAPPINGS)
     for module in (nodes_audio, nodes_minimax_h3, nodes_video, nodes_custom_sampler,
@@ -225,11 +225,12 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
     composite = add('ImageCompositeMasked', 'Noise follows the inpaint region when enabled', (2840, 4210), (900, 210),
                     {'destination': (blur, 0), 'source': (noisy, 0), 'mask': (prepared, 1), 'x': 0, 'y': 0, 'resize_source': False})
 
-    ref = add('LoadImage', 'Reference image — Picture 1', (3340, 100), (960, 430), {'image': 'hybrid_windows/ref2va_stock_portrait.jpg'})
-    refs = add('MMH3ImageList', 'Reference pictures — connect additional images here', (3340, 630), (960, 170), {'images.image_0': (ref, 0)})
+    ref = add('LoadImage', 'Reference image — Picture 1 (optional; mute or bypass for RefMod only)', (3340, 100), (960, 630), {'image': 'hybrid_windows/ref2va_stock_portrait.jpg'})
+    assert reference_mode in (0, 2, 4)  # Always, Mute, Bypass; LoadImage has no passthrough image.
+    graph_nodes[ref - 1]['mode'] = reference_mode
     cond = add('MMH3ReferenceMultiPrompt', 'Encode the planned prompts and aligned controls', (3340, 900), (960, 720),
                {'clip': (clip, 0), 'vae': (vae, 0), 'audio_vae': (avae, 0), 'width': (width, 0), 'height': (height, 0),
-                'length': (plan, 2), 'ref_image_size': 'match', 'prompts': (plan, 7), 'ref_images': (refs, 0),
+                'length': (plan, 2), 'ref_image_size': 'match', 'prompts': (plan, 7), 'ref_images': (ref, 0),
                 'ref_videos.ref_video_0': (composite, 0), 'ref_videos.ref_video_1': (control, 0),
                 'use_input_audio': False, 'unload_text_encoder': True, 'window_ref_video': True,
                 'chunk_frames': (window, 0), 'overlap_frames': (overlap, 0)})
@@ -270,7 +271,7 @@ async def build(source_video="input/source.mp4", mask_video_path="input/mask.web
                 'format.codec.encoding': 're-encode', 'format.codec.encoding.crf': 16., 'codec': 'auto'})
     add('PreviewAny', 'Saved run and next continuation setting', (5540, 2690), (960, 260), {'source': (save, 3)})
 
-    muted = {str(n['id']) for n in graph_nodes if n['mode'] == 2}
+    muted = {str(n['id']) for n in graph_nodes if n['mode'] in (2, 4)}
     api = {key: {**node, 'inputs': {name: value for name, value in node['inputs'].items()
                 if not (isinstance(value, list) and value[0] in muted)}} for key, node in api.items() if key not in muted}
     panels = (ROOT / 'docs/v2v-workflow.md').read_text().split('\n<!-- workflow-panel -->\n')

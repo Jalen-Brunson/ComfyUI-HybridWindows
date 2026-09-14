@@ -2,8 +2,8 @@
   "id": "9dd8248e-bdd1-5be0-b363-6adcec9529fb",
   "version": 0.4,
   "revision": 0,
-  "last_node_id": 75,
-  "last_link_id": 134,
+  "last_node_id": 74,
+  "last_link_id": 133,
   "nodes": [
     {
       "id": 1,
@@ -81,7 +81,7 @@
           "type": "STRING",
           "links": [
             31,
-            133
+            132
           ]
         }
       ],
@@ -229,8 +229,8 @@
           "links": [
             30,
             37,
-            124,
-            132
+            123,
+            131
           ]
         },
         {
@@ -249,7 +249,7 @@
             10,
             15,
             22,
-            78
+            77
           ]
         },
         {
@@ -261,14 +261,14 @@
           "name": "start_window",
           "type": "INT",
           "links": [
-            97
+            96
           ]
         },
         {
           "name": "pinned_frames",
           "type": "INT",
           "links": [
-            96
+            95
           ]
         },
         {
@@ -282,7 +282,7 @@
           "name": "run_prompts",
           "type": "STRING",
           "links": [
-            79
+            78
           ]
         },
         {
@@ -352,7 +352,7 @@
             13,
             20,
             33,
-            76
+            75
           ]
         }
       ],
@@ -402,7 +402,7 @@
             14,
             21,
             34,
-            77
+            76
           ]
         }
       ],
@@ -539,8 +539,8 @@
           "type": "INT",
           "links": [
             3,
-            83,
-            89
+            82,
+            88
           ]
         }
       ],
@@ -587,8 +587,8 @@
           "type": "INT",
           "links": [
             4,
-            84,
-            90
+            83,
+            89
           ]
         }
       ],
@@ -798,7 +798,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            88
+            87
           ]
         }
       ],
@@ -862,7 +862,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            73
+            72
           ]
         }
       ],
@@ -912,8 +912,8 @@
           "type": "VAE",
           "links": [
             25,
-            74,
-            117
+            73,
+            116
           ]
         }
       ],
@@ -959,8 +959,8 @@
           "type": "VAE",
           "links": [
             27,
-            75,
-            119
+            74,
+            118
           ]
         }
       ],
@@ -1006,8 +1006,8 @@
           "type": "INT",
           "links": [
             68,
-            100,
-            107
+            99,
+            106
           ]
         }
       ],
@@ -1053,10 +1053,10 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            91,
-            101,
-            108,
-            114
+            90,
+            100,
+            107,
+            113
           ]
         }
       ],
@@ -1102,8 +1102,8 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            106,
-            113
+            105,
+            112
           ]
         }
       ],
@@ -1225,7 +1225,7 @@
           "type": "AUDIO",
           "links": [
             26,
-            120
+            119
           ]
         },
         {
@@ -1636,7 +1636,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            82
+            81
           ]
         },
         {
@@ -1890,7 +1890,7 @@
           "type": "LATENT",
           "links": [
             38,
-            131
+            130
           ]
         },
         {
@@ -2010,7 +2010,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            125
+            124
           ]
         },
         {
@@ -2022,7 +2022,7 @@
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            126
+            125
           ]
         },
         {
@@ -2111,7 +2111,7 @@
           "name": "latent",
           "type": "LATENT",
           "links": [
-            93
+            92
           ]
         },
         {
@@ -2119,14 +2119,14 @@
           "type": "MASK",
           "links": [
             71,
-            94
+            93
           ]
         },
         {
           "name": "overlap_pin",
           "type": "COMBO",
           "links": [
-            98
+            97
           ]
         }
       ],
@@ -3494,7 +3494,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            81
+            80
           ]
         }
       ],
@@ -3523,7 +3523,7 @@
       ],
       "size": [
         960,
-        430
+        630
       ],
       "flags": {},
       "order": 51,
@@ -3543,7 +3543,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            72
+            79
           ]
         },
         {
@@ -3552,7 +3552,7 @@
           "links": []
         }
       ],
-      "title": "Reference image \u2014 Picture 1",
+      "title": "Reference image \u2014 Picture 1 (optional; mute or bypass for RefMod only)",
       "properties": {
         "Node name for S&R": "LoadImage",
         "cnr_id": "comfy-core"
@@ -3566,55 +3566,6 @@
     },
     {
       "id": 53,
-      "type": "MMH3ImageList",
-      "pos": [
-        3340,
-        630
-      ],
-      "size": [
-        960,
-        170
-      ],
-      "flags": {},
-      "order": 52,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images.image_0",
-          "type": "IMAGE",
-          "link": 72,
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            80
-          ]
-        },
-        {
-          "name": "count",
-          "type": "INT",
-          "links": []
-        },
-        {
-          "name": "report",
-          "type": "STRING",
-          "links": []
-        }
-      ],
-      "title": "Reference pictures \u2014 connect additional images here",
-      "properties": {
-        "Node name for S&R": "MMH3ImageList",
-        "aux_id": "ckinpdx/ComfyUI-MMH3Tools"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
-    },
-    {
-      "id": 54,
       "type": "MMH3ReferenceMultiPrompt",
       "pos": [
         3340,
@@ -3625,40 +3576,40 @@
         720
       ],
       "flags": {},
-      "order": 53,
+      "order": 52,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 73
+          "link": 72
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 74
+          "link": 73
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 75
+          "link": 74
         },
         {
           "name": "ref_images",
           "type": "IMAGE",
-          "link": 80,
+          "link": 79,
           "shape": 7
         },
         {
           "name": "ref_videos.ref_video_0",
           "type": "IMAGE",
-          "link": 81,
+          "link": 80,
           "shape": 7
         },
         {
           "name": "ref_videos.ref_video_1",
           "type": "IMAGE",
-          "link": 82,
+          "link": 81,
           "shape": 7
         },
         {
@@ -3670,7 +3621,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 76,
+          "link": 75,
           "widget": {
             "name": "width"
           }
@@ -3678,7 +3629,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 77,
+          "link": 76,
           "widget": {
             "name": "height"
           }
@@ -3686,7 +3637,7 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 78,
+          "link": 77,
           "widget": {
             "name": "length"
           }
@@ -3702,7 +3653,7 @@
         {
           "name": "prompts",
           "type": "STRING",
-          "link": 79,
+          "link": 78,
           "widget": {
             "name": "prompts"
           }
@@ -3735,7 +3686,7 @@
         {
           "name": "chunk_frames",
           "type": "INT",
-          "link": 83,
+          "link": 82,
           "shape": 7,
           "widget": {
             "name": "chunk_frames"
@@ -3744,7 +3695,7 @@
         {
           "name": "overlap_frames",
           "type": "INT",
-          "link": 84,
+          "link": 83,
           "shape": 7,
           "widget": {
             "name": "overlap_frames"
@@ -3765,7 +3716,7 @@
           "name": "cond_set",
           "type": "MMH3_COND_SET",
           "links": [
-            85
+            84
           ]
         },
         {
@@ -3817,7 +3768,7 @@
       }
     },
     {
-      "id": 55,
+      "id": 54,
       "type": "MiniMaxH3RefModsLoader",
       "pos": [
         3340,
@@ -3828,7 +3779,7 @@
         700
       ],
       "flags": {},
-      "order": 54,
+      "order": 53,
       "mode": 0,
       "inputs": [
         {
@@ -4262,14 +4213,14 @@
           "name": "mods",
           "type": "H3_REF_MODS",
           "links": [
-            86
+            85
           ]
         },
         {
           "name": "prompt_hint",
           "type": "STRING",
           "links": [
-            87
+            86
           ]
         }
       ],
@@ -4384,7 +4335,7 @@
       }
     },
     {
-      "id": 56,
+      "id": 55,
       "type": "H3RefModCondSetApply",
       "pos": [
         3340,
@@ -4395,18 +4346,18 @@
         250
       ],
       "flags": {},
-      "order": 55,
+      "order": 54,
       "mode": 0,
       "inputs": [
         {
           "name": "cond_set",
           "type": "MMH3_COND_SET",
-          "link": 85
+          "link": 84
         },
         {
           "name": "mods",
           "type": "H3_REF_MODS",
-          "link": 86,
+          "link": 85,
           "shape": 7
         },
         {
@@ -4439,7 +4390,7 @@
           "name": "cond_set",
           "type": "MMH3_COND_SET",
           "links": [
-            92
+            91
           ]
         },
         {
@@ -4465,7 +4416,7 @@
       }
     },
     {
-      "id": 57,
+      "id": 56,
       "type": "PreviewAny",
       "pos": [
         3340,
@@ -4476,13 +4427,13 @@
         240
       ],
       "flags": {},
-      "order": 56,
+      "order": 55,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 87
+          "link": 86
         }
       ],
       "outputs": [
@@ -4501,7 +4452,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 58,
+      "id": 57,
       "type": "SolidMask",
       "pos": [
         4440,
@@ -4512,7 +4463,7 @@
         170
       ],
       "flags": {},
-      "order": 57,
+      "order": 56,
       "mode": 0,
       "inputs": [
         {
@@ -4545,7 +4496,7 @@
           "name": "MASK",
           "type": "MASK",
           "links": [
-            95
+            94
           ]
         }
       ],
@@ -4566,7 +4517,7 @@
       }
     },
     {
-      "id": 59,
+      "id": 58,
       "type": "H3HybridWindows",
       "pos": [
         4440,
@@ -4577,42 +4528,42 @@
         680
       ],
       "flags": {},
-      "order": 58,
+      "order": 57,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 88
+          "link": 87
         },
         {
           "name": "cond_set",
           "type": "MMH3_COND_SET",
-          "link": 92,
+          "link": 91,
           "shape": 7
         },
         {
           "name": "latent",
           "type": "LATENT",
-          "link": 93,
+          "link": 92,
           "shape": 7
         },
         {
           "name": "denoise_mask",
           "type": "MASK",
-          "link": 94,
+          "link": 93,
           "shape": 7
         },
         {
           "name": "audio_denoise_mask",
           "type": "MASK",
-          "link": 95,
+          "link": 94,
           "shape": 7
         },
         {
           "name": "window_frames",
           "type": "INT",
-          "link": 89,
+          "link": 88,
           "widget": {
             "name": "window_frames"
           }
@@ -4620,7 +4571,7 @@
         {
           "name": "overlap_frames",
           "type": "INT",
-          "link": 90,
+          "link": 89,
           "widget": {
             "name": "overlap_frames"
           }
@@ -4628,7 +4579,7 @@
         {
           "name": "total_steps",
           "type": "INT",
-          "link": 91,
+          "link": 90,
           "shape": 7,
           "widget": {
             "name": "total_steps"
@@ -4646,7 +4597,7 @@
         {
           "name": "accepted_prefix_frames",
           "type": "INT",
-          "link": 96,
+          "link": 95,
           "shape": 7,
           "widget": {
             "name": "accepted_prefix_frames"
@@ -4655,7 +4606,7 @@
         {
           "name": "start_window",
           "type": "INT",
-          "link": 97,
+          "link": 96,
           "shape": 7,
           "widget": {
             "name": "start_window"
@@ -4673,7 +4624,7 @@
         {
           "name": "overlap_pin",
           "type": "COMBO",
-          "link": 98,
+          "link": 97,
           "shape": 7,
           "widget": {
             "name": "overlap_pin"
@@ -4694,23 +4645,23 @@
           "name": "sequential_model",
           "type": "MODEL",
           "links": [
-            104
+            103
           ]
         },
         {
           "name": "joint_model",
           "type": "MODEL",
           "links": [
-            111
+            110
           ]
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            99,
-            102,
-            109
+            98,
+            101,
+            108
           ]
         },
         {
@@ -4722,14 +4673,14 @@
           "name": "latent",
           "type": "LATENT",
           "links": [
-            105
+            104
           ]
         },
         {
           "name": "report",
           "type": "STRING",
           "links": [
-            115
+            114
           ]
         }
       ],
@@ -4762,7 +4713,7 @@
       }
     },
     {
-      "id": 60,
+      "id": 59,
       "type": "ConditioningZeroOut",
       "pos": [
         4440,
@@ -4773,13 +4724,13 @@
         100
       ],
       "flags": {},
-      "order": 59,
+      "order": 58,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 99
+          "link": 98
         }
       ],
       "outputs": [
@@ -4787,8 +4738,8 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            103,
-            110
+            102,
+            109
           ]
         }
       ],
@@ -4801,7 +4752,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 61,
+      "id": 60,
       "type": "KSamplerAdvanced",
       "pos": [
         4440,
@@ -4812,28 +4763,28 @@
         480
       ],
       "flags": {},
-      "order": 60,
+      "order": 59,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 104
+          "link": 103
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 102
+          "link": 101
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 103
+          "link": 102
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 105
+          "link": 104
         },
         {
           "name": "add_noise",
@@ -4846,7 +4797,7 @@
         {
           "name": "noise_seed",
           "type": "INT",
-          "link": 100,
+          "link": 99,
           "widget": {
             "name": "noise_seed"
           }
@@ -4854,7 +4805,7 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 101,
+          "link": 100,
           "widget": {
             "name": "steps"
           }
@@ -4894,7 +4845,7 @@
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 106,
+          "link": 105,
           "widget": {
             "name": "end_at_step"
           }
@@ -4913,7 +4864,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            112
+            111
           ]
         }
       ],
@@ -4947,7 +4898,7 @@
       }
     },
     {
-      "id": 62,
+      "id": 61,
       "type": "KSamplerAdvanced",
       "pos": [
         4440,
@@ -4958,28 +4909,28 @@
         480
       ],
       "flags": {},
-      "order": 61,
+      "order": 60,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 111
+          "link": 110
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 109
+          "link": 108
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 110
+          "link": 109
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 112
+          "link": 111
         },
         {
           "name": "add_noise",
@@ -4992,7 +4943,7 @@
         {
           "name": "noise_seed",
           "type": "INT",
-          "link": 107,
+          "link": 106,
           "widget": {
             "name": "noise_seed"
           }
@@ -5000,7 +4951,7 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 108,
+          "link": 107,
           "widget": {
             "name": "steps"
           }
@@ -5032,7 +4983,7 @@
         {
           "name": "start_at_step",
           "type": "INT",
-          "link": 113,
+          "link": 112,
           "widget": {
             "name": "start_at_step"
           }
@@ -5040,7 +4991,7 @@
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 114,
+          "link": 113,
           "widget": {
             "name": "end_at_step"
           }
@@ -5059,9 +5010,9 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            116,
-            118,
-            130
+            115,
+            117,
+            129
           ]
         }
       ],
@@ -5095,7 +5046,7 @@
       }
     },
     {
-      "id": 63,
+      "id": 62,
       "type": "PreviewAny",
       "pos": [
         4440,
@@ -5106,13 +5057,13 @@
         240
       ],
       "flags": {},
-      "order": 62,
+      "order": 61,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 115
+          "link": 114
         }
       ],
       "outputs": [
@@ -5131,10 +5082,53 @@
       "widgets_values_named": {}
     },
     {
-      "id": 64,
+      "id": 63,
       "type": "VAEDecode",
       "pos": [
         5540,
+        1000
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 62,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 115
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 116
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            121
+          ]
+        }
+      ],
+      "title": "Decode this run",
+      "properties": {
+        "Node name for S&R": "VAEDecode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 64,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        6060,
         1000
       ],
       "size": [
@@ -5148,55 +5142,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 116
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
           "link": 117
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            122
-          ]
-        }
-      ],
-      "title": "Decode this run",
-      "properties": {
-        "Node name for S&R": "VAEDecode",
-        "cnr_id": "comfy-core"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
-    },
-    {
-      "id": 65,
-      "type": "VAEDecodeAudio",
-      "pos": [
-        6060,
-        1000
-      ],
-      "size": [
-        440,
-        110
-      ],
-      "flags": {},
-      "order": 64,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 118
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 119
+          "link": 118
         }
       ],
       "outputs": [
@@ -5204,7 +5155,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            121
+            120
           ]
         }
       ],
@@ -5217,7 +5168,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 66,
+      "id": 65,
       "type": "ComfySwitchNode",
       "pos": [
         5540,
@@ -5228,19 +5179,19 @@
         180
       ],
       "flags": {},
-      "order": 65,
+      "order": 64,
       "mode": 0,
       "inputs": [
         {
           "name": "on_false",
           "type": "AUDIO",
-          "link": 121,
+          "link": 120,
           "shape": 7
         },
         {
           "name": "on_true",
           "type": "AUDIO",
-          "link": 120,
+          "link": 119,
           "shape": 7
         },
         {
@@ -5257,7 +5208,7 @@
           "name": "output",
           "type": "AUDIO",
           "links": [
-            123
+            122
           ]
         }
       ],
@@ -5274,7 +5225,7 @@
       }
     },
     {
-      "id": 67,
+      "id": 66,
       "type": "H3HybridResumeOutput",
       "pos": [
         5540,
@@ -5285,34 +5236,34 @@
         210
       ],
       "flags": {},
-      "order": 66,
+      "order": 65,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 122
+          "link": 121
         },
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 123
+          "link": 122
         },
         {
           "name": "run",
           "type": "H3_HYBRID_RUN",
-          "link": 124
+          "link": 123
         },
         {
           "name": "prefix_images",
           "type": "IMAGE",
-          "link": 125,
+          "link": 124,
           "shape": 7
         },
         {
           "name": "prefix_audio",
           "type": "AUDIO",
-          "link": 126,
+          "link": 125,
           "shape": 7
         }
       ],
@@ -5321,14 +5272,14 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            127
+            126
           ]
         },
         {
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            128
+            127
           ]
         },
         {
@@ -5346,7 +5297,7 @@
       "widgets_values_named": {}
     },
     {
-      "id": 68,
+      "id": 67,
       "type": "CreateVideo",
       "pos": [
         5540,
@@ -5357,18 +5308,18 @@
         220
       ],
       "flags": {},
-      "order": 67,
+      "order": 66,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 127
+          "link": 126
         },
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 128,
+          "link": 127,
           "shape": 7
         },
         {
@@ -5412,7 +5363,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            129
+            128
           ]
         }
       ],
@@ -5435,7 +5386,7 @@
       }
     },
     {
-      "id": 69,
+      "id": 68,
       "type": "H3HybridSaveRun",
       "pos": [
         5540,
@@ -5446,28 +5397,28 @@
         420
       ],
       "flags": {},
-      "order": 68,
+      "order": 67,
       "mode": 0,
       "inputs": [
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 129
+          "link": 128
         },
         {
           "name": "latent",
           "type": "LATENT",
-          "link": 130
+          "link": 129
         },
         {
           "name": "run",
           "type": "H3_HYBRID_RUN",
-          "link": 132
+          "link": 131
         },
         {
           "name": "prior",
           "type": "LATENT",
-          "link": 131,
+          "link": 130,
           "shape": 7
         },
         {
@@ -5514,7 +5465,7 @@
         {
           "name": "project",
           "type": "STRING",
-          "link": 133,
+          "link": 132,
           "widget": {
             "name": "project"
           }
@@ -5549,7 +5500,7 @@
           "name": "report",
           "type": "STRING",
           "links": [
-            134
+            133
           ]
         }
       ],
@@ -5578,7 +5529,7 @@
       }
     },
     {
-      "id": 70,
+      "id": 69,
       "type": "PreviewAny",
       "pos": [
         5540,
@@ -5589,13 +5540,13 @@
         260
       ],
       "flags": {},
-      "order": 69,
+      "order": 68,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 134
+          "link": 133
         }
       ],
       "outputs": [
@@ -5614,11 +5565,33 @@
       "widgets_values_named": {}
     },
     {
-      "id": 71,
+      "id": 70,
       "type": "MarkdownNote",
       "title": "V2V Hybrid Sampling with inpainting option",
       "pos": [
         40,
+        5020
+      ],
+      "size": [
+        2060,
+        1770
+      ],
+      "flags": {},
+      "order": 69,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "# V2V Hybrid Sampling with inpainting option\n\nTransform a source video using reference pictures and prompts, generate it in manageable parts, and continue from accepted chunks. Face and hair blur uses **Sapiens2 segmentation**, with the mouth protected. The workflow uses two native KSampler Advanced nodes.\n\n[Download the workflow](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/blob/main/example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.json) \u00b7 [API graph](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/blob/main/example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.api.json)\n\n## Start a video\n\n1. Set **Source video path** to your footage, including an audio track. Paths can be absolute or relative to ComfyUI, such as `input/source.mp4`.\n2. Give it a **Project name**. Use a different name for another source or alternative settings.\n3. Choose an image, a saved RefMod, or both for the desired appearance, then write your **Prompt**. For an image, use **Reference image \u2014 Picture 1** and refer to it as `<Picture 1>`. For RefMod only, mute or bypass that image loader and describe the subject using **RefMod prompt hint**; remove `<Picture 1>` from the prompt. `<Video 1>` remains the source-derived motion control.\n4. In **Run controls**, leave **accepted_chunks = 0**, choose **new_chunks**, and set your output width/height. Defaults generate two chunks: 447 frames / 18.625 seconds at 832\u00d7480, 24 fps, if the source is long enough.\n5. Leave **Enable inpainting = false** for full-frame regeneration. **Enable segmentation blur = true** uses the face/hair mask; disable it to skip segmentation completely.\n6. Select the model files described below and **Queue**.\n\nThe output appears under `ComfyUI/output/video/V2V_Hybrid\u2026mp4`. **Saved run and next continuation setting** tells you how many chunks to accept next. Each successful save also writes its matching full latent master under `output/latents/hybrid_windows/`.\n\nThe defaults are **8 sampling steps, 6 sequential + 2 joint, Euler/simple, CFG 1**, with **243-frame windows, 39-frame overlap and 5 context frames**. Changing **Switch to joint sampling at step** to 8 gives an 8/0 sequential comparison. Keep both stages on the same schedule; the linked step and seed controls do this automatically.\n"
+      ]
+    },
+    {
+      "id": 71,
+      "type": "MarkdownNote",
+      "title": "Install nodes and models",
+      "pos": [
+        2240,
         5020
       ],
       "size": [
@@ -5632,15 +5605,15 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# V2V Hybrid Sampling with inpainting option\n\nTransform a source video using reference pictures and prompts, generate it in manageable parts, and continue from accepted chunks. Face and hair blur uses **Sapiens2 segmentation**, with the mouth protected. The workflow uses two native KSampler Advanced nodes.\n\n[Download the workflow](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/blob/main/example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.json) \u00b7 [API graph](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/blob/main/example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.api.json)\n\n## Start a video\n\n1. Set **Source video path** to your footage, including an audio track. Paths can be absolute or relative to ComfyUI, such as `input/source.mp4`.\n2. Give it a **Project name**. Use a different name for another source or alternative settings.\n3. Upload the desired appearance in **Reference image \u2014 Picture 1** and write your **Prompt**. `<Picture 1>` is the reference picture; `<Video 1>` is the source-derived motion control.\n4. In **Run controls**, leave **accepted_chunks = 0**, choose **new_chunks**, and set your output width/height. Defaults generate two chunks: 447 frames / 18.625 seconds at 832\u00d7480, 24 fps, if the source is long enough.\n5. Leave **Enable inpainting = false** for full-frame regeneration. **Enable segmentation blur = true** uses the face/hair mask; disable it to skip segmentation completely.\n6. Select the model files described below and **Queue**.\n\nThe output appears under `ComfyUI/output/video/V2V_Hybrid\u2026mp4`. **Saved run and next continuation setting** tells you how many chunks to accept next. Each successful save also writes its matching full latent master under `output/latents/hybrid_windows/`.\n\nThe defaults are **8 sampling steps, 6 sequential + 2 joint, Euler/simple, CFG 1**, with **243-frame windows, 39-frame overlap and 5 context frames**. Changing **Switch to joint sampling at step** to 8 gives an 8/0 sequential comparison. Keep both stages on the same schedule; the linked step and seed controls do this automatically.\n"
+        "# Install nodes and models\n\nUse current ComfyUI with native MiniMax H3 and continuous per-row mask support. Install these public node packs with ComfyUI Manager or clone their repositories into `ComfyUI/custom_nodes/`, install their requirements in ComfyUI's Python environment, then restart:\n\n- [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows): sampling and the continuation/segmentation-blur workflow helpers.\n- [ComfyUI-MMH3Tools](https://github.com/ckinpdx/ComfyUI-MMH3Tools): reference conditioning, streaming source encode and AV utilities.\n- [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite): aligned video/audio loading.\n- [ComfyUI-Sapiens2](https://github.com/kijai/ComfyUI-Sapiens2): face, hair and mouth segmentation.\n- [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools): the segmentation-only blur implementation. This workflow disables its face detector and likeness measurement; no InsightFace model is loaded. The pack's requirements may still install InsightFace for its other nodes.\n- [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod): `MiniMaxH3RefModsLoader` loads saved RefMods, which MMH3Tools' `H3RefModCondSetApply` applies to every window. Install the pack for the supplied graph; using RefMod files is optional. Leave its slots at `(none)` to skip them.\n\n**FFmpeg** decodes the source, mask, control and saved continuation video/audio. **ffprobe** reads clip duration so the run planner can calculate the available frames and chunks. Install both commands and make them available on PATH, meaning ComfyUI can find them in its launch environment.\n\nDownload the model files below and select them in the corresponding loaders. These paths are relative to the ComfyUI folder.\n\n| Model | Download | Folder |\n|---|---|---|\n| H3 Ref2VA | [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors) | `models/diffusion_models/` |\n| Native eight-step PDD LoRA | [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors) | `models/loras/` |\n| H3 text encoder | [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors) | `models/text_encoders/` |\n| Video VAE | [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors) | `models/vae/` |\n| Audio VAE | [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors) | `models/vae/` |\n| Segmentation | [sapiens2_5b_seg.safetensors](https://huggingface.co/facebook/sapiens2-seg-5b/blob/main/sapiens2_5b_seg.safetensors) | `models/sapiens2/` |\n\nUse CLIP type **minimax**, LoRA strength **1**, and video/audio sigma shifts **12/3**. The segmentation checkpoint is only executed when blur is enabled. A compatible smaller Sapiens2 segmentation model can be selected instead; pose and normals checkpoints are unsuitable.\n\nWhen using a reference image, upload your own picture, or copy the bundled `example_workflows/assets/ref2va_stock_portrait.jpg` into `ComfyUI/input/hybrid_windows/`. See the assets folder for its credit. The shared workflow contains placeholder source/mask/control paths; it does not contain private footage or machine-specific paths.\n"
       ]
     },
     {
       "id": 72,
       "type": "MarkdownNote",
-      "title": "Install nodes and models",
+      "title": "Continue or redo a section",
       "pos": [
-        2240,
+        4440,
         5020
       ],
       "size": [
@@ -5654,16 +5627,16 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# Install nodes and models\n\nUse current ComfyUI with native MiniMax H3 and continuous per-row mask support. Install these public node packs with ComfyUI Manager or clone their repositories into `ComfyUI/custom_nodes/`, install their requirements in ComfyUI's Python environment, then restart:\n\n- [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows): sampling and the continuation/segmentation-blur workflow helpers.\n- [ComfyUI-MMH3Tools](https://github.com/ckinpdx/ComfyUI-MMH3Tools): reference conditioning, streaming source encode and AV utilities.\n- [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite): aligned video/audio loading.\n- [ComfyUI-Sapiens2](https://github.com/kijai/ComfyUI-Sapiens2): face, hair and mouth segmentation.\n- [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools): the segmentation-only blur implementation. This workflow disables its face detector and likeness measurement; no InsightFace model is loaded. The pack's requirements may still install InsightFace for its other nodes.\n- [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod): optional saved RefMods. Leave its slots at `(none)` to skip them.\n\n**FFmpeg and ffprobe** must be installed and available on PATH. Download the model files below and select them in the corresponding loaders. These paths are relative to the ComfyUI folder.\n\n| Model | Download | Folder |\n|---|---|---|\n| H3 Ref2VA | [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors) | `models/diffusion_models/` |\n| Native eight-step PDD LoRA | [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors) | `models/loras/` |\n| H3 text encoder | [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors) | `models/text_encoders/` |\n| Video VAE | [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors) | `models/vae/` |\n| Audio VAE | [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors) | `models/vae/` |\n| Segmentation | [sapiens2_5b_seg.safetensors](https://huggingface.co/facebook/sapiens2-seg-5b/blob/main/sapiens2_5b_seg.safetensors) | `models/sapiens2/` |\n\nUse CLIP type **minimax**, LoRA strength **1**, and video/audio sigma shifts **12/3**. The segmentation checkpoint is only executed when blur is enabled. A compatible smaller Sapiens2 segmentation model can be selected instead; pose and normals checkpoints are unsuitable.\n\nUpload your own reference picture, or copy the bundled `example_workflows/assets/ref2va_stock_portrait.jpg` into `ComfyUI/input/hybrid_windows/`. See the assets folder for its credit. The shared workflow contains placeholder source/mask/control paths; it does not contain private footage or machine-specific paths.\n"
+        "# Continue or redo a section\n\n**Accepted chunks** means the number of completed chunks to keep. It is not the chunk to generate next, a frame count, or a sampling-step count.\n\nFor example, generate two chunks with **accepted_chunks = 0 / new_chunks = 2**. After reviewing the result, set **accepted_chunks = 2 / new_chunks = 2** and queue again. The new save contains the original two accepted chunks plus two new ones. Then use **accepted_chunks = 4** for another continuation.\n\n**Select continuation** defaults to **Latest completed run**, scoped to your Project name. It selects the saved video and the exact raw latent master that produced it. To branch from an older result, refresh ComfyUI and choose that run in its dropdown, labeled with the project, chunk count and video filename. A smaller accepted count regenerates the suffix after that point.\n\nKeep the same source file, source start, dimensions, window size and overlap across a chain. Changing prompts for later chunks is supported. Use one prompt to repeat it throughout, or a `|` separated list indexed from global chunk 1; the run planner automatically selects the correct portion, including the pinned context window. Keep the same seed when you want stable global per-window seeds.\n\nThe source, mask and optional second control loaders automatically advance together. Only the current run's span is loaded and encoded. A resumed run includes one already accepted window for conditioning; that window is pinned in sampling and removed exactly once before appending the new frames. The accepted decoded prefix and its waveform are preserved before normal MP4 encoding.\n\nEvery save contains a full video and full raw latent master beginning at the project start. Keep **both** the video and its master/index files if you want to continue later. Incomplete saves are not offered as completed runs. These continuation records start with runs saved by this workflow; older local diagnostic masters are not automatically imported.\n\n**new_chunks = 0** generates everything remaining. **max_frames = 0** uses the remaining source; a positive value caps the full project. The planner rounds the final project length down to H3's `5 + 17 \u00d7 n` frame grid, potentially omitting up to 16 trailing source frames. **source_start_seconds** chooses where the whole project begins; it does not need to be changed on continuation.\n\nContinuation resumes after a completed save. It does not recover an interrupted sampler halfway through its current queued run. Reduce new_chunks to save more frequently.\n"
       ]
     },
     {
       "id": 73,
       "type": "MarkdownNote",
-      "title": "Continue or redo a section",
+      "title": "Segmentation blur and controls",
       "pos": [
-        4440,
-        5020
+        40,
+        6920
       ],
       "size": [
         2060,
@@ -5676,33 +5649,11 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "# Continue or redo a section\n\n**Accepted chunks** means the number of completed chunks to keep. It is not the chunk to generate next, a frame count, or a sampling-step count.\n\nFor example, generate two chunks with **accepted_chunks = 0 / new_chunks = 2**. After reviewing the result, set **accepted_chunks = 2 / new_chunks = 2** and queue again. The new save contains the original two accepted chunks plus two new ones. Then use **accepted_chunks = 4** for another continuation.\n\n**Select continuation** defaults to **Latest completed run**, scoped to your Project name. It selects the saved video and the exact raw latent master that produced it. To branch from an older result, refresh ComfyUI and choose that run in its dropdown, labeled with the project, chunk count and video filename. A smaller accepted count regenerates the suffix after that point.\n\nKeep the same source file, source start, dimensions, window size and overlap across a chain. Changing prompts for later chunks is supported. Use one prompt to repeat it throughout, or a `|` separated list indexed from global chunk 1; the run planner automatically selects the correct portion, including the pinned context window. Keep the same seed when you want stable global per-window seeds.\n\nThe source, mask and optional second control loaders automatically advance together. Only the current run's span is loaded and encoded. A resumed run includes one already accepted window for conditioning; that window is pinned in sampling and removed exactly once before appending the new frames. The accepted decoded prefix and its waveform are preserved before normal MP4 encoding.\n\nEvery save contains a full video and full raw latent master beginning at the project start. Keep **both** the video and its master/index files if you want to continue later. Incomplete saves are not offered as completed runs. These continuation records start with runs saved by this workflow; older local diagnostic masters are not automatically imported.\n\n**new_chunks = 0** generates everything remaining. **max_frames = 0** uses the remaining source; a positive value caps the full project. The planner rounds the final project length down to H3's `5 + 17 \u00d7 n` frame grid, potentially omitting up to 16 trailing source frames. **source_start_seconds** chooses where the whole project begins; it does not need to be changed on continuation.\n\nContinuation resumes after a completed save. It does not recover an interrupted sampler halfway through its current queued run. Reduce new_chunks to save more frequently.\n"
+        "# Segmentation blur and controls\n\nThe source feeds a clear encode branch and a separate motion-control branch. Only the control branch receives blur and image noise. The clear source remains available for inpainting and its audio remains available for the soundtrack.\n\n**Enable segmentation blur** is the only on/off control. When false, the Sapiens2 loader, segmentation and mask-extraction branch are not requested. When true, the segmentation selects **Face_Neck + Hair + Eyeglass**. **Upper/Lower Lip, Upper/Lower Teeth and Tongue** form a protection mask. Hands, props and background are excluded when the segmentation labels them correctly.\n\n**Blur Segmented Face and Hair** exposes strength, region growth, protection growth and a minimum component size. Defaults are **strength 0.5**, **region_grow 2**, **protect_grow 2**, and **min_component 0.05**. The component filter removes tiny stray blobs relative to the largest selected component. Lower it if a small secondary subject loses too much mask coverage.\n\nThis is the Sapiens2 segmentation path. It uses no detector ellipse, gender filter, face tracking or InsightFace likeness measurement. Segmentation can still make mistakes; inspect the control around occlusions or small faces.\n\n**Control image noise** defaults to **0.10**. Set it to 0 to skip noise. When inpainting is enabled, noise follows its white region; otherwise it covers the full control frame. This value is independent of sampler denoise.\n\n**Optional second aligned control video** starts muted. To use it, select its file and set the node's mode to Always, then refer to it as `<Video 2>` in the prompt. Its time offset and length follow the source automatically. Leave it muted when unused.\n\nFor saved RefMods, place files in `models/refmods/`, refresh the loader and select a slot. Start with strength/copies 1, and use the displayed prompt hint. Leave unused slots at `(none)`.\n\n**RefMod only:** mute or bypass **Reference image \u2014 Picture 1**. It connects directly to the conditioner's optional image input, so no reference picture or placeholder file is required. Remove `<Picture 1>` from the prompt and describe the desired subject using **RefMod prompt hint**, for example: `A person with short dark hair follows the movement and timing in <Video 1>.` RefMods have no `<Picture N>` tag. `<Video 1>` still refers to the source control. Enable the image loader again to use both.\n\nFor an API run without an image, omit the `LoadImage` node and the `ref_images` input on `MMH3ReferenceMultiPrompt`. To use several pictures, connect an `MMH3ImageList` to that input; mute the whole image branch, including the list node, when returning to RefMod only.\n"
       ]
     },
     {
       "id": 74,
-      "type": "MarkdownNote",
-      "title": "Segmentation blur and controls",
-      "pos": [
-        40,
-        6920
-      ],
-      "size": [
-        2060,
-        1770
-      ],
-      "flags": {},
-      "order": 73,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "# Segmentation blur and controls\n\nThe source feeds a clear encode branch and a separate motion-control branch. Only the control branch receives blur and image noise. The clear source remains available for inpainting and its audio remains available for the soundtrack.\n\n**Enable segmentation blur** is the only on/off control. When false, the Sapiens2 loader, segmentation and mask-extraction branch are not requested. When true, the segmentation selects **Face_Neck + Hair + Eyeglass**. **Upper/Lower Lip, Upper/Lower Teeth and Tongue** form a protection mask. Hands, props and background are excluded when the segmentation labels them correctly.\n\n**Blur Segmented Face and Hair** exposes strength, region growth, protection growth and a minimum component size. Defaults are **strength 0.5**, **region_grow 2**, **protect_grow 2**, and **min_component 0.05**. The component filter removes tiny stray blobs relative to the largest selected component. Lower it if a small secondary subject loses too much mask coverage.\n\nThis is the Sapiens2 segmentation path. It uses no detector ellipse, gender filter, face tracking or InsightFace likeness measurement. Segmentation can still make mistakes; inspect the control around occlusions or small faces.\n\n**Control image noise** defaults to **0.10**. Set it to 0 to skip noise. When inpainting is enabled, noise follows its white region; otherwise it covers the full control frame. This value is independent of sampler denoise.\n\n**Optional second aligned control video** starts muted. To use it, select its file and set the node's mode to Always, then refer to it as `<Video 2>` in the prompt. Its time offset and length follow the source automatically. Leave it muted when unused.\n\nFor saved RefMods, place files in `models/refmods/`, refresh the loader and select a slot. Start with strength/copies 1, and use the displayed prompt hint. Leave unused slots at `(none)`. RefMods do not replace `<Picture N>` numbering.\n"
-      ]
-    },
-    {
-      "id": 75,
       "type": "MarkdownNote",
       "title": "Inpainting, audio and color",
       "pos": [
@@ -5714,7 +5665,7 @@
         1770
       ],
       "flags": {},
-      "order": 74,
+      "order": 73,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -6295,505 +6246,497 @@
     ],
     [
       72,
-      52,
-      0,
-      53,
-      0,
-      "IMAGE"
-    ],
-    [
-      73,
       15,
       0,
-      54,
+      53,
       0,
       "CLIP"
     ],
     [
-      74,
+      73,
       16,
       0,
-      54,
+      53,
       1,
       "VAE"
     ],
     [
-      75,
+      74,
       17,
       0,
-      54,
+      53,
       2,
       "VAE"
     ],
     [
-      76,
+      75,
       5,
       0,
-      54,
+      53,
       7,
       "INT"
     ],
     [
-      77,
+      76,
       6,
       0,
-      54,
+      53,
       8,
+      "INT"
+    ],
+    [
+      77,
+      4,
+      2,
+      53,
+      9,
       "INT"
     ],
     [
       78,
       4,
-      2,
-      54,
-      9,
-      "INT"
-    ],
-    [
-      79,
-      4,
       7,
-      54,
+      53,
       11,
       "STRING"
     ],
     [
-      80,
-      53,
+      79,
+      52,
       0,
-      54,
+      53,
       3,
       "IMAGE"
     ],
     [
-      81,
+      80,
       51,
       0,
-      54,
+      53,
       4,
       "IMAGE"
     ],
     [
-      82,
+      81,
       26,
       0,
-      54,
+      53,
       5,
       "IMAGE"
     ],
     [
-      83,
+      82,
       9,
       0,
-      54,
+      53,
       15,
       "INT"
     ],
     [
-      84,
+      83,
       10,
       0,
-      54,
+      53,
       16,
       "INT"
+    ],
+    [
+      84,
+      53,
+      0,
+      55,
+      0,
+      "MMH3_COND_SET"
     ],
     [
       85,
       54,
       0,
-      56,
-      0,
-      "MMH3_COND_SET"
-    ],
-    [
-      86,
       55,
-      0,
-      56,
       1,
       "H3_REF_MODS"
     ],
     [
-      87,
-      55,
+      86,
+      54,
       1,
-      57,
+      56,
       0,
       "STRING"
     ],
     [
-      88,
+      87,
       14,
       0,
-      59,
+      58,
       0,
       "MODEL"
     ],
     [
-      89,
+      88,
       9,
       0,
-      59,
+      58,
       5,
+      "INT"
+    ],
+    [
+      89,
+      10,
+      0,
+      58,
+      6,
       "INT"
     ],
     [
       90,
-      10,
-      0,
-      59,
-      6,
-      "INT"
-    ],
-    [
-      91,
       19,
       0,
-      59,
+      58,
       7,
       "INT"
     ],
     [
-      92,
-      56,
+      91,
+      55,
       0,
-      59,
+      58,
       1,
       "MMH3_COND_SET"
     ],
     [
-      93,
+      92,
       32,
       0,
-      59,
+      58,
       2,
       "LATENT"
     ],
     [
-      94,
+      93,
       32,
       1,
-      59,
+      58,
       3,
+      "MASK"
+    ],
+    [
+      94,
+      57,
+      0,
+      58,
+      4,
       "MASK"
     ],
     [
       95,
-      58,
-      0,
-      59,
       4,
-      "MASK"
+      5,
+      58,
+      9,
+      "INT"
     ],
     [
       96,
       4,
-      5,
-      59,
-      9,
+      4,
+      58,
+      10,
       "INT"
     ],
     [
       97,
-      4,
-      4,
-      59,
-      10,
-      "INT"
-    ],
-    [
-      98,
       32,
       2,
-      59,
+      58,
       12,
       "COMBO"
     ],
     [
-      99,
-      59,
+      98,
+      58,
       2,
-      60,
+      59,
       0,
       "CONDITIONING"
     ],
     [
-      100,
+      99,
       18,
       0,
-      61,
+      60,
       5,
+      "INT"
+    ],
+    [
+      100,
+      19,
+      0,
+      60,
+      6,
       "INT"
     ],
     [
       101,
-      19,
-      0,
-      61,
-      6,
-      "INT"
+      58,
+      2,
+      60,
+      1,
+      "CONDITIONING"
     ],
     [
       102,
       59,
+      0,
+      60,
       2,
-      61,
-      1,
       "CONDITIONING"
     ],
     [
       103,
+      58,
+      0,
       60,
-      0,
-      61,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      104,
-      59,
-      0,
-      61,
       0,
       "MODEL"
     ],
     [
-      105,
-      59,
+      104,
+      58,
       4,
-      61,
+      60,
       3,
       "LATENT"
     ],
     [
-      106,
+      105,
       20,
       0,
-      61,
+      60,
       11,
+      "INT"
+    ],
+    [
+      106,
+      18,
+      0,
+      61,
+      5,
       "INT"
     ],
     [
       107,
-      18,
-      0,
-      62,
-      5,
-      "INT"
-    ],
-    [
-      108,
       19,
       0,
-      62,
+      61,
       6,
       "INT"
     ],
     [
+      108,
+      58,
+      2,
+      61,
+      1,
+      "CONDITIONING"
+    ],
+    [
       109,
       59,
+      0,
+      61,
       2,
-      62,
-      1,
       "CONDITIONING"
     ],
     [
       110,
-      60,
-      0,
-      62,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      111,
-      59,
+      58,
       1,
-      62,
+      61,
       0,
       "MODEL"
     ],
     [
-      112,
-      61,
+      111,
+      60,
       0,
-      62,
+      61,
       3,
       "LATENT"
     ],
     [
-      113,
+      112,
       20,
       0,
-      62,
+      61,
       10,
       "INT"
     ],
     [
-      114,
+      113,
       19,
       0,
-      62,
+      61,
       11,
       "INT"
     ],
     [
-      115,
-      59,
+      114,
+      58,
       5,
-      63,
+      62,
       0,
       "STRING"
     ],
     [
-      116,
-      62,
+      115,
+      61,
       0,
-      64,
+      63,
       0,
       "LATENT"
+    ],
+    [
+      116,
+      16,
+      0,
+      63,
+      1,
+      "VAE"
     ],
     [
       117,
-      16,
+      61,
+      0,
+      64,
+      0,
+      "LATENT"
+    ],
+    [
+      118,
+      17,
       0,
       64,
       1,
       "VAE"
     ],
     [
-      118,
-      62,
-      0,
-      65,
-      0,
-      "LATENT"
-    ],
-    [
       119,
-      17,
-      0,
+      21,
+      2,
       65,
       1,
-      "VAE"
+      "AUDIO"
     ],
     [
       120,
-      21,
-      2,
-      66,
-      1,
+      64,
+      0,
+      65,
+      0,
       "AUDIO"
     ],
     [
       121,
-      65,
+      63,
       0,
       66,
-      0,
-      "AUDIO"
-    ],
-    [
-      122,
-      64,
-      0,
-      67,
       0,
       "IMAGE"
     ],
     [
-      123,
-      66,
+      122,
+      65,
       0,
-      67,
+      66,
       1,
       "AUDIO"
     ],
     [
-      124,
+      123,
       4,
       0,
-      67,
+      66,
       2,
       "H3_HYBRID_RUN"
+    ],
+    [
+      124,
+      31,
+      0,
+      66,
+      3,
+      "IMAGE"
     ],
     [
       125,
       31,
-      0,
-      67,
-      3,
-      "IMAGE"
-    ],
-    [
-      126,
-      31,
       2,
-      67,
+      66,
       4,
       "AUDIO"
     ],
     [
-      127,
+      126,
+      66,
+      0,
       67,
       0,
-      68,
-      0,
       "IMAGE"
+    ],
+    [
+      127,
+      66,
+      1,
+      67,
+      1,
+      "AUDIO"
     ],
     [
       128,
       67,
-      1,
-      68,
-      1,
-      "AUDIO"
-    ],
-    [
-      129,
-      68,
       0,
-      69,
+      68,
       0,
       "VIDEO"
     ],
     [
-      130,
-      62,
+      129,
+      61,
       0,
-      69,
+      68,
       1,
       "LATENT"
     ],
     [
-      131,
+      130,
       30,
       0,
-      69,
+      68,
       3,
       "LATENT"
     ],
     [
-      132,
+      131,
       4,
       0,
-      69,
+      68,
       2,
       "H3_HYBRID_RUN"
     ],
     [
-      133,
+      132,
       2,
       0,
-      69,
+      68,
       9,
       "STRING"
     ],
     [
-      134,
-      69,
+      133,
+      68,
       3,
-      70,
+      69,
       0,
       "STRING"
     ]

@@ -9,6 +9,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -147,6 +148,99 @@ async def executor_checks():
     return results
 
 
+reference_tokens = []
+
+
+class ReferenceVae:
+    def encode(self, frames):
+        t = 1 if len(frames) == 1 else 2 + 5 * ((len(frames) - 5) // 17)
+        return torch.full((1, 24, t, frames.shape[1] // 16, frames.shape[2] // 16), float(frames.mean()))
+
+
+class ReferenceClip:
+    def tokenize(self, text, minimax_ref_items=None):
+        reference_tokens.append([item['type'] for item in minimax_ref_items])
+        return text
+
+    def encode_from_tokens_scheduled(self, text):
+        return [[torch.zeros(1, 8), {'text': text}]]
+
+
+class FixtureReferenceInputs:
+    @classmethod
+    def INPUT_TYPES(cls): return {'required': {}}
+    RETURN_TYPES = ('CLIP', 'VAE', 'IMAGE')
+    FUNCTION = 'run'
+    def run(self):
+        control = torch.arange(39).ge(20).float().view(39, 1, 1, 1).expand(39, 64, 64, 3)
+        return ReferenceClip(), ReferenceVae(), control
+
+
+class FixtureConditioningOutput:
+    @classmethod
+    def INPUT_TYPES(cls): return {'required': {'cond_set': ('MMH3_COND_SET',)}}
+    RETURN_TYPES = ()
+    FUNCTION = 'run'
+    OUTPUT_NODE = True
+    def run(self, cond_set): captured.append(cond_set); return ()
+
+
+async def reference_executor_checks(api):
+    for cls in (FixtureReferenceInputs, FixtureConditioningOutput):
+        nodes.NODE_CLASS_MAPPINGS[cls.__name__] = cls
+    loader = nodes.NODE_CLASS_MAPPINGS['MiniMaxH3RefModsLoader']
+    mods_module = importlib.import_module(loader.__module__)
+    mp = importlib.import_module(nodes.NODE_CLASS_MAPPINGS['MMH3ReferenceMultiPrompt'].__module__)
+    loader_inputs = dict(next(n['inputs'] for n in api.values() if n['class_type'] == 'MiniMaxH3RefModsLoader'))
+    results = []
+    with tempfile.TemporaryDirectory() as temp:
+        mod = mods_module.H3RefMod('fixture', 'image', torch.full((1, 24, 1, 4, 4), .8125),
+                                  description='a person with short dark hair', concept_type='identity')
+        mod.save(str(Path(temp) / 'fixture'))
+        Image.new('RGB', (64, 64), (128, 128, 128)).save(Path(temp) / 'portrait.png')
+        loader_inputs['mod_1'] = 'fixture'
+        with patch.object(mods_module, '_mod_search_dirs', return_value=[temp]), patch.object(folder_paths, 'get_input_directory', return_value=temp):
+            for mode in (0, 2, 4):
+                if mode == 2:
+                    (Path(temp) / 'portrait.png').unlink()
+                graph = {
+                    '1': {'class_type': 'FixtureReferenceInputs', 'inputs': {}},
+                    '2': {'class_type': 'LoadImage', 'inputs': {'image': 'portrait.png'}},
+                    '3': {'class_type': 'MMH3ReferenceMultiPrompt', 'inputs': {
+                        'clip': ['1', 0], 'vae': ['1', 1], 'audio_vae': ['1', 1], 'width': 64, 'height': 64,
+                        'length': 39, 'ref_image_size': 'match', 'ref_images': ['2', 0],
+                        'ref_videos.ref_video_0': ['1', 2], 'window_ref_video': True, 'chunk_frames': 22,
+                        'overlap_frames': 5, 'use_input_audio': False, 'unload_text_encoder': False,
+                        'prompts': ('The person in <Picture 1>' if mode == 0 else 'A person with short dark hair') + ' follows <Video 1>.'}},
+                    '4': {'class_type': 'MiniMaxH3RefModsLoader', 'inputs': loader_inputs},
+                    '5': {'class_type': 'H3RefModCondSetApply', 'inputs': {'cond_set': ['3', 0], 'mods': ['4', 0],
+                        'retention': 1., 'insert_position': 'before_controls', 'controls_override': -1}},
+                    '6': {'class_type': 'FixtureConditioningOutput', 'inputs': {'cond_set': ['5', 0]}},
+                }
+                if mode in (2, 4):
+                    # Frontend export omits muted/bypassed LoadImage and its optional link.
+                    del graph['2']; del graph['3']['inputs']['ref_images']
+                valid = await execution.validate_prompt('v2v-refmod-only', graph, None)
+                assert valid[0] and not valid[3], valid
+                captured.clear(); reference_tokens.clear(); mp._CACHE.clear()
+                server = SimpleNamespace(client_id=None, last_node_id=None, send_sync=lambda *a, **kw: None)
+                runner = execution.PromptExecutor(server, cache_args={'ram': 0, 'ram_inactive': 0})
+                await runner.execute_async(graph, 'v2v-refmod-only', execute_outputs=valid[2])
+                assert runner.success, runner.status_messages
+                assert reference_tokens == ([['image', 'video']] if mode == 0 else [['video']]) * 2, reference_tokens
+                conds = captured[0]['conds']
+                assert len(conds) == 2
+                for index, cond in enumerate(conds):
+                    refs = cond[0][1]['minimax_refs']
+                    assert [b['kind'] for b in refs] == (['image', 'image', 'video'] if mode == 0 else ['image', 'video'])
+                    torch.testing.assert_close(refs[-2]['latent'], mod.latent, rtol=0, atol=0)
+                    expected = torch.arange(39).ge(20).float()[index * 17:index * 17 + 22].mean()
+                    torch.testing.assert_close(refs[-1]['latent'].mean(), expected)
+                results.append({'reference_mode': mode, 'windows': 2, 'refmod_in_every_window': True,
+                                'tokenizer_reference_types': reference_tokens.copy()})
+    return results
+
+
 def check_links_and_layout(graph):
     by_id = {n['id']: n for n in graph['nodes']}
     for lid, source, slot, target, inp, kind in graph['links']:
@@ -202,18 +296,28 @@ async def main():
         cases = await executor_checks()
         with patch.object(face, '_app_or_cpu', side_effect=AssertionError('InsightFace must not run')):
             blur_cases = await blur_executor_checks()
+        reference_cases = await reference_executor_checks(api)
         for inpaint in (False, True):
             for blur in (False, True):
                 variant, prompt = await build(str(source), str(source), str(source), enable_mask=inpaint, enable_blur=blur, enable_control2=True)
                 result = await execution.validate_prompt('v2v-public-schema', installed_model_paths(prompt), None)
                 assert result[0] and not result[3], json.dumps(result, indent=2, default=str)
+        for mode in (2, 4):
+            variant, prompt = await build(str(source), str(source), str(source), reference_mode=mode)
+            check_links_and_layout(variant)
+            assert not any(n['class_type'] in ('LoadImage', 'MMH3ImageList') for n in prompt.values())
+            conditioner = next(n for n in prompt.values() if n['class_type'] == 'MMH3ReferenceMultiPrompt')
+            assert 'ref_images' not in conditioner['inputs']
+            assert any(n['class_type'] == 'MiniMaxH3RefModsLoader' for n in prompt.values())
+            result = await execution.validate_prompt('v2v-refmod-without-image-file', installed_model_paths(prompt), None)
+            assert result[0] and not result[3], json.dumps(result, indent=2, default=str)
         result = await execution.validate_prompt('v2v-no-mask-file', installed_model_paths(api), None)
         assert result[0] and not result[3], json.dumps(result, indent=2, default=str)
         banned = ('vlm_video_prompt', 'wan_chunk_io', 'path_tools', 'minimax_h3_mask_tools', 'MaskVidExperiments')
         assert not any(any(name in module for name in banned) for module in sys.modules)
-        report = {'workflow': NAME, 'processing_nodes': len(api), 'schema_variants': 5,
+        report = {'workflow': NAME, 'processing_nodes': len(api), 'schema_variants': 7,
                   'layout_and_links': 'passed', 'segmentation_blur': 'passed without InsightFace',
-                  'accepted_pixels_audio_and_lazy_branches': cases, 'lazy_blur': blur_cases, 'full_model_generation': 'not run'}
+                  'accepted_pixels_audio_and_lazy_branches': cases, 'lazy_blur': blur_cases, 'reference_modes': reference_cases, 'full_model_generation': 'not run'}
         print(json.dumps(report, indent=2))
 
 

@@ -36,6 +36,37 @@ Defaults are 8 steps, 6 sequential + 2 joint, five context frames, and two new c
 per queue. The workflow includes editable controls and setup notes. Install the
 additional node packs and model files listed in the guide before running it.
 
+### V2V custom-node dependencies
+
+Install all six packs for the supplied V2V workflow, including **ComfyUI-MiniMaxH3Mod**
+for its RefMod loader. Install each pack's requirements in ComfyUI's Python environment
+and restart. RefMod files are optional; leave the loader slots at `(none)` when unused.
+
+| Node pack | Nodes used by the V2V workflow |
+|---|---|
+| [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) | `H3HybridWindows`, `H3HybridRunPlan`, `H3HybridResumeLoad`, `H3HybridResumeLatent`, `H3HybridResumeOutput`, `H3HybridSaveRun`, `H3SegmentedVideoBlur` |
+| [ComfyUI-MMH3Tools](https://github.com/ckinpdx/ComfyUI-MMH3Tools) | `MMH3ReferenceMultiPrompt`, `MMH3StreamingEncode`, `MMH3PackAV`, `H3RefModCondSetApply`; optional `MMH3ImageList` for multiple pictures; `MMH3JoinAV` is called by the continuation helper |
+| [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) | `VHS_LoadVideoFFmpegPath` for aligned source, mask, control and accepted-prefix loading |
+| [ComfyUI-Sapiens2](https://github.com/kijai/ComfyUI-Sapiens2) | `Sapiens2Loader`, `Sapiens2Seg`, `Sapiens2SegExtract` |
+| [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools) | `FaceAnonymizeVideo`, called by the segmentation-blur helper with face detection and likeness measurement disabled |
+| [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod) | `MiniMaxH3RefModsLoader` loads saved RefMods; MMH3Tools' `H3RefModCondSetApply` applies them to every window |
+
+The remaining workflow nodes are supplied by ComfyUI. **FFmpeg** decodes the source,
+mask, control and saved continuation video/audio. **ffprobe** reads clip duration
+so the run planner can calculate the available frames and chunks. Both commands
+must be on PATH, meaning ComfyUI can find them in its launch environment. Model
+downloads and installation folders are in the
+[V2V setup guide](docs/v2v-workflow.md#install-nodes-and-models).
+
+### Use a RefMod without a reference image
+
+Mute or bypass **Reference image — Picture 1**, select a RefMod in its loader, and
+write the prompt using the subject description shown in **RefMod prompt hint**.
+Remove `<Picture 1>` when no image is connected; keep `<Video 1>` for the source
+motion control. For example: `A person with short dark hair follows the movement
+and timing in <Video 1>.` Put saved RefMod files in `models/refmods/` and refresh
+the loader. Image references, RefMods, or both are supported.
+
 ## Example: Looping Sampler vs Hybrid on a two-minute clip
 
 The comparison now includes **Hybrid with 5 pinned video context frames**, alongside the
@@ -168,9 +199,10 @@ The V2V workflow also includes **V2V Run Plan**, **Load V2V Continuation**,
 and Continuation**, and **Blur Segmented Face and Hair**. See the
 [V2V guide](docs/v2v-workflow.md) for their controls and dependencies.
 
-The model/LoRA loaders, image loaders, prompt text boxes, H3 conditioning,
-KSampler Advanced, VAE decoders and video output nodes in the examples are
-provided by ComfyUI itself.
+The Ref2VA/FL2VA image-conditioned examples use ComfyUI's native model/LoRA loaders,
+image loaders, prompt text boxes, H3 conditioning, KSampler Advanced, VAE decoders
+and video output nodes. The V2V workflow also uses the custom-node dependencies
+listed above.
 
 ## Source masks, resume and per-window noise
 
@@ -261,6 +293,7 @@ git clone https://github.com/Jalen-Brunson/ComfyUI-HybridWindows.git
 
 Restart ComfyUI, then open an example:
 
+- [V2V Hybrid Sampling with inpainting option](example_workflows/V2V%20Hybrid%20Sampling%20with%20inpainting%20option.json); install the [V2V dependencies](#v2v-custom-node-dependencies) above.
 - [R2V (Ref2VA): reference image](example_workflows/H3%20Hybrid%20R2V%20-%20native%20KSampler%20Advanced.json).
 - [FL2VA: starting image and prompts](example_workflows/H3%20Hybrid%20FL2VA%20-%20native%20KSampler%20Advanced.json).
 - [FL2VA: optional recurring ending guide](example_workflows/H3%20Hybrid%20FL2VA%20-%20recurring%20end%20guide.json).

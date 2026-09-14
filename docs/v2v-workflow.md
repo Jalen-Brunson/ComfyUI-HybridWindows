@@ -8,7 +8,7 @@ Transform a source video using reference pictures and prompts, generate it in ma
 
 1. Set **Source video path** to your footage, including an audio track. Paths can be absolute or relative to ComfyUI, such as `input/source.mp4`.
 2. Give it a **Project name**. Use a different name for another source or alternative settings.
-3. Upload the desired appearance in **Reference image — Picture 1** and write your **Prompt**. `<Picture 1>` is the reference picture; `<Video 1>` is the source-derived motion control.
+3. Choose an image, a saved RefMod, or both for the desired appearance, then write your **Prompt**. For an image, use **Reference image — Picture 1** and refer to it as `<Picture 1>`. For RefMod only, mute or bypass that image loader and describe the subject using **RefMod prompt hint**; remove `<Picture 1>` from the prompt. `<Video 1>` remains the source-derived motion control.
 4. In **Run controls**, leave **accepted_chunks = 0**, choose **new_chunks**, and set your output width/height. Defaults generate two chunks: 447 frames / 18.625 seconds at 832×480, 24 fps, if the source is long enough.
 5. Leave **Enable inpainting = false** for full-frame regeneration. **Enable segmentation blur = true** uses the face/hair mask; disable it to skip segmentation completely.
 6. Select the model files described below and **Queue**.
@@ -27,9 +27,11 @@ Use current ComfyUI with native MiniMax H3 and continuous per-row mask support. 
 - [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite): aligned video/audio loading.
 - [ComfyUI-Sapiens2](https://github.com/kijai/ComfyUI-Sapiens2): face, hair and mouth segmentation.
 - [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools): the segmentation-only blur implementation. This workflow disables its face detector and likeness measurement; no InsightFace model is loaded. The pack's requirements may still install InsightFace for its other nodes.
-- [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod): optional saved RefMods. Leave its slots at `(none)` to skip them.
+- [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod): `MiniMaxH3RefModsLoader` loads saved RefMods, which MMH3Tools' `H3RefModCondSetApply` applies to every window. Install the pack for the supplied graph; using RefMod files is optional. Leave its slots at `(none)` to skip them.
 
-**FFmpeg and ffprobe** must be installed and available on PATH. Download the model files below and select them in the corresponding loaders. These paths are relative to the ComfyUI folder.
+**FFmpeg** decodes the source, mask, control and saved continuation video/audio. **ffprobe** reads clip duration so the run planner can calculate the available frames and chunks. Install both commands and make them available on PATH, meaning ComfyUI can find them in its launch environment.
+
+Download the model files below and select them in the corresponding loaders. These paths are relative to the ComfyUI folder.
 
 | Model | Download | Folder |
 |---|---|---|
@@ -42,7 +44,7 @@ Use current ComfyUI with native MiniMax H3 and continuous per-row mask support. 
 
 Use CLIP type **minimax**, LoRA strength **1**, and video/audio sigma shifts **12/3**. The segmentation checkpoint is only executed when blur is enabled. A compatible smaller Sapiens2 segmentation model can be selected instead; pose and normals checkpoints are unsuitable.
 
-Upload your own reference picture, or copy the bundled `example_workflows/assets/ref2va_stock_portrait.jpg` into `ComfyUI/input/hybrid_windows/`. See the assets folder for its credit. The shared workflow contains placeholder source/mask/control paths; it does not contain private footage or machine-specific paths.
+When using a reference image, upload your own picture, or copy the bundled `example_workflows/assets/ref2va_stock_portrait.jpg` into `ComfyUI/input/hybrid_windows/`. See the assets folder for its credit. The shared workflow contains placeholder source/mask/control paths; it does not contain private footage or machine-specific paths.
 
 <!-- workflow-panel -->
 # Continue or redo a section
@@ -78,7 +80,11 @@ This is the Sapiens2 segmentation path. It uses no detector ellipse, gender filt
 
 **Optional second aligned control video** starts muted. To use it, select its file and set the node's mode to Always, then refer to it as `<Video 2>` in the prompt. Its time offset and length follow the source automatically. Leave it muted when unused.
 
-For saved RefMods, place files in `models/refmods/`, refresh the loader and select a slot. Start with strength/copies 1, and use the displayed prompt hint. Leave unused slots at `(none)`. RefMods do not replace `<Picture N>` numbering.
+For saved RefMods, place files in `models/refmods/`, refresh the loader and select a slot. Start with strength/copies 1, and use the displayed prompt hint. Leave unused slots at `(none)`.
+
+**RefMod only:** mute or bypass **Reference image — Picture 1**. It connects directly to the conditioner's optional image input, so no reference picture or placeholder file is required. Remove `<Picture 1>` from the prompt and describe the desired subject using **RefMod prompt hint**, for example: `A person with short dark hair follows the movement and timing in <Video 1>.` RefMods have no `<Picture N>` tag. `<Video 1>` still refers to the source control. Enable the image loader again to use both.
+
+For an API run without an image, omit the `LoadImage` node and the `ref_images` input on `MMH3ReferenceMultiPrompt`. To use several pictures, connect an `MMH3ImageList` to that input; mute the whole image branch, including the list node, when returning to RefMod only.
 
 <!-- workflow-panel -->
 # Inpainting, audio and color
