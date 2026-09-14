@@ -4,13 +4,13 @@ import json
 import math
 import os
 from pathlib import Path
-import subprocess
 import time
 
+import av
 import torch
 import folder_paths
 from comfy.nested_tensor import NestedTensor
-from comfy_api.latest import io
+from comfy_api.latest import InputImpl, io
 from comfy_extras.nodes_video import SaveVideo
 
 from .dependencies import _mmh3_module
@@ -88,14 +88,14 @@ class H3HybridRunPlan(io.ComfyNode):
                 overlap_frames=39, source_start_seconds=0., max_frames=0):
         path = source_file(source_video)
         stat = path.stat()
-        probe = subprocess.run(['ffprobe', '-v', 'error', '-show_entries',
-            'stream=codec_type,duration:format=duration', '-of', 'json', str(path)],
-            capture_output=True, text=True, check=True, timeout=30)
-        info = json.loads(probe.stdout)
-        stream = next((s for s in info['streams'] if s['codec_type'] == 'video'), None)
-        if stream is None:
-            raise ValueError('Select a source file containing video.')
-        duration = float(stream.get('duration', info['format']['duration']))
+        with av.open(str(path)) as container:
+            stream = next(iter(container.streams.video), None)
+            if stream is None:
+                raise ValueError('Select a source file containing video.')
+            # Prefer video duration: an audio tail must not extend the planned video.
+            duration = float(stream.duration * stream.time_base) if stream.duration is not None else None
+        if duration is None:
+            duration = InputImpl.VideoFromFile(str(path)).get_duration()
         start = round(source_start_seconds * 24) / 24
         available = math.floor((duration - start) * 24 + 1e-5)
         if max_frames > 0:

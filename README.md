@@ -51,12 +51,12 @@ and restart. RefMod files are optional; leave the loader slots at `(none)` when 
 | [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools) | `FaceAnonymizeVideo`, called by the segmentation-blur helper with face detection and likeness measurement disabled |
 | [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod) | `MiniMaxH3RefModsLoader` loads saved RefMods; MMH3Tools' `H3RefModCondSetApply` applies them to every window |
 
-The remaining workflow nodes are supplied by ComfyUI. **FFmpeg** decodes the source,
-mask, control and saved continuation video/audio. **ffprobe** reads clip duration
-so the run planner can calculate the available frames and chunks. Both commands
-must be on PATH, meaning ComfyUI can find them in its launch environment. Model
-downloads and installation folders are in the
-[V2V setup guide](docs/v2v-workflow.md#install-nodes-and-models).
+The remaining workflow nodes are supplied by ComfyUI. Video metadata uses ComfyUI's
+existing PyAV dependency. VideoHelperSuite's `imageio-ffmpeg` dependency supplies
+its video/audio decoder in the standard pip installation on Windows, macOS and
+Linux. **No separate FFmpeg/ffprobe installation or PATH configuration is needed
+for this workflow on those installs.** Model downloads and installation folders
+are in the [V2V setup guide](docs/v2v-workflow.md#install-nodes-and-models).
 
 ### Use a RefMod without a reference image
 

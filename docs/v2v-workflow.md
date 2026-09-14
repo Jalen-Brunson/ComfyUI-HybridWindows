@@ -29,7 +29,7 @@ Use current ComfyUI with native MiniMax H3 and continuous per-row mask support. 
 - [h3_face_tools](https://github.com/Jalen-Brunson/h3_face_tools): the segmentation-only blur implementation. This workflow disables its face detector and likeness measurement; no InsightFace model is loaded. The pack's requirements may still install InsightFace for its other nodes.
 - [ComfyUI-MiniMaxH3Mod](https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod): `MiniMaxH3RefModsLoader` loads saved RefMods, which MMH3Tools' `H3RefModCondSetApply` applies to every window. Install the pack for the supplied graph; using RefMod files is optional. Leave its slots at `(none)` to skip them.
 
-**FFmpeg** decodes the source, mask, control and saved continuation video/audio. **ffprobe** reads clip duration so the run planner can calculate the available frames and chunks. Install both commands and make them available on PATH, meaning ComfyUI can find them in its launch environment.
+**No separate FFmpeg/ffprobe setup is needed with the standard pip dependencies on Windows, macOS or Linux.** The run planner reads video metadata through ComfyUI's existing PyAV dependency. VideoHelperSuite uses the FFmpeg binary provided by `imageio-ffmpeg` for video/audio loading; it does not need that binary on PATH. Install the node-pack requirements listed above, then restart ComfyUI.
 
 Download the model files below and select them in the corresponding loaders. These paths are relative to the ComfyUI folder.
 

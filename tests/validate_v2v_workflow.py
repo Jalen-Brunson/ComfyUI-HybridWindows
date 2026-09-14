@@ -10,6 +10,7 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 from PIL import Image
+from imageio_ffmpeg import get_ffmpeg_exe
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -253,6 +254,23 @@ def check_links_and_layout(graph):
             assert not (x < bx+bw and bx < x+w and y-30 < by+bh and by-30 < y+h), (a['title'], b['title'])
 
 
+def bundled_video_loading_check(source):
+    loader = nodes.NODE_CLASS_MAPPINGS['VHS_LoadVideoFFmpegPath']
+    load_module = importlib.import_module(loader.__module__)
+    utils = importlib.import_module(loader.__module__.rsplit('.', 1)[0] + '.utils')
+    bundled = get_ffmpeg_exe()
+    assert Path(bundled).is_file()
+    with patch.dict(os.environ, {'PATH': ''}), patch.object(load_module, 'ffmpeg_path', bundled), patch.object(utils, 'ffmpeg_path', bundled):
+        plan = resume.H3HybridRunPlan.execute(str(source), 'repeat')[0]
+        images, mask, audio, info = loader().load_video(video=str(source), force_rate=24., custom_width=32,
+            custom_height=32, frame_load_cap=22, start_time=.5, format='None')
+        assert plan['run_frames'] == 447
+        assert len(images) == 22 and info['loaded_frame_count'] == 22
+        assert audio['waveform'].shape[-1] > 0
+    return {'path_empty': True, 'planner_frames': plan['run_frames'], 'video_frames_loaded': len(images),
+            'audio_loaded': True, 'decoder': 'imageio-ffmpeg bundled executable'}
+
+
 def installed_model_paths(prompt):
     # Public downloads go in the documented root; this test machine uses subfolders.
     for node in prompt.values():
@@ -268,11 +286,12 @@ async def main():
     global resume
     with tempfile.TemporaryDirectory() as temp:
         source = Path(temp) / 'source.mp4'
-        subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=gray:s=32x32:r=24',
+        subprocess.run([get_ffmpeg_exe(), '-v', 'error', '-f', 'lavfi', '-i', 'color=c=gray:s=32x32:r=24',
                         '-f', 'lavfi', '-i', 'anullsrc=r=32000:cl=stereo', '-t', '55', '-c:v', 'libx264',
                         '-preset', 'ultrafast', '-c:a', 'aac', str(source)], check=True)
         graph, api = await build(str(source), 'input/not_needed_when_disabled.webm', str(source))
         resume = importlib.import_module(nodes.NODE_CLASS_MAPPINGS['H3HybridRunPlan'].__module__)
+        video_loading = bundled_video_loading_check(source)
         check_links_and_layout(graph)
         assert not any('InsightFace' in n['type'] or n['type'] == 'FaceAnonymizeVideo' for n in graph['nodes'])
         types = {n['class_type']: n for n in api.values()}
@@ -316,7 +335,7 @@ async def main():
         banned = ('vlm_video_prompt', 'wan_chunk_io', 'path_tools', 'minimax_h3_mask_tools', 'MaskVidExperiments')
         assert not any(any(name in module for name in banned) for module in sys.modules)
         report = {'workflow': NAME, 'processing_nodes': len(api), 'schema_variants': 7,
-                  'layout_and_links': 'passed', 'segmentation_blur': 'passed without InsightFace',
+                  'video_without_system_executables': video_loading, 'layout_and_links': 'passed', 'segmentation_blur': 'passed without InsightFace',
                   'accepted_pixels_audio_and_lazy_branches': cases, 'lazy_blur': blur_cases, 'reference_modes': reference_cases, 'full_model_generation': 'not run'}
         print(json.dumps(report, indent=2))
 

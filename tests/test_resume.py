@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import wave
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -15,9 +16,10 @@ sys.path.insert(0, str(COMFY))
 sys.argv = [sys.argv[0], '--cpu']
 import comfy.options
 comfy.options.enable_args_parsing()
+import av
 import torch
 from comfy.nested_tensor import NestedTensor
-from comfy_api.latest import io, ui
+from comfy_api.latest import io, ui, Types
 from comfy_extras.nodes_video import CreateVideo
 
 spec = importlib.util.spec_from_file_location('hybrid_resume_test', ROOT / '__init__.py', submodule_search_locations=[str(ROOT)])
@@ -69,9 +71,8 @@ class ResumeTests(unittest.TestCase):
         saved = saver.execute(video, 'video/roundtrip', {'format': 'mp4', 'codec': {'codec': 'h264'}}, latent(22, .5), run, 'roundtrip')
         self.assertTrue(Path(saved[1]).is_file())
         self.assertEqual(r.completed_runs()[0]['frames'], 22)
-        probe = r.subprocess.run(['ffprobe', '-v', 'error', '-count_frames', '-select_streams', 'v:0',
-            '-show_entries', 'stream=nb_read_frames', '-of', 'json', saved[1]], capture_output=True, text=True, check=True)
-        self.assertEqual(json.loads(probe.stdout)['streams'][0]['nb_read_frames'], '22')
+        with av.open(saved[1]) as container:
+            self.assertEqual(sum(1 for frame in container.decode(video=0)), 22)
         data = torch.load(saved[2], weights_only=True)
         torch.testing.assert_close(data['video'], latent(22, .5)['samples'].unbind()[0], rtol=0, atol=0)
 
@@ -88,10 +89,15 @@ class ResumeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             r.plan_run(651, 243, 243, 0, 2)
 
-    def test_source_probe_and_global_prompt_selection(self):
-        path = self.root / 'source.mp4'; path.write_bytes(b'fixture')
-        probe = SimpleNamespace(stdout=json.dumps({'streams': [{'codec_type': 'video', 'duration': '60'}], 'format': {'duration': '60'}}))
-        with patch.object(r.subprocess, 'run', return_value=probe):
+    def write_source(self, name, count=1440):
+        path = self.root / name
+        video = CreateVideo.execute(torch.full((count, 16, 16, 3), .5), 24.)[0]
+        video.save_to(str(path), format=Types.VideoContainer(path.suffix[1:]), codec=Types.VideoCodec('h264'))
+        return path
+
+    def test_native_source_metadata_and_global_prompts_without_path(self):
+        path = self.write_source('source.mp4')
+        with patch.dict(os.environ, {'PATH': ''}), patch('subprocess.Popen', side_effect=AssertionError('No external probe')):
             out = r.H3HybridRunPlan.execute(str(path), 'first | second | third | fourth', 2, 2, source_start_seconds=1.01)
             self.assertEqual(out[7], 'second | third | fourth')
             self.assertEqual(out[1], 9.5)
@@ -100,6 +106,29 @@ class ResumeTests(unittest.TestCase):
             self.assertEqual(repeat[7], 'repeat | repeat | repeat')
             with self.assertRaisesRegex(ValueError, 'one prompt'):
                 r.H3HybridRunPlan.execute(str(path), 'first | second', 2, 2)
+
+    def test_container_duration_fallback_without_path(self):
+        path = self.write_source('source.mkv', 39)
+        with av.open(str(path)) as container:
+            self.assertIsNone(container.streams.video[0].duration)
+        with patch.dict(os.environ, {'PATH': ''}), patch('subprocess.Popen', side_effect=AssertionError('No external probe')):
+            self.assertEqual(r.H3HybridRunPlan.execute(str(path), 'repeat')[0]['total_frames'], 39)
+
+    def test_longer_audio_does_not_extend_video(self):
+        path = self.root / 'audio_tail.mp4'; path.write_bytes(b'fixture')
+        stream = SimpleNamespace(duration=22, time_base=1 / 24)
+        container = SimpleNamespace(streams=SimpleNamespace(video=[stream]), duration=2 * av.time_base)
+        with patch.object(r.av, 'open') as open_video:
+            open_video.return_value.__enter__.return_value = container
+            self.assertEqual(r.H3HybridRunPlan.execute(str(path), 'repeat')[0]['total_frames'], 22)
+
+    def test_audio_only_source_is_rejected(self):
+        path = self.root / 'audio.wav'
+        with wave.open(str(path), 'wb') as audio:
+            audio.setparams((1, 2, 32000, 0, 'NONE', 'not compressed'))
+            audio.writeframes(bytes(64000))
+        with self.assertRaisesRegex(ValueError, 'containing video'):
+            r.H3HybridRunPlan.execute(str(path), 'repeat')
 
     def test_accepted_master_and_new_source_regions_are_exact(self):
         run = self.plan(2)
