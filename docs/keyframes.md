@@ -6,9 +6,10 @@
 same order, and connect the output to the `keyframes` input of **H3 Hybrid Windows**.
 
 ```
-Load Image ─┐
-Load Image ─┼─ H3 Hybrid Keyframes ── keyframes ──▶ H3 Hybrid Windows
-Load Image ─┘   frame_indices: 0, 15, 32, 64, 100
+Load Image ─────┐
+Load Image ─────┼─ H3 Hybrid Keyframes ── keyframes ──▶ H3 Hybrid Windows
+Image Batch ────┘   frame_indices: 0, 15, 32, 64, 100
+(image_batch)       (sockets first, then each frame of the batch)
 ```
 
 Nothing changes on the window encoders or the samplers. Two examples wire it:
@@ -60,7 +61,8 @@ Keyframes: 3 still(s) on the 480x832 canvas (size from set on H3 Hybrid Keyframe
 |---|---|
 | `vae` | The H3 video VAE the encoders use. |
 | `frame_indices` | One number per image, socket order, separated by commas: `0, 15, 32, 64, 100`. Negative numbers count from the end. A socket carrying a batch uses one number per frame of the batch. |
-| `keyframe_N` | The stills. Any size; each is fitted to the canvas. |
+| `keyframe_N` | The stills, one per socket. Any size; each is fitted to the canvas. |
+| `image_batch` | A whole batch of stills (a folder loader, an Image Batch node), taken **after** the keyframe sockets: the numbers pair with the sockets first, then with each frame of the batch in order. Either source alone works. |
 | `fit` | `crop` keeps the aspect and trims the edges (core's behaviour); `stretch` keeps every pixel and distorts. |
 | `width`, `height` | The canvas. At `0` Hybrid Windows takes the size from the master latent connected to it, else from the encoders' own guides. With plain prompts and no master latent, set both to the encoders' width and height (the example connects the size nodes). |
 

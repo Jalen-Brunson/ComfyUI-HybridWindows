@@ -60,18 +60,20 @@ class H3HybridKeyframes(io.ComfyNode):
             category="sampling/hybrid", is_experimental=True,
             description=(
                 "Stills pinned at frame numbers of the whole run. Plug each image into its own "
-                "socket (a new socket appears as you connect one), list the frame numbers in the "
-                "same order, and connect the output to the `keyframes` input of H3 Hybrid Windows. "
+                "socket (a new socket appears as you connect one) and/or a whole batch into "
+                "image_batch, list the frame numbers in the same order (sockets first, then the "
+                "batch), and connect the output to the `keyframes` input of H3 Hybrid Windows. "
                 "No per-window arithmetic: numbers count over the full timeline from 0, negative "
                 "from the end."),
             inputs=[
                 io.Vae.Input("vae", tooltip="The H3 video VAE, the same one the window encoders use."),
                 io.String.Input(
                     "frame_indices", default="0", multiline=False,
-                    tooltip="One frame number per image, in socket order, e.g. '0, 15, 32, 64, 100'. "
-                            "Counted over the WHOLE run from 0 (24 fps unless the timeline says "
-                            "otherwise). Negative numbers count from the end: -1 is the last frame. "
-                            "A socket carrying a batch uses one number per frame of the batch."),
+                    tooltip="One frame number per image, e.g. '0, 15, 32, 64, 100': the keyframe sockets "
+                            "first, in order, then each frame of image_batch. Counted over the WHOLE run "
+                            "from 0 (24 fps unless the timeline says otherwise). Negative numbers count "
+                            "from the end: -1 is the last frame. A socket carrying a batch uses one number "
+                            "per frame of the batch."),
                 io.Autogrow.Input("images", template=io.Autogrow.TemplatePrefix(
                     input=io.Image.Input("keyframe"), prefix="keyframe_", min=1, max=MAX_KEYFRAMES)),
                 io.Combo.Input(
@@ -87,13 +89,18 @@ class H3HybridKeyframes(io.ComfyNode):
                 io.Int.Input(
                     "height", default=0, min=0, max=core_nodes.MAX_RESOLUTION, step=32, optional=True,
                     tooltip="Canvas height; see width."),
+                io.Image.Input(
+                    "image_batch", optional=True,
+                    tooltip="A whole batch of stills (a folder loader, an Image Batch node) taken AFTER the "
+                            "keyframe sockets: the numbers in frame_indices pair with the keyframe sockets "
+                            "first, then with each frame of this batch in order. Either source alone works."),
             ],
             outputs=[KEYFRAMES_TYPE.Output(display_name="keyframes"),
                      io.String.Output(display_name="report")],
         )
 
     @classmethod
-    def execute(cls, vae, frame_indices, images=None, fit="crop", width=0, height=0):
+    def execute(cls, vae, frame_indices, images=None, fit="crop", width=0, height=0, image_batch=None):
         stills = []
         for name in sorted(images or {}, key=lambda n: int(n.rsplit("_", 1)[1])):
             batch = images[name]
@@ -103,13 +110,24 @@ class H3HybridKeyframes(io.ComfyNode):
                 raise ValueError(f"{name}: expected an IMAGE [batch, height, width, channels].")
             for i in range(batch.shape[0]):
                 stills.append((name, batch[i:i + 1]))
+        from_sockets = len(stills)
+        if image_batch is not None:
+            if getattr(image_batch, "ndim", 0) != 4:
+                raise ValueError("image_batch: expected an IMAGE [batch, height, width, channels].")
+            for i in range(image_batch.shape[0]):
+                stills.append((f"image_batch[{i}]", image_batch[i:i + 1]))
+        from_batch = len(stills) - from_sockets
         if not stills:
-            raise ValueError("Connect at least one image to H3 Hybrid Keyframes.")
+            raise ValueError("Connect at least one image to H3 Hybrid Keyframes (a keyframe socket or image_batch).")
         indices = parse_indices(frame_indices)
         if len(indices) != len(stills):
+            sources = f"{from_sockets} from the keyframe socket(s)"
+            if from_batch:
+                sources += f" + {from_batch} from image_batch"
             raise ValueError(
-                f"H3 Hybrid Keyframes: {len(stills)} image(s) but {len(indices)} frame number(s) in "
-                f"{frame_indices!r}. Give one frame number per image, in socket order.")
+                f"H3 Hybrid Keyframes: {len(stills)} image(s) ({sources}) but {len(indices)} frame number(s) "
+                f"in {frame_indices!r}. Give one frame number per image: keyframe sockets first, in order, "
+                "then each frame of image_batch.")
         if (int(width) > 0) != (int(height) > 0):
             raise ValueError("H3 Hybrid Keyframes: set both width and height, or leave both at 0.")
         seen = {}
@@ -120,7 +138,8 @@ class H3HybridKeyframes(io.ComfyNode):
             seen[index] = n
         if fit not in FIT_MODES:
             raise ValueError(f"H3 Hybrid Keyframes: fit must be one of {FIT_MODES}.")
-        lines = [f"{len(stills)} keyframe(s), fit by {fit}; frame numbers count over the whole run"
+        sources = f"{from_sockets} from the keyframe socket(s)" + (f", {from_batch} from image_batch" if from_batch else "")
+        lines = [f"{len(stills)} keyframe(s) ({sources}), fit by {fit}; frame numbers count over the whole run"
                  + (f"; canvas {int(width)}x{int(height)}." if int(width) else
                     "; canvas taken from the run (master latent or the encoders' guides).")]
         for n, ((name, still), index) in enumerate(zip(stills, indices), 1):

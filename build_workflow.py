@@ -157,7 +157,8 @@ def workflow_notes(mode, end_guide=False, keyframes=False):
 **whole video**, starting at 0 (negative numbers count from the end, -1 = the last frame). To add a
 still at frame 100, connect another Load Image to the node (a new `keyframe` socket appears) and
 append its number: `0, 100, -1`. Numbers and images pair up in socket order; a batch in one socket
-uses one number per frame.
+uses one number per frame. A whole batch (a folder loader, an Image Batch node) can also go into
+`image_batch`: its frames take the numbers after the keyframe sockets, in order.
 
 Hybrid Windows does the window arithmetic: with 243-frame windows and a 39-frame overlap, window 2
 starts at frame 204 and window 3 at 408, so frame 300 becomes window 2's own frame 96. A frame inside

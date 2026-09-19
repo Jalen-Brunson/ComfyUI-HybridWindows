@@ -68,8 +68,25 @@ class NodeTests(unittest.TestCase):
         self.assertIn("3 keyframe(s)", report)
 
     def test_count_mismatch_names_both_counts(self):
-        with self.assertRaisesRegex(ValueError, "2 image\\(s\\) but 3 frame number\\(s\\)"):
+        with self.assertRaisesRegex(ValueError, "2 image\\(s\\) \\(2 from the keyframe socket\\(s\\)\\) but 3 frame number\\(s\\)"):
             build("0, 15, 32", {"keyframe_0": still(.2), "keyframe_1": still(.9)})
+        with self.assertRaisesRegex(ValueError, "3 image\\(s\\) \\(1 from the keyframe socket\\(s\\) \\+ 2 from image_batch\\) but 2"):
+            build("0, 15", {"keyframe_0": still(.2)}, image_batch=still(.5, count=2))
+
+    def test_image_batch_follows_the_keyframe_sockets(self):
+        payload, report = build("0, 15, 32, 64", {"keyframe_1": still(.9), "keyframe_0": still(.2)},
+                                image_batch=torch.cat([still(.4), still(.6)]))
+        self.assertEqual([name for name, _ in payload["stills"]],
+                         ["keyframe_0", "keyframe_1", "image_batch[0]", "image_batch[1]"])
+        self.assertEqual([round(float(s.mean()), 1) for _, s in payload["stills"]], [.2, .9, .4, .6])
+        self.assertEqual(payload["indices"], [0, 15, 32, 64])
+        self.assertIn("2 from the keyframe socket(s), 2 from image_batch", report)
+
+    def test_image_batch_alone(self):
+        payload, _ = build("10, 20", {}, image_batch=torch.cat([still(.4), still(.6)]))
+        self.assertEqual([name for name, _ in payload["stills"]], ["image_batch[0]", "image_batch[1]"])
+        payload, _ = build("10, 20", {"keyframe_0": None}, image_batch=torch.cat([still(.4), still(.6)]))
+        self.assertEqual(payload["indices"], [10, 20])
 
     def test_no_images(self):
         with self.assertRaisesRegex(ValueError, "at least one image"):
@@ -152,8 +169,9 @@ class WindowPlacementTests(unittest.TestCase):
         self.assertEqual(guides_by_window(bound)[1], [(26, .5)])
 
     def test_both_stages_see_each_window_only_its_own_guides(self):
-        payload, _ = build("15, 49, 88", {f"keyframe_{i}": still(v) for i, v in enumerate((.1, .4, .9))},
-                           width=32, height=32)
+        # socket first, then the two batch frames: the batch is just more stills in order
+        payload, _ = build("15, 49, 88", {"keyframe_0": still(.1)},
+                           image_batch=torch.cat([still(.4), still(.9)]), width=32, height=32)
         m = chain.model()
         sequential, joint, cond, total, *_ = H3HybridWindows.execute(m, 39, 5, self.groups(), keyframes=payload)
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
