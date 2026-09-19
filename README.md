@@ -190,7 +190,8 @@ under `image/video`.
 | Node | What it does | Used in the examples |
 |---|---|---|
 | **H3 Hybrid Window Sampler** (`MMH3HybridWindowSampler`) | Single-node sequential warmup and joint finish, with adjustable pinned context, source masks and accepted-prefix preservation. Requires MMH3Tools. | Single-sampler Ref2VA |
-| **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, and `noise_mode`. | Both Ref2VA and FL2VA |
+| **H3 Hybrid Windows** (`H3HybridWindows`) | Arranges prompt conditioning into overlapping windows. Outputs a `sequential_model` for early sampling with overlap carry, a `joint_model` for finishing with shared overlap predictions, the connected `positive` conditioning, the calculated `total_frames`, the `latent` to sample, and a `report`. Connect the two models to the two native sampler nodes. Optional inputs cover a production graph: an MMH3 `cond_set` instead of the prompt sockets, a source `latent` with `denoise_mask` / `audio_denoise_mask` for v2v inpainting, `accepted_prefix_frames` + `start_window` for an accepted-prefix resume, `noise_mode`, and `keyframes` from H3 Hybrid Keyframes. | Both Ref2VA and FL2VA |
+| **H3 Hybrid Keyframes** (`H3HybridKeyframes`) | Stills pinned at frame numbers of the whole run: one socket per image (a new one appears as you connect), one list of frame numbers such as `0, 15, 32, 64, 100`, negative numbers counted from the end. Hybrid Windows places each still into the window(s) that draw its frame, converts the number to that window's own index, fits it to the canvas, encodes it, and lists every placement in its report. Same conditioning rows as core's Add Guide, without a chain of guide nodes per window. See [keyframes](docs/keyframes.md). | FL2VA and R2V Keyframes variants |
 | **H3 Window ControlNet** (`H3HybridControlNet`) | Applies ComfyUI's native H3 FUN control to the correct source frames for each window. Takes a model, FUN model patch, video VAE and control-frame batch; returns a model with control applied. Provides control strength and start/end timing. It does not extract pose, depth or edges from ordinary footage. | Optional; neither example uses it |
 | **Video Color Stabilize** (`VideoColorStabilize`) | Reduces gradual tint and saturation drift in a decoded IMAGE batch, using an opening reference interval and optional aligned source frames. Preserves per-pixel brightness and smooths the correction over time. Returns corrected images. | Both; optional, enabled by default |
 
@@ -333,6 +334,17 @@ all three native encoders. Window 1 moves into that composition; windows 2 and
 3 continue the established shot with the same guide. It reaches the ending
 view early, so use it when a stable target composition matters more than
 arriving at that view only at the final moment.
+
+The **Keyframes** variants (`H3 Hybrid FL2VA Keyframes - native KSampler Advanced`
+and `H3 Hybrid R2V Keyframes - native KSampler Advanced`) pin stills at frame
+numbers of the whole video through **H3 Hybrid Keyframes**: each image has its
+own socket and `frame_indices` lists their frame numbers in the same order
+(`0, -1` in both examples). FL2VA leaves the encoders' `first_frame` /
+`last_frame` inputs empty and pins the two bundled stills; R2V pins the reference
+portrait at the first and last frame beside its `<Picture 1>` role, on a portrait
+canvas. Add a still at any frame, say `0, 100, -1`, by connecting another Load
+Image and appending its number; Hybrid Windows works out the window and index
+and reports every placement. Details in [docs/keyframes.md](docs/keyframes.md).
 
 Connecting the last image only to the final window is possible, but caused
 late reframing in our 27-second tests. It is not the recommended setup for a

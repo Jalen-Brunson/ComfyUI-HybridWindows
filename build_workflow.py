@@ -98,9 +98,9 @@ def example_prompts(mode, end_guide=False):
     }
     return prompts["fl2va_end" if mode == "fl2va" and end_guide else mode]
 
-def workflow_notes(mode, end_guide=False):
+def workflow_notes(mode, end_guide=False, keyframes=False):
     variant = "FL2VA" if mode == "fl2va" else "Ref2VA"
-    size = "480 x 832" if mode == "fl2va" else "832 x 480"
+    size = "480 x 832" if mode == "fl2va" or keyframes else "832 x 480"
     official = "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main"
     kijai = "https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main"
     base = f"minimax_h3_{mode}_int8_convrot.safetensors"
@@ -136,8 +136,44 @@ def workflow_notes(mode, end_guide=False):
     )
     if mode == "fl2va" and not end_guide:
         extend = "Keep the starting image only on window 1; added windows continue through overlap carry."
+    keyframe_section = ""
+    if keyframes:
+        images = ("Load the stills in the two **Keyframe** Load Image nodes. Each connects to its own socket on "
+                  "**H3 Hybrid Keyframes**, whose `frame_indices` lists their frame numbers in the same order: "
+                  "`0, -1` pins the opening image at frame 0 and the closing image at the last frame. The "
+                  "encoders' own `first_frame` / `last_frame` inputs stay disconnected in this variant."
+                  if mode == "fl2va" else
+                  "Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference "
+                  "image**. It is connected to all three conditioning nodes as `<Picture 1>`, and to both "
+                  "sockets of **H3 Hybrid Keyframes**, whose `frame_indices` `0, -1` pins that composition at "
+                  "the first and the last frame: the take opens and closes on the reference view while "
+                  "`<Picture 1>` guides appearance throughout. The canvas is portrait (480 x 832) to match "
+                  "the photo; a landscape canvas would crop it.")
+        extend = ("Keyframes need no change when a window is added: frame numbers keep counting over the "
+                  "longer video, and the report shows the window each one landed in.")
+        keyframe_section = """## Keyframes at frame numbers
+
+**H3 Hybrid Keyframes** takes any number of stills and one list of frame numbers counted over the
+**whole video**, starting at 0 (negative numbers count from the end, -1 = the last frame). To add a
+still at frame 100, connect another Load Image to the node (a new `keyframe` socket appears) and
+append its number: `0, 100, -1`. Numbers and images pair up in socket order; a batch in one socket
+uses one number per frame.
+
+Hybrid Windows does the window arithmetic: with 243-frame windows and a 39-frame overlap, window 2
+starts at frame 204 and window 3 at 408, so frame 300 becomes window 2's own frame 96. A frame inside
+a shared overlap is given to both windows. The Hybrid Windows **report** lists every placement. Stills
+are fitted to the canvas (`fit` = crop keeps the aspect and trims; stretch keeps every pixel). `width`
+and `height` are connected to the size nodes here; at 0 the node takes the size from a master latent
+or from the encoders' own guides.
+
+A keyframe is conditioning, the same rows core's **Add Guide for MiniMax H3** writes, not pasted
+pixels: the model is guided toward the still at that moment. FL2VA is the checkpoint trained on frame
+anchors. Mid-video anchors are less constrained than the opening frame; keep prompts consistent with
+the stills.
+
+"""
     label = "FL2VA" if mode == "fl2va" else "R2V (Ref2VA)"
-    return f"""# {label} Hybrid - start here
+    return f"""# {label} Hybrid{' keyframes' if keyframes else ''} - start here
 
 Build one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.
 
@@ -168,7 +204,7 @@ Use the listed base with its matching PDD LoRA at **1.0**. A model with PDD alre
 4. Set **Width / Height** (default **{size}**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.
 5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_{variant}*`.
 
-## Pinned context and overlap
+{keyframe_section}## Pinned context and overlap
 
 The example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.
 
@@ -208,10 +244,11 @@ window finish.
 """
 
 
-async def build(mode="ref2va", end_guide=False):
+async def build(mode="ref2va", end_guide=False, keyframes=False):
     assert mode in ("ref2va", "fl2va")
     fl2va = mode == "fl2va"
     assert not end_guide or fl2va
+    assert not (keyframes and end_guide)
     for module in (nodes_audio, nodes_minimax_h3, nodes_primitive, nodes_video):
         extension = await module.comfy_entrypoint()
         for cls in await extension.get_node_list():
@@ -280,7 +317,7 @@ async def build(mode="ref2va", end_guide=False):
                 "outputs": outputs, "title": title,
                 "properties": {"Node name for S&R": kind},
                 "widgets_values": widgets, "widgets_values_named": named}
-        if kind not in ("H3HybridWindows", "H3HybridControlNet", "VideoColorStabilize"):
+        if kind not in ("H3HybridWindows", "H3HybridKeyframes", "H3HybridControlNet", "VideoColorStabilize"):
             node["properties"]["cnr_id"] = "comfy-core"
         graph_nodes.append(node)
         prompt_inputs = dict(named)
@@ -298,11 +335,14 @@ async def build(mode="ref2va", end_guide=False):
         api[str(node_id)] = {"class_type": kind, "inputs": prompt_inputs, "_meta": {"title": title}}
         return node_id
 
-    ref = add("LoadImage", "Load FIRST frame - start of video" if fl2va else "Load reference image - all three windows",
+    ref = add("LoadImage", ("Keyframe 1 - opening image (frame 0)" if fl2va else
+                            "Load reference image - <Picture 1> and keyframes 0, -1") if keyframes else
+              "Load FIRST frame - start of video" if fl2va else "Load reference image - all three windows",
               (540, 100), (400, 400),
               {"image": "hybrid_windows/fl2va_stock_first.png" if fl2va else "hybrid_windows/ref2va_stock_portrait.jpg"})
     if fl2va:
-        last = add("LoadImage", "Load LAST frame - recurring composition" if end_guide else "Optional ending image - disconnected", (540, 650), (400, 400),
+        last = add("LoadImage", "Keyframe 2 - closing image (frame -1)" if keyframes else
+                   "Load LAST frame - recurring composition" if end_guide else "Optional ending image - disconnected", (540, 650), (400, 400),
                    {"image": "hybrid_windows/fl2va_stock_last.png"})
     base = add("UNETLoader", f"H3 {'FL2VA' if fl2va else 'Ref2VA'} base", (40, 100), (440, 140),
                {"unet_name": f"minimax_h3_{mode}_int8_convrot.safetensors", "weight_dtype": "default"})
@@ -314,12 +354,20 @@ async def build(mode="ref2va", end_guide=False):
                {"clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors", "type": "minimax", "device": "default"})
     vae = add("VAELoader", "Video VAE", (40, 890), (440, 100), {"vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"})
     audio_vae = add("VAELoader", "Audio VAE", (40, 1040), (440, 100), {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"})
-    width = add("PrimitiveInt", "Width", (1040, 1100), (220, 110), {"value": 480 if fl2va else 832})
-    height = add("PrimitiveInt", "Height", (1300, 1100), (220, 110), {"value": 832 if fl2va else 480})
+    portrait = fl2va or keyframes  # the R2V keyframe variant pins the portrait photo, so it renders portrait
+    width = add("PrimitiveInt", "Width", (1040, 1100), (220, 110), {"value": 480 if portrait else 832})
+    height = add("PrimitiveInt", "Height", (1300, 1100), (220, 110), {"value": 832 if portrait else 480})
     window = add("PrimitiveInt", "Window frames", (1560, 1100), (220, 110), {"value": 243})
     split = add("PrimitiveInt", "Switch at step", (1820, 1100), (220, 110), {"value": 6})
     steps = add("PrimitiveInt", "Total steps", (2080, 1100), (220, 110), {"value": 8})
-    prompt_texts = example_prompts(mode, end_guide)
+    guides = None
+    if keyframes:
+        guides = add("H3HybridKeyframes", "Keyframes at frame numbers of the whole run",
+                     (540, 1130) if fl2va else (540, 580), (400, 250),
+                     {"vae": (vae, 0), "frame_indices": "0, -1", "fit": "crop",
+                      "width": (width, 0), "height": (height, 0),
+                      "images.keyframe_0": (ref, 0), "images.keyframe_1": (last if fl2va else ref, 0)})
+    prompt_texts = example_prompts(mode, end_guide or keyframes)
     prompts = []
     for i in range(3):
         x = 1040 + i*450
@@ -327,13 +375,16 @@ async def build(mode="ref2va", end_guide=False):
         values = {"clip": (clip, 0), "vae": (vae, 0), "prompt": (text, 0),
                   "width": (width, 0), "height": (height, 0), "length": (window, 0)}
         if fl2va:
-            if i == 0:
+            if i == 0 and not keyframes:
                 values["first_frame"] = (ref, 0)
             if end_guide:
                 values["last_frame"] = (last, 0)
             kind = "MiniMaxH3ImageToVideo"
             title = (("Window 1 - move into ending view", "Window 2 - continue the shot", "Window 3 - finish the shot")
-                     if end_guide else ("Window 1 - starting image", "Window 2 - continuation", "Window 3 - continuation"))[i]
+                     if end_guide else
+                     ("Window 1 - prompt only; keyframes pin the images", "Window 2 - continuation", "Window 3 - ending")
+                     if keyframes else
+                     ("Window 1 - starting image", "Window 2 - continuation", "Window 3 - continuation"))[i]
         else:
             values.update({"ref_image_size": "match", "ref_images.ref_image_0": (ref, 0)})
             kind, title = "MiniMaxH3ReferenceToVideo", f"Native H3 conditioning {i+1}"
@@ -342,7 +393,8 @@ async def build(mode="ref2va", end_guide=False):
     setup = add("H3HybridWindows", "Hybrid windows — pinned video context", (2440, 100), (390, 420),
                 {"model": (shift, 0), "window_frames": (window, 0), "overlap_frames": 39,
                  "total_steps": (steps, 0), "overlap_pin": "tail_custom", "context_frames": 5,
-                 **{f"prompts.positive_{i}": (p, 0) for i, p in enumerate(prompts)}})
+                 **{f"prompts.positive_{i}": (p, 0) for i, p in enumerate(prompts)},
+                 **({"keyframes": (guides, 0)} if guides else {})})
     empty = add("EmptyMiniMaxH3LatentAV", "Full timeline latent", (2870, 100), (360, 180),
                 {"width": (width, 0), "height": (height, 0), "length": (setup, 3)})
     negative = add("ConditioningZeroOut", "Unused at CFG 1", (2870, 350), (360, 100), {"conditioning": (setup, 2)})
@@ -364,10 +416,13 @@ async def build(mode="ref2va", end_guide=False):
     video = add("CreateVideo", "Create video", (3880, 100), (420, 210),
                 {"images": (color, 0), "audio": (decoded_audio, 0), "fps": (fps, 0), "bit_depth": 8, "color_space": "sRGB"})
     add("SaveVideo", "Save hybrid test", (3880, 450), (420, 510),
-        {"video": (video, 0), "filename_prefix": "video/HybridNative_FL2VA_EndGuide" if end_guide else "video/HybridNative_FL2VA" if fl2va else "video/HybridNative_Ref2VA", "format": "mp4", "format.codec": "h264",
+        {"video": (video, 0), "filename_prefix": ("video/HybridNative_FL2VA_Keyframes" if fl2va else "video/HybridNative_Ref2VA_Keyframes") if keyframes else "video/HybridNative_FL2VA_EndGuide" if end_guide else "video/HybridNative_FL2VA" if fl2va else "video/HybridNative_Ref2VA", "format": "mp4", "format.codec": "h264",
          "format.codec.encoding": "re-encode", "format.codec.encoding.crf": 16., "codec": "auto"})
     groups = [
-        ("Models", [0, 0, 510, 1240]), ("First and last images" if fl2va else "Load reference image", [520, 0, 450, 1240]),
+        ("Models", [0, 0, 510, 1240]),
+        (("Keyframe images and frame numbers" if fl2va else "Reference image and keyframes") if keyframes
+         else "First and last images" if fl2va else "Load reference image",
+         [520, 0, 450, 1400 if keyframes and fl2va else 1240]),
         ("Three prompts", [1000, 0, 1380, 980]), ("Size and handoff", [1000, 1020, 1380, 240]),
         ("Two native samplers", [2400, 0, 870, 1280]), ("Decode, optional color and output", [3320, 0, 1020, 1280]),
     ]
@@ -376,16 +431,16 @@ async def build(mode="ref2va", end_guide=False):
         node["pos"][0] += 1160
     for _, bounds in groups:
         bounds[0] += 1160
-    note = workflow_notes(mode, end_guide)
+    note = workflow_notes(mode, end_guide, keyframes)
     graph_nodes.append({
         "id": len(graph_nodes)+1, "type": "MarkdownNote", "pos": [40, 100], "size": [1040, 2320],
         "flags": {}, "order": len(graph_nodes), "mode": 0, "inputs": [], "outputs": [],
-        "title": "READ ME - FL2VA" if fl2va else "READ ME - R2V (Ref2VA)", "properties": {},
+        "title": ("READ ME - FL2VA" if fl2va else "READ ME - R2V (Ref2VA)") + (" keyframes" if keyframes else ""), "properties": {},
         "widgets_values": [note], "widgets_values_named": {"text": note},
         "color": "#234", "bgcolor": "#345",
     })
     groups.append(("Start here - downloads and instructions", [0, 0, 1120, 2480]))
-    graph = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/{mode}{'/end-guide' if end_guide else ''}")),
+    graph = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/{mode}{'/end-guide' if end_guide else ''}{'/keyframes' if keyframes else ''}")),
              "revision": 0, "last_node_id": len(graph_nodes),
              "last_link_id": len(links), "nodes": graph_nodes, "links": links,
              "groups": [{"id": i+1, "title": title, "bounding": bounds, "color": "#3f789e", "font_size": 24}
@@ -396,6 +451,8 @@ async def build(mode="ref2va", end_guide=False):
     name = "H3 Hybrid FL2VA - native KSampler Advanced" if fl2va else "H3 Hybrid R2V - native KSampler Advanced"
     if end_guide:
         name = "H3 Hybrid FL2VA - recurring end guide"
+    if keyframes:
+        name = f"H3 Hybrid {'FL2VA' if fl2va else 'R2V'} Keyframes - native KSampler Advanced"
     (folder / f"{name}.json").write_text(json.dumps(graph, indent=2)+"\n")
     (folder / f"{name}.api.json").write_text(json.dumps(api, indent=2)+"\n")
     print(f"Built {mode}: {len(graph_nodes)} nodes / {len(links)} links.")
@@ -406,3 +463,5 @@ if __name__ == "__main__":
     asyncio.run(build())
     asyncio.run(build("fl2va"))
     asyncio.run(build("fl2va", end_guide=True))
+    asyncio.run(build("fl2va", keyframes=True))
+    asyncio.run(build("ref2va", keyframes=True))

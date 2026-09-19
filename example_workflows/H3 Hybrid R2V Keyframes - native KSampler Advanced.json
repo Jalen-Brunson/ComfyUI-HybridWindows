@@ -1,8 +1,8 @@
 {
-  "id": "ff54c953-addd-516c-8815-9cfbde3bfc4c",
+  "id": "34507f22-5db3-527a-9967-3983afba553b",
   "revision": 0,
   "last_node_id": 31,
-  "last_link_id": 57,
+  "last_link_id": 62,
   "nodes": [
     {
       "id": 1,
@@ -33,7 +33,11 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            9
+            6,
+            7,
+            14,
+            21,
+            28
           ]
         },
         {
@@ -42,72 +46,20 @@
           "links": []
         }
       ],
-      "title": "Load FIRST frame - start of video",
+      "title": "Load reference image - <Picture 1> and keyframes 0, -1",
       "properties": {
         "Node name for S&R": "LoadImage",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "hybrid_windows/fl2va_stock_first.png"
+        "hybrid_windows/ref2va_stock_portrait.jpg"
       ],
       "widgets_values_named": {
-        "image": "hybrid_windows/fl2va_stock_first.png"
+        "image": "hybrid_windows/ref2va_stock_portrait.jpg"
       }
     },
     {
       "id": 2,
-      "type": "LoadImage",
-      "pos": [
-        1700,
-        650
-      ],
-      "size": [
-        400,
-        400
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "link": null,
-          "widget": {
-            "name": "image"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            10,
-            17,
-            24
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": []
-        }
-      ],
-      "title": "Load LAST frame - recurring composition",
-      "properties": {
-        "Node name for S&R": "LoadImage",
-        "cnr_id": "comfy-core"
-      },
-      "widgets_values": [
-        "hybrid_windows/fl2va_stock_last.png"
-      ],
-      "widgets_values_named": {
-        "image": "hybrid_windows/fl2va_stock_last.png"
-      }
-    },
-    {
-      "id": 3,
       "type": "UNETLoader",
       "pos": [
         1200,
@@ -118,7 +70,7 @@
         140
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [
         {
@@ -147,22 +99,22 @@
           ]
         }
       ],
-      "title": "H3 FL2VA base",
+      "title": "H3 Ref2VA base",
       "properties": {
         "Node name for S&R": "UNETLoader",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "minimax_h3_ref2va_int8_convrot.safetensors",
         "default"
       ],
       "widgets_values_named": {
-        "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+        "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
         "weight_dtype": "default"
       }
     },
     {
-      "id": 4,
+      "id": 3,
       "type": "LoraLoaderModelOnly",
       "pos": [
         1200,
@@ -173,7 +125,7 @@
         150
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [
         {
@@ -213,16 +165,16 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors",
+        "minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors",
         1.0
       ],
       "widgets_values_named": {
-        "lora_name": "minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors",
+        "lora_name": "minimax/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors",
         "strength_model": 1.0
       }
     },
     {
-      "id": 5,
+      "id": 4,
       "type": "MiniMaxH3SigmaShift",
       "pos": [
         1200,
@@ -233,7 +185,7 @@
         150
       ],
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -263,7 +215,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            25
+            29
           ]
         }
       ],
@@ -282,7 +234,7 @@
       }
     },
     {
-      "id": 6,
+      "id": 5,
       "type": "CLIPLoader",
       "pos": [
         1200,
@@ -293,7 +245,7 @@
         150
       ],
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -327,9 +279,9 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            3,
-            11,
-            18
+            8,
+            15,
+            22
           ]
         }
       ],
@@ -350,11 +302,60 @@
       }
     },
     {
-      "id": 7,
+      "id": 6,
       "type": "VAELoader",
       "pos": [
         1200,
         890
+      ],
+      "size": [
+        440,
+        100
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "vae_name"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            9,
+            16,
+            23,
+            54
+          ]
+        }
+      ],
+      "title": "Video VAE",
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_int8_convrot.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+      }
+    },
+    {
+      "id": 7,
+      "type": "VAELoader",
+      "pos": [
+        1200,
+        1040
       ],
       "size": [
         440,
@@ -378,55 +379,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            4,
-            12,
-            19,
-            49
-          ]
-        }
-      ],
-      "title": "Video VAE",
-      "properties": {
-        "Node name for S&R": "VAELoader",
-        "cnr_id": "comfy-core"
-      },
-      "widgets_values": [
-        "minimax_h3_video_vae_int8_convrot.safetensors"
-      ],
-      "widgets_values_named": {
-        "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
-      }
-    },
-    {
-      "id": 8,
-      "type": "VAELoader",
-      "pos": [
-        1200,
-        1040
-      ],
-      "size": [
-        440,
-        100
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "link": null,
-          "widget": {
-            "name": "vae_name"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            51
+            56
           ]
         }
       ],
@@ -443,10 +396,60 @@
       }
     },
     {
-      "id": 9,
+      "id": 8,
       "type": "PrimitiveInt",
       "pos": [
         2200,
+        1100
+      ],
+      "size": [
+        220,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "value",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            4,
+            11,
+            18,
+            25,
+            36
+          ]
+        }
+      ],
+      "title": "Width",
+      "properties": {
+        "Node name for S&R": "PrimitiveInt",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        480,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "value": 480
+      }
+    },
+    {
+      "id": 9,
+      "type": "PrimitiveInt",
+      "pos": [
+        2460,
         1100
       ],
       "size": [
@@ -471,31 +474,32 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            6,
-            14,
-            21,
-            31
+            5,
+            12,
+            19,
+            26,
+            37
           ]
         }
       ],
-      "title": "Width",
+      "title": "Height",
       "properties": {
         "Node name for S&R": "PrimitiveInt",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        480,
+        832,
         "fixed"
       ],
       "widgets_values_named": {
-        "value": 480
+        "value": 832
       }
     },
     {
       "id": 10,
       "type": "PrimitiveInt",
       "pos": [
-        2460,
+        2720,
         1100
       ],
       "size": [
@@ -520,31 +524,31 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            7,
-            15,
-            22,
-            32
+            13,
+            20,
+            27,
+            30
           ]
         }
       ],
-      "title": "Height",
+      "title": "Window frames",
       "properties": {
         "Node name for S&R": "PrimitiveInt",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        832,
+        243,
         "fixed"
       ],
       "widgets_values_named": {
-        "value": 832
+        "value": 243
       }
     },
     {
       "id": 11,
       "type": "PrimitiveInt",
       "pos": [
-        2720,
+        2980,
         1100
       ],
       "size": [
@@ -569,31 +573,29 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            8,
-            16,
-            23,
-            26
+            45,
+            51
           ]
         }
       ],
-      "title": "Window frames",
+      "title": "Switch at step",
       "properties": {
         "Node name for S&R": "PrimitiveInt",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        243,
+        6,
         "fixed"
       ],
       "widgets_values_named": {
-        "value": 243
+        "value": 6
       }
     },
     {
       "id": 12,
       "type": "PrimitiveInt",
       "pos": [
-        2980,
+        3240,
         1100
       ],
       "size": [
@@ -618,57 +620,10 @@
           "name": "INT",
           "type": "INT",
           "links": [
+            31,
             40,
-            46
-          ]
-        }
-      ],
-      "title": "Switch at step",
-      "properties": {
-        "Node name for S&R": "PrimitiveInt",
-        "cnr_id": "comfy-core"
-      },
-      "widgets_values": [
-        6,
-        "fixed"
-      ],
-      "widgets_values_named": {
-        "value": 6
-      }
-    },
-    {
-      "id": 13,
-      "type": "PrimitiveInt",
-      "pos": [
-        3240,
-        1100
-      ],
-      "size": [
-        220,
-        110
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "value",
-          "type": "INT",
-          "link": null,
-          "widget": {
-            "name": "value"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            27,
-            35,
-            41,
-            47
+            46,
+            52
           ]
         }
       ],
@@ -683,6 +638,105 @@
       ],
       "widgets_values_named": {
         "value": 8
+      }
+    },
+    {
+      "id": 13,
+      "type": "H3HybridKeyframes",
+      "pos": [
+        1700,
+        580
+      ],
+      "size": [
+        400,
+        250
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "images.keyframe_0",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        },
+        {
+          "name": "images.keyframe_1",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        },
+        {
+          "name": "frame_indices",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "frame_indices"
+          }
+        },
+        {
+          "name": "fit",
+          "type": "COMBO",
+          "link": null,
+          "shape": 7,
+          "widget": {
+            "name": "fit"
+          }
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 4,
+          "shape": 7,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 5,
+          "shape": 7,
+          "widget": {
+            "name": "height"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "keyframes",
+          "type": "H3_HYBRID_KEYFRAMES",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Keyframes at frame numbers of the whole run",
+      "properties": {
+        "Node name for S&R": "H3HybridKeyframes"
+      },
+      "widgets_values": [
+        "0, -1",
+        "crop",
+        0,
+        0
+      ],
+      "widgets_values_named": {
+        "frame_indices": "0, -1",
+        "fit": "crop",
+        "width": 0,
+        "height": 0
       }
     },
     {
@@ -714,7 +768,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            5
+            10
           ]
         }
       ],
@@ -724,15 +778,15 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "One continuous portrait shot of a man seated at a white desk in a bright office. He wears the same black long-sleeved button-up shirt, with short black hair swept to one side and a clean-shaven face. His hands rest together on the desk. He looks toward the camera, blinking naturally with a subtle relaxed smile. The camera slowly shifts from a slight angle to a frontal view. Soft daylight, steady exposure, natural skin texture and color. No cuts, no sudden motion."
+        "A single uninterrupted studio portrait take of the man in <Picture 1>. The fixed camera tightly frames his head and shoulders against a plain white wall. His face stays the same size and position in the frame, with the top of his hair near the upper edge and only his shoulders and black shirt collar at the bottom. He has short light brown hair brushed forward into a fringe, a moustache and short goatee. Soft daylight stays constant. He gently glances a little to his left, then slowly returns his eyes toward the lens. Subtle natural blinking and breathing. The camera remains completely still for the entire take."
       ],
       "widgets_values_named": {
-        "value": "One continuous portrait shot of a man seated at a white desk in a bright office. He wears the same black long-sleeved button-up shirt, with short black hair swept to one side and a clean-shaven face. His hands rest together on the desk. He looks toward the camera, blinking naturally with a subtle relaxed smile. The camera slowly shifts from a slight angle to a frontal view. Soft daylight, steady exposure, natural skin texture and color. No cuts, no sudden motion."
+        "value": "A single uninterrupted studio portrait take of the man in <Picture 1>. The fixed camera tightly frames his head and shoulders against a plain white wall. His face stays the same size and position in the frame, with the top of his hair near the upper edge and only his shoulders and black shirt collar at the bottom. He has short light brown hair brushed forward into a fringe, a moustache and short goatee. Soft daylight stays constant. He gently glances a little to his left, then slowly returns his eyes toward the lens. Subtle natural blinking and breathing. The camera remains completely still for the entire take."
       }
     },
     {
       "id": 15,
-      "type": "MiniMaxH3ImageToVideo",
+      "type": "MiniMaxH3ReferenceToVideo",
       "pos": [
         2200,
         460
@@ -748,29 +802,30 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 3
+          "link": 8
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 4
-        },
-        {
-          "name": "first_frame",
-          "type": "IMAGE",
           "link": 9,
           "shape": 7
         },
         {
-          "name": "last_frame",
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "ref_images.ref_image_0",
           "type": "IMAGE",
-          "link": 10,
+          "link": 14,
           "shape": 7
         },
         {
           "name": "prompt",
           "type": "STRING",
-          "link": 5,
+          "link": 10,
           "widget": {
             "name": "prompt"
           }
@@ -778,7 +833,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 6,
+          "link": 11,
           "widget": {
             "name": "width"
           }
@@ -786,7 +841,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 7,
+          "link": 12,
           "widget": {
             "name": "height"
           }
@@ -794,9 +849,17 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 8,
+          "link": 13,
           "widget": {
             "name": "length"
+          }
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "ref_image_size"
           }
         }
       ],
@@ -805,7 +868,7 @@
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            28
+            32
           ]
         },
         {
@@ -814,22 +877,24 @@
           "links": []
         }
       ],
-      "title": "Window 1 - move into ending view",
+      "title": "Native H3 conditioning 1",
       "properties": {
-        "Node name for S&R": "MiniMaxH3ImageToVideo",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
         "",
         1344,
         768,
-        124
+        124,
+        "match"
       ],
       "widgets_values_named": {
         "prompt": "",
         "width": 1344,
         "height": 768,
-        "length": 124
+        "length": 124,
+        "ref_image_size": "match"
       }
     },
     {
@@ -861,7 +926,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            13
+            17
           ]
         }
       ],
@@ -871,15 +936,15 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "Continue the same uninterrupted portrait shot in the established frontal composition. The camera is now stationary, at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk. His hands rest together. He looks toward the lens with a calm expression, natural blinking and subtle breathing, then gives a very small relaxed smile. Keep the same soft daylight, exposure, face size and background throughout."
+        "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he slowly glances a little to his right and settles, with subtle natural blinking and breathing. Only his eyes and a small gentle head turn move within the established framing. The camera remains completely still."
       ],
       "widgets_values_named": {
-        "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera is now stationary, at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk. His hands rest together. He looks toward the lens with a calm expression, natural blinking and subtle breathing, then gives a very small relaxed smile. Keep the same soft daylight, exposure, face size and background throughout."
+        "value": "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he slowly glances a little to his right and settles, with subtle natural blinking and breathing. Only his eyes and a small gentle head turn move within the established framing. The camera remains completely still."
       }
     },
     {
       "id": 17,
-      "type": "MiniMaxH3ImageToVideo",
+      "type": "MiniMaxH3ReferenceToVideo",
       "pos": [
         2650,
         460
@@ -895,29 +960,30 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 11
+          "link": 15
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 12
+          "link": 16,
+          "shape": 7
         },
         {
-          "name": "first_frame",
-          "type": "IMAGE",
+          "name": "audio_vae",
+          "type": "VAE",
           "link": null,
           "shape": 7
         },
         {
-          "name": "last_frame",
+          "name": "ref_images.ref_image_0",
           "type": "IMAGE",
-          "link": 17,
+          "link": 21,
           "shape": 7
         },
         {
           "name": "prompt",
           "type": "STRING",
-          "link": 13,
+          "link": 17,
           "widget": {
             "name": "prompt"
           }
@@ -925,7 +991,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 14,
+          "link": 18,
           "widget": {
             "name": "width"
           }
@@ -933,7 +999,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 15,
+          "link": 19,
           "widget": {
             "name": "height"
           }
@@ -941,9 +1007,17 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 16,
+          "link": 20,
           "widget": {
             "name": "length"
+          }
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "ref_image_size"
           }
         }
       ],
@@ -952,7 +1026,7 @@
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            29
+            33
           ]
         },
         {
@@ -961,22 +1035,24 @@
           "links": []
         }
       ],
-      "title": "Window 2 - continue the shot",
+      "title": "Native H3 conditioning 2",
       "properties": {
-        "Node name for S&R": "MiniMaxH3ImageToVideo",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
         "",
         1344,
         768,
-        124
+        124,
+        "match"
       ],
       "widgets_values_named": {
         "prompt": "",
         "width": 1344,
         "height": 768,
-        "length": 124
+        "length": 124,
+        "ref_image_size": "match"
       }
     },
     {
@@ -1008,7 +1084,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            20
+            24
           ]
         }
       ],
@@ -1018,15 +1094,15 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "Continue the same uninterrupted portrait shot in the established frontal composition. The camera remains stationary at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk, hands together. He maintains a calm gaze toward the lens, blinking naturally and breathing softly, and settles into the final guide image pose. Keep the same face size, background, soft daylight and exposure."
+        "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he gently turns back toward the lens and holds a relaxed forward gaze, blinking naturally and breathing softly. The camera remains completely still through the end of the take."
       ],
       "widgets_values_named": {
-        "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera remains stationary at the same distance and focal length as the guide image. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk, hands together. He maintains a calm gaze toward the lens, blinking naturally and breathing softly, and settles into the final guide image pose. Keep the same face size, background, soft daylight and exposure."
+        "value": "Continue the same uninterrupted studio portrait take of the man in <Picture 1>. Maintain exactly the established tight head-and-shoulders composition, fixed camera position, focal length, face size, plain white wall and soft daylight. His short light brown fringe, moustache, short goatee and black shirt collar stay unchanged. From his current pose he gently turns back toward the lens and holds a relaxed forward gaze, blinking naturally and breathing softly. The camera remains completely still through the end of the take."
       }
     },
     {
       "id": 19,
-      "type": "MiniMaxH3ImageToVideo",
+      "type": "MiniMaxH3ReferenceToVideo",
       "pos": [
         3100,
         460
@@ -1042,29 +1118,30 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 18
+          "link": 22
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 19
+          "link": 23,
+          "shape": 7
         },
         {
-          "name": "first_frame",
-          "type": "IMAGE",
+          "name": "audio_vae",
+          "type": "VAE",
           "link": null,
           "shape": 7
         },
         {
-          "name": "last_frame",
+          "name": "ref_images.ref_image_0",
           "type": "IMAGE",
-          "link": 24,
+          "link": 28,
           "shape": 7
         },
         {
           "name": "prompt",
           "type": "STRING",
-          "link": 20,
+          "link": 24,
           "widget": {
             "name": "prompt"
           }
@@ -1072,7 +1149,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 21,
+          "link": 25,
           "widget": {
             "name": "width"
           }
@@ -1080,7 +1157,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 22,
+          "link": 26,
           "widget": {
             "name": "height"
           }
@@ -1088,9 +1165,17 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 23,
+          "link": 27,
           "widget": {
             "name": "length"
+          }
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "ref_image_size"
           }
         }
       ],
@@ -1099,7 +1184,7 @@
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            30
+            34
           ]
         },
         {
@@ -1108,22 +1193,24 @@
           "links": []
         }
       ],
-      "title": "Window 3 - finish the shot",
+      "title": "Native H3 conditioning 3",
       "properties": {
-        "Node name for S&R": "MiniMaxH3ImageToVideo",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
         "",
         1344,
         768,
-        124
+        124,
+        "match"
       ],
       "widgets_values_named": {
         "prompt": "",
         "width": 1344,
         "height": 768,
-        "length": 124
+        "length": 124,
+        "ref_image_size": "match"
       }
     },
     {
@@ -1144,24 +1231,24 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 25
+          "link": 29
         },
         {
           "name": "prompts.positive_0",
           "type": "CONDITIONING",
-          "link": 28,
+          "link": 32,
           "shape": 7
         },
         {
           "name": "prompts.positive_1",
           "type": "CONDITIONING",
-          "link": 29,
+          "link": 33,
           "shape": 7
         },
         {
           "name": "prompts.positive_2",
           "type": "CONDITIONING",
-          "link": 30,
+          "link": 34,
           "shape": 7
         },
         {
@@ -1191,13 +1278,13 @@
         {
           "name": "keyframes",
           "type": "H3_HYBRID_KEYFRAMES",
-          "link": null,
+          "link": 35,
           "shape": 7
         },
         {
           "name": "window_frames",
           "type": "INT",
-          "link": 26,
+          "link": 30,
           "widget": {
             "name": "window_frames"
           }
@@ -1213,7 +1300,7 @@
         {
           "name": "total_steps",
           "type": "INT",
-          "link": 27,
+          "link": 31,
           "shape": 7,
           "widget": {
             "name": "total_steps"
@@ -1279,30 +1366,30 @@
           "name": "sequential_model",
           "type": "MODEL",
           "links": [
-            38
+            43
           ]
         },
         {
           "name": "joint_model",
           "type": "MODEL",
           "links": [
-            44
+            49
           ]
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            34,
-            36,
-            42
+            39,
+            41,
+            47
           ]
         },
         {
           "name": "total_frames",
           "type": "INT",
           "links": [
-            33
+            38
           ]
         },
         {
@@ -1361,7 +1448,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 31,
+          "link": 36,
           "widget": {
             "name": "width"
           }
@@ -1369,7 +1456,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 32,
+          "link": 37,
           "widget": {
             "name": "height"
           }
@@ -1377,7 +1464,7 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 33,
+          "link": 38,
           "widget": {
             "name": "length"
           }
@@ -1388,7 +1475,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            39
+            44
           ]
         }
       ],
@@ -1426,7 +1513,7 @@
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 34
+          "link": 39
         }
       ],
       "outputs": [
@@ -1434,8 +1521,8 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            37,
-            43
+            42,
+            48
           ]
         }
       ],
@@ -1465,22 +1552,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 38
+          "link": 43
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 36
+          "link": 41
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 37
+          "link": 42
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 39
+          "link": 44
         },
         {
           "name": "add_noise",
@@ -1501,7 +1588,7 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 35,
+          "link": 40,
           "widget": {
             "name": "steps"
           }
@@ -1541,7 +1628,7 @@
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 40,
+          "link": 45,
           "widget": {
             "name": "end_at_step"
           }
@@ -1560,7 +1647,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            45
+            50
           ]
         }
       ],
@@ -1611,22 +1698,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 44
+          "link": 49
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 42
+          "link": 47
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 43
+          "link": 48
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 45
+          "link": 50
         },
         {
           "name": "add_noise",
@@ -1647,7 +1734,7 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 41,
+          "link": 46,
           "widget": {
             "name": "steps"
           }
@@ -1679,7 +1766,7 @@
         {
           "name": "start_at_step",
           "type": "INT",
-          "link": 46,
+          "link": 51,
           "widget": {
             "name": "start_at_step"
           }
@@ -1687,7 +1774,7 @@
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 47,
+          "link": 52,
           "widget": {
             "name": "end_at_step"
           }
@@ -1706,8 +1793,8 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            48,
-            50
+            53,
+            55
           ]
         }
       ],
@@ -1769,8 +1856,8 @@
           "name": "FLOAT",
           "type": "FLOAT",
           "links": [
-            53,
-            56
+            58,
+            61
           ]
         }
       ],
@@ -1804,12 +1891,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 48
+          "link": 53
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 49
+          "link": 54
         }
       ],
       "outputs": [
@@ -1817,7 +1904,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            52
+            57
           ]
         }
       ],
@@ -1847,12 +1934,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 50
+          "link": 55
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 51
+          "link": 56
         }
       ],
       "outputs": [
@@ -1860,7 +1947,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            55
+            60
           ]
         }
       ],
@@ -1890,7 +1977,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 52
+          "link": 57
         },
         {
           "name": "source_frames",
@@ -1917,7 +2004,7 @@
         {
           "name": "fps",
           "type": "FLOAT",
-          "link": 53,
+          "link": 58,
           "widget": {
             "name": "fps"
           }
@@ -1961,7 +2048,7 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            54
+            59
           ]
         }
       ],
@@ -2006,18 +2093,18 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 54
+          "link": 59
         },
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 55,
+          "link": 60,
           "shape": 7
         },
         {
           "name": "fps",
           "type": "FLOAT",
-          "link": 56,
+          "link": 61,
           "widget": {
             "name": "fps"
           }
@@ -2055,7 +2142,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            57
+            62
           ]
         }
       ],
@@ -2095,7 +2182,7 @@
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 57
+          "link": 62
         },
         {
           "name": "filename_prefix",
@@ -2161,7 +2248,7 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "video/HybridNative_FL2VA_EndGuide",
+        "video/HybridNative_Ref2VA_Keyframes",
         "mp4",
         "h264",
         "re-encode",
@@ -2169,7 +2256,7 @@
         "auto"
       ],
       "widgets_values_named": {
-        "filename_prefix": "video/HybridNative_FL2VA_EndGuide",
+        "filename_prefix": "video/HybridNative_Ref2VA_Keyframes",
         "format": "mp4",
         "format.codec": "h264",
         "format.codec.encoding": "re-encode",
@@ -2193,13 +2280,13 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "READ ME - FL2VA",
+      "title": "READ ME - R2V (Ref2VA) keyframes",
       "properties": {},
       "widgets_values": [
-        "# FL2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **FL2VA base:** [minimax_h3_fl2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `fl2va_stock_first.png` and `fl2va_stock_last.png`, or upload your own first and last images in the two **Load Image** nodes. The first image connects to window 1. The last image also acts as a recurring composition guide and connects to `last_frame` on all three encoders. Window 1 reaches that view; windows 2 and 3 continue the shot from it. This example favors a stable long shot: the ending composition is reached before the end of the whole video. For first-image-only generation, disconnect `last_frame` on all three encoders.\n3. Edit **Prompt 1, 2 and 3** as an opening, continuation and ending. Keep identity, clothing, hairstyle, camera distance and lighting consistent. Describe only that window's part of the action; repeating a complete camera move in every box can ask the model to restart it.\n4. Set **Width / Height** (default **480 x 832**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_FL2VA*`.\n\n## Pinned context and overlap\n\nThe example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.\n\nContext is counted on H3's latent grid: 5, 9, 13, 17, 22 and 39 are useful exact settings for this overlap; 6 rounds up to 9. Set **overlap_pin = full** for the previous behavior. **context_frames = 0** releases all video pins but still passes overlap and audio context. This option currently needs full-frame regeneration outside any accepted prefix.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Values **1-7** use a joint finish; **8** is a fully sequential baseline. **Total steps** also connects to Hybrid Windows.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\nFor the **8+0 baseline**, set only **Switch at step = 8**. Each window finishes all eight steps before passing its completed overlap forward. The second native sampler passes the latent through without sampling. This is useful for checking whether a visible change comes from joint finishing; it does not blend or repair decoded frames.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Keep the first image only on window 1. Connect the recurring last-image guide to the added encoder and describe a continuation of the established shot.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n\n## Research credit\n\nCredit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for\n[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)\n(ICML 2024), an inspiration for temporal generation through sliding-window\ndenoising. This H3 adaptation uses sequential Euler warmup followed by a joint\nwindow finish.\n"
+        "# R2V (Ref2VA) Hybrid keyframes - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is connected to all three conditioning nodes as `<Picture 1>`, and to both sockets of **H3 Hybrid Keyframes**, whose `frame_indices` `0, -1` pins that composition at the first and the last frame: the take opens and closes on the reference view while `<Picture 1>` guides appearance throughout. The canvas is portrait (480 x 832) to match the photo; a landscape canvas would crop it.\n3. Edit **Prompt 1, 2 and 3** as an opening, continuation and ending. Keep identity, clothing, hairstyle, camera distance and lighting consistent. Describe only that window's part of the action; repeating a complete camera move in every box can ask the model to restart it.\n4. Set **Width / Height** (default **480 x 832**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Keyframes at frame numbers\n\n**H3 Hybrid Keyframes** takes any number of stills and one list of frame numbers counted over the\n**whole video**, starting at 0 (negative numbers count from the end, -1 = the last frame). To add a\nstill at frame 100, connect another Load Image to the node (a new `keyframe` socket appears) and\nappend its number: `0, 100, -1`. Numbers and images pair up in socket order; a batch in one socket\nuses one number per frame.\n\nHybrid Windows does the window arithmetic: with 243-frame windows and a 39-frame overlap, window 2\nstarts at frame 204 and window 3 at 408, so frame 300 becomes window 2's own frame 96. A frame inside\na shared overlap is given to both windows. The Hybrid Windows **report** lists every placement. Stills\nare fitted to the canvas (`fit` = crop keeps the aspect and trims; stretch keeps every pixel). `width`\nand `height` are connected to the size nodes here; at 0 the node takes the size from a master latent\nor from the encoders' own guides.\n\nA keyframe is conditioning, the same rows core's **Add Guide for MiniMax H3** writes, not pasted\npixels: the model is guided toward the still at that moment. FL2VA is the checkpoint trained on frame\nanchors. Mid-video anchors are less constrained than the opening frame; keep prompts consistent with\nthe stills.\n\n## Pinned context and overlap\n\nThe example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.\n\nContext is counted on H3's latent grid: 5, 9, 13, 17, 22 and 39 are useful exact settings for this overlap; 6 rounds up to 9. Set **overlap_pin = full** for the previous behavior. **context_frames = 0** releases all video pins but still passes overlap and audio context. This option currently needs full-frame regeneration outside any accepted prefix.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Values **1-7** use a joint finish; **8** is a fully sequential baseline. **Total steps** also connects to Hybrid Windows.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\nFor the **8+0 baseline**, set only **Switch at step = 8**. Each window finishes all eight steps before passing its completed overlap forward. The second native sampler passes the latent through without sampling. This is useful for checking whether a visible change comes from joint finishing; it does not blend or repair decoded frames.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Keyframes need no change when a window is added: frame numbers keep counting over the longer video, and the report shows the window each one landed in.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n\n## Research credit\n\nCredit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for\n[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)\n(ICML 2024), an inspiration for temporal generation through sliding-window\ndenoising. This H3 adaptation uses sequential Euler warmup followed by a joint\nwindow finish.\n"
       ],
       "widgets_values_named": {
-        "text": "# FL2VA Hybrid - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **FL2VA base:** [minimax_h3_fl2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `fl2va_stock_first.png` and `fl2va_stock_last.png`, or upload your own first and last images in the two **Load Image** nodes. The first image connects to window 1. The last image also acts as a recurring composition guide and connects to `last_frame` on all three encoders. Window 1 reaches that view; windows 2 and 3 continue the shot from it. This example favors a stable long shot: the ending composition is reached before the end of the whole video. For first-image-only generation, disconnect `last_frame` on all three encoders.\n3. Edit **Prompt 1, 2 and 3** as an opening, continuation and ending. Keep identity, clothing, hairstyle, camera distance and lighting consistent. Describe only that window's part of the action; repeating a complete camera move in every box can ask the model to restart it.\n4. Set **Width / Height** (default **480 x 832**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_FL2VA*`.\n\n## Pinned context and overlap\n\nThe example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.\n\nContext is counted on H3's latent grid: 5, 9, 13, 17, 22 and 39 are useful exact settings for this overlap; 6 rounds up to 9. Set **overlap_pin = full** for the previous behavior. **context_frames = 0** releases all video pins but still passes overlap and audio context. This option currently needs full-frame regeneration outside any accepted prefix.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Values **1-7** use a joint finish; **8** is a fully sequential baseline. **Total steps** also connects to Hybrid Windows.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\nFor the **8+0 baseline**, set only **Switch at step = 8**. Each window finishes all eight steps before passing its completed overlap forward. The second native sampler passes the latent through without sampling. This is useful for checking whether a visible change comes from joint finishing; it does not blend or repair decoded frames.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Keep the first image only on window 1. Connect the recurring last-image guide to the added encoder and describe a continuation of the established shot.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n\n## Research credit\n\nCredit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for\n[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)\n(ICML 2024), an inspiration for temporal generation through sliding-window\ndenoising. This H3 adaptation uses sequential Euler warmup followed by a joint\nwindow finish.\n"
+        "text": "# R2V (Ref2VA) Hybrid keyframes - start here\n\nBuild one continuous video from three overlapping prompt windows. The first sampler works through their early steps in order; the second finishes them together, sharing predictions in the overlap.\n\n## Install and download\n\nInstall [ComfyUI-HybridWindows](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows) in `ComfyUI/custom_nodes/`, use a current ComfyUI with H3 support, then restart. The links below open the exact model pages; click **Download**. Folders are relative to your ComfyUI installation.\n\n- **Ref2VA base:** [minimax_h3_ref2va_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors)\n  Save in `models/diffusion_models/`.\n- **Matching native PDD LoRA:** [MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_comfy.safetensors)\n  Save in `models/loras/minimax/`.\n- **Text encoder:** [qwen3vl_32b_minimax_h3_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors)\n  Save in `models/text_encoders/`; CLIP Loader type = `minimax`.\n- **Video VAE:** [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Kijai/MiniMax-H3-experimental/blob/main/minimax_h3_video_vae_int8_convrot.safetensors)\n  Save in `models/vae/`.\n- **Audio VAE:** [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n  Save in `models/vae/`.\n\nRefresh the model lists after downloading and select your files in the loaders. Both examples use image conditioning and prompts. The sigma-shift MODEL connects directly to Hybrid Windows.\n\nUse the listed base with its matching PDD LoRA at **1.0**. A model with PDD already baked in would apply the same changes twice. The Ref2VA and FL2VA base/LoRA pairs are different.\n\n## Run the flow\n\n1. Copy the bundled images from [example_workflows/assets](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows/tree/main/example_workflows/assets) into `ComfyUI/input/hybrid_windows/`. The assets folder includes source credits and license links. You can also upload them through Load Image and select the uploaded filename.\n2. Use the bundled `ref2va_stock_portrait.jpg`, or upload your own image in **Load reference image**. It is connected to all three conditioning nodes as `<Picture 1>`, and to both sockets of **H3 Hybrid Keyframes**, whose `frame_indices` `0, -1` pins that composition at the first and the last frame: the take opens and closes on the reference view while `<Picture 1>` guides appearance throughout. The canvas is portrait (480 x 832) to match the photo; a landscape canvas would crop it.\n3. Edit **Prompt 1, 2 and 3** as an opening, continuation and ending. Keep identity, clothing, hairstyle, camera distance and lighting consistent. Describe only that window's part of the action; repeating a complete camera move in every box can ask the model to restart it.\n4. Set **Width / Height** (default **480 x 832**). **Window frames = 243**, **overlap = 39** gives **651 frames / 27.125 seconds** total at 24 fps. The full latent length is calculated automatically.\n5. Queue once; the complete video and generated audio save under `ComfyUI/output/video/HybridNative_Ref2VA*`.\n\n## Keyframes at frame numbers\n\n**H3 Hybrid Keyframes** takes any number of stills and one list of frame numbers counted over the\n**whole video**, starting at 0 (negative numbers count from the end, -1 = the last frame). To add a\nstill at frame 100, connect another Load Image to the node (a new `keyframe` socket appears) and\nappend its number: `0, 100, -1`. Numbers and images pair up in socket order; a batch in one socket\nuses one number per frame.\n\nHybrid Windows does the window arithmetic: with 243-frame windows and a 39-frame overlap, window 2\nstarts at frame 204 and window 3 at 408, so frame 300 becomes window 2's own frame 96. A frame inside\na shared overlap is given to both windows. The Hybrid Windows **report** lists every placement. Stills\nare fitted to the canvas (`fit` = crop keeps the aspect and trims; stretch keeps every pixel). `width`\nand `height` are connected to the size nodes here; at 0 the node takes the size from a master latent\nor from the encoders' own guides.\n\nA keyframe is conditioning, the same rows core's **Add Guide for MiniMax H3** writes, not pasted\npixels: the model is guided toward the still at that moment. FL2VA is the checkpoint trained on frame\nanchors. Mid-video anchors are less constrained than the opening frame; keep prompts consistent with\nthe stills.\n\n## Pinned context and overlap\n\nThe example uses **overlap_pin = tail_custom** and **context_frames = 5** on Hybrid Windows. All **39 overlap frames** still reach the model. During warmup, the last **5 video frames** follow the previous result; the first **34** may regenerate internally. Audio carry and the joint finish are unchanged.\n\nContext is counted on H3's latent grid: 5, 9, 13, 17, 22 and 39 are useful exact settings for this overlap; 6 rounds up to 9. Set **overlap_pin = full** for the previous behavior. **context_frames = 0** releases all video pins but still passes overlap and audio context. This option currently needs full-frame regeneration outside any accepted prefix.\n\n## Optional color stabilization\n\n**Video Color Stabilize** sits after Decode video and before Create Video. It is enabled at **strength 0.85**, uses the generated **1-8 second** interval as its color reference, and smooths tint/saturation drift over **2 seconds**. Brightness is preserved. Turn **enabled** off (or set strength to zero) for exact frame passthrough. The shared **Output FPS** node drives both the correction and video creation.\n\nThe optional `source_frames` input is for original, unnoised video frames aligned one-for-one with the complete generated timeline. It accounts for source color changes relative to the opening. Leave it disconnected for these image-conditioned examples; do not connect the portrait or first/last guide images. Without a source, intentional color changes may also be reduced. Process each continuous shot as one batch; split at scene cuts. This changes decoded color only, not sampling, audio, sharpness or spatial mottling.\n\n## Keep the two samplers paired\n\n- Both samplers: **8 total steps, Euler, simple, CFG 1**. Video/audio sigma shifts: **12 / 3**.\n- **Switch at step = 6** connects both sides of the handoff. Values **1-7** use a joint finish; **8** is a fully sequential baseline. **Total steps** also connects to Hybrid Windows.\n- **Sequential warmup:** start 0, end 6; add noise **enabled**; return leftover noise **enabled**.\n- **Joint finish:** start 6, end 8; add noise **disabled**; return leftover noise **disabled**. Its latent comes from the first sampler.\n- For a new generation, set the same new noise seed in both samplers.\n\nFor the **8+0 baseline**, set only **Switch at step = 8**. Each window finishes all eight steps before passing its completed overlap forward. The second native sampler passes the latent through without sampling. This is useful for checking whether a visible change comes from joint finishing; it does not blend or repair decoded frames.\n\n## Longer videos\n\nWindow/overlap lengths follow H3's **17k+5** frame grid (overlap examples: 22, 39, 56). Overlap must be smaller than the window. Total frames = window + (number of prompts - 1) x (window - overlap).\n\nTo add a window, duplicate a prompt box and its native H3 conditioning node. Connect its positive output to the next Hybrid Windows prompt input, and share the width, height, window-length, CLIP and VAE connections. Keyframes need no change when a window is added: frame numbers keep counting over the longer video, and the report shows the window each one landed in.\n\nEach queue generates a fresh full timeline. [More detail and sampler diagram](https://github.com/Jalen-Brunson/ComfyUI-HybridWindows#how-it-works).\n\n## Research credit\n\nCredit to **David Ruhe, Jonathan Heek, Tim Salimans, and Emiel Hoogeboom** for\n[Rolling Diffusion Models](https://proceedings.mlr.press/v235/ruhe24a.html)\n(ICML 2024), an inspiration for temporal generation through sliding-window\ndenoising. This H3 adaptation uses sequential Euler warmup followed by a joint\nwindow finish.\n"
       },
       "color": "#234",
       "bgcolor": "#345"
@@ -2208,17 +2295,17 @@
   "links": [
     [
       1,
-      3,
+      2,
       0,
-      4,
+      3,
       0,
       "MODEL"
     ],
     [
       2,
-      4,
+      3,
       0,
-      5,
+      4,
       0,
       "MODEL"
     ],
@@ -2226,84 +2313,116 @@
       3,
       6,
       0,
-      15,
+      13,
       0,
-      "CLIP"
-    ],
-    [
-      4,
-      7,
-      0,
-      15,
-      1,
       "VAE"
     ],
     [
-      5,
-      14,
-      0,
-      15,
       4,
-      "STRING"
+      8,
+      0,
+      13,
+      5,
+      "INT"
+    ],
+    [
+      5,
+      9,
+      0,
+      13,
+      6,
+      "INT"
     ],
     [
       6,
-      9,
+      1,
       0,
-      15,
-      5,
-      "INT"
+      13,
+      1,
+      "IMAGE"
     ],
     [
       7,
-      10,
+      1,
       0,
-      15,
-      6,
-      "INT"
+      13,
+      2,
+      "IMAGE"
     ],
     [
       8,
-      11,
+      5,
       0,
       15,
-      7,
-      "INT"
+      0,
+      "CLIP"
     ],
     [
       9,
-      1,
+      6,
       0,
       15,
-      2,
-      "IMAGE"
+      1,
+      "VAE"
     ],
     [
       10,
-      2,
+      14,
       0,
       15,
-      3,
-      "IMAGE"
+      4,
+      "STRING"
     ],
     [
       11,
-      6,
+      8,
       0,
-      17,
-      0,
-      "CLIP"
+      15,
+      5,
+      "INT"
     ],
     [
       12,
+      9,
+      0,
+      15,
+      6,
+      "INT"
+    ],
+    [
+      13,
+      10,
+      0,
+      15,
       7,
+      "INT"
+    ],
+    [
+      14,
+      1,
+      0,
+      15,
+      3,
+      "IMAGE"
+    ],
+    [
+      15,
+      5,
+      0,
+      17,
+      0,
+      "CLIP"
+    ],
+    [
+      16,
+      6,
       0,
       17,
       1,
       "VAE"
     ],
     [
-      13,
+      17,
       16,
       0,
       17,
@@ -2311,55 +2430,55 @@
       "STRING"
     ],
     [
-      14,
-      9,
+      18,
+      8,
       0,
       17,
       5,
       "INT"
     ],
     [
-      15,
-      10,
+      19,
+      9,
       0,
       17,
       6,
       "INT"
     ],
     [
-      16,
-      11,
+      20,
+      10,
       0,
       17,
       7,
       "INT"
     ],
     [
-      17,
-      2,
+      21,
+      1,
       0,
       17,
       3,
       "IMAGE"
     ],
     [
-      18,
-      6,
+      22,
+      5,
       0,
       19,
       0,
       "CLIP"
     ],
     [
-      19,
-      7,
+      23,
+      6,
       0,
       19,
       1,
       "VAE"
     ],
     [
-      20,
+      24,
       18,
       0,
       19,
@@ -2367,63 +2486,63 @@
       "STRING"
     ],
     [
-      21,
-      9,
-      0,
-      19,
-      5,
-      "INT"
-    ],
-    [
-      22,
-      10,
-      0,
-      19,
-      6,
-      "INT"
-    ],
-    [
-      23,
-      11,
-      0,
-      19,
-      7,
-      "INT"
-    ],
-    [
-      24,
-      2,
-      0,
-      19,
-      3,
-      "IMAGE"
-    ],
-    [
       25,
+      8,
+      0,
+      19,
       5,
-      0,
-      20,
-      0,
-      "MODEL"
+      "INT"
     ],
     [
       26,
-      11,
-      0,
-      20,
       9,
+      0,
+      19,
+      6,
       "INT"
     ],
     [
       27,
-      13,
+      10,
+      0,
+      19,
+      7,
+      "INT"
+    ],
+    [
+      28,
+      1,
+      0,
+      19,
+      3,
+      "IMAGE"
+    ],
+    [
+      29,
+      4,
+      0,
+      20,
+      0,
+      "MODEL"
+    ],
+    [
+      30,
+      10,
+      0,
+      20,
+      9,
+      "INT"
+    ],
+    [
+      31,
+      12,
       0,
       20,
       11,
       "INT"
     ],
     [
-      28,
+      32,
       15,
       0,
       20,
@@ -2431,7 +2550,7 @@
       "CONDITIONING"
     ],
     [
-      29,
+      33,
       17,
       0,
       20,
@@ -2439,55 +2558,63 @@
       "CONDITIONING"
     ],
     [
-      30,
+      34,
       19,
       0,
       20,
       3,
-      "CONDITIONING"
-    ],
-    [
-      31,
-      9,
-      0,
-      21,
-      0,
-      "INT"
-    ],
-    [
-      32,
-      10,
-      0,
-      21,
-      1,
-      "INT"
-    ],
-    [
-      33,
-      20,
-      3,
-      21,
-      2,
-      "INT"
-    ],
-    [
-      34,
-      20,
-      2,
-      22,
-      0,
       "CONDITIONING"
     ],
     [
       35,
       13,
       0,
+      20,
+      8,
+      "H3_HYBRID_KEYFRAMES"
+    ],
+    [
+      36,
+      8,
+      0,
+      21,
+      0,
+      "INT"
+    ],
+    [
+      37,
+      9,
+      0,
+      21,
+      1,
+      "INT"
+    ],
+    [
+      38,
+      20,
+      3,
+      21,
+      2,
+      "INT"
+    ],
+    [
+      39,
+      20,
+      2,
+      22,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      40,
+      12,
+      0,
       23,
       6,
       "INT"
     ],
     [
-      36,
+      41,
       20,
       2,
       23,
@@ -2495,7 +2622,7 @@
       "CONDITIONING"
     ],
     [
-      37,
+      42,
       22,
       0,
       23,
@@ -2503,7 +2630,7 @@
       "CONDITIONING"
     ],
     [
-      38,
+      43,
       20,
       0,
       23,
@@ -2511,7 +2638,7 @@
       "MODEL"
     ],
     [
-      39,
+      44,
       21,
       0,
       23,
@@ -2519,23 +2646,23 @@
       "LATENT"
     ],
     [
-      40,
-      12,
+      45,
+      11,
       0,
       23,
       11,
       "INT"
     ],
     [
-      41,
-      13,
+      46,
+      12,
       0,
       24,
       6,
       "INT"
     ],
     [
-      42,
+      47,
       20,
       2,
       24,
@@ -2543,7 +2670,7 @@
       "CONDITIONING"
     ],
     [
-      43,
+      48,
       22,
       0,
       24,
@@ -2551,7 +2678,7 @@
       "CONDITIONING"
     ],
     [
-      44,
+      49,
       20,
       1,
       24,
@@ -2559,7 +2686,7 @@
       "MODEL"
     ],
     [
-      45,
+      50,
       23,
       0,
       24,
@@ -2567,23 +2694,23 @@
       "LATENT"
     ],
     [
-      46,
-      12,
+      51,
+      11,
       0,
       24,
       10,
       "INT"
     ],
     [
-      47,
-      13,
+      52,
+      12,
       0,
       24,
       11,
       "INT"
     ],
     [
-      48,
+      53,
       24,
       0,
       26,
@@ -2591,31 +2718,31 @@
       "LATENT"
     ],
     [
-      49,
+      54,
+      6,
+      0,
+      26,
+      1,
+      "VAE"
+    ],
+    [
+      55,
+      24,
+      0,
+      27,
+      0,
+      "LATENT"
+    ],
+    [
+      56,
       7,
       0,
-      26,
-      1,
-      "VAE"
-    ],
-    [
-      50,
-      24,
-      0,
-      27,
-      0,
-      "LATENT"
-    ],
-    [
-      51,
-      8,
-      0,
       27,
       1,
       "VAE"
     ],
     [
-      52,
+      57,
       26,
       0,
       28,
@@ -2623,7 +2750,7 @@
       "IMAGE"
     ],
     [
-      53,
+      58,
       25,
       0,
       28,
@@ -2631,7 +2758,7 @@
       "FLOAT"
     ],
     [
-      54,
+      59,
       28,
       0,
       29,
@@ -2639,7 +2766,7 @@
       "IMAGE"
     ],
     [
-      55,
+      60,
       27,
       0,
       29,
@@ -2647,7 +2774,7 @@
       "AUDIO"
     ],
     [
-      56,
+      61,
       25,
       0,
       29,
@@ -2655,7 +2782,7 @@
       "FLOAT"
     ],
     [
-      57,
+      62,
       29,
       0,
       30,
@@ -2678,7 +2805,7 @@
     },
     {
       "id": 2,
-      "title": "First and last images",
+      "title": "Reference image and keyframes",
       "bounding": [
         1680,
         0,

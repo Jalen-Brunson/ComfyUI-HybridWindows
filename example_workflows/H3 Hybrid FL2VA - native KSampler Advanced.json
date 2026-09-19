@@ -1185,6 +1185,12 @@
           "shape": 7
         },
         {
+          "name": "keyframes",
+          "type": "H3_HYBRID_KEYFRAMES",
+          "link": null,
+          "shape": 7
+        },
+        {
           "name": "window_frames",
           "type": "INT",
           "link": 23,
@@ -2377,7 +2383,7 @@
       11,
       0,
       20,
-      8,
+      9,
       "INT"
     ],
     [
@@ -2385,7 +2391,7 @@
       13,
       0,
       20,
-      10,
+      11,
       "INT"
     ],
     [

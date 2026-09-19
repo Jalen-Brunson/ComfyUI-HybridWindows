@@ -16,8 +16,8 @@ def intersects(a, b):
     return a[0] < b[0]+b[2] and b[0] < a[0]+a[2] and a[1] < b[1]+b[3] and b[1] < a[1]+a[3]
 
 
-async def validate(mode, end_guide=False):
-    graph, api = await builder.build(mode, end_guide=end_guide)
+async def validate(mode, end_guide=False, keyframes=False):
+    graph, api = await builder.build(mode, end_guide=end_guide, keyframes=keyframes)
     result = await execution.validate_prompt("hybrid-native-validation", api, None)
     assert result[0], json.dumps(result, indent=2, default=str)
     by_id = {n["id"]: n for n in graph["nodes"]}
@@ -57,8 +57,11 @@ async def validate(mode, end_guide=False):
         assert len(loaders) == 2
         conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ImageToVideo"]
         assert len(conds) == 3
-        assert conds[0]["inputs"]["first_frame"] == [str(loaders[0]["id"]), 0]
-        assert all("first_frame" not in c["inputs"] for c in conds[1:])
+        if keyframes:
+            assert all("first_frame" not in c["inputs"] and "last_frame" not in c["inputs"] for c in conds)
+        else:
+            assert conds[0]["inputs"]["first_frame"] == [str(loaders[0]["id"]), 0]
+            assert all("first_frame" not in c["inputs"] for c in conds[1:])
         if end_guide:
             assert all(c["inputs"]["last_frame"] == [str(loaders[1]["id"]), 0] for c in conds)
         else:
@@ -68,7 +71,22 @@ async def validate(mode, end_guide=False):
         conds = [n for n in api.values() if n["class_type"] == "MiniMaxH3ReferenceToVideo"]
         assert len(conds) == 3
         assert all(c["inputs"]["ref_images.ref_image_0"] == [str(loaders[0]["id"]), 0] for c in conds)
-    custom = {"H3HybridWindows", "VideoColorStabilize"}
+    if keyframes:
+        guides_id = next(k for k, n in api.items() if n["class_type"] == "H3HybridKeyframes")
+        guides = api[guides_id]["inputs"]
+        second = loaders[1] if mode == "fl2va" else loaders[0]
+        assert guides["images.keyframe_0"] == [str(loaders[0]["id"]), 0]
+        assert guides["images.keyframe_1"] == [str(second["id"]), 0]
+        assert guides["frame_indices"] == "0, -1"
+        assert guides["width"] == conds[0]["inputs"]["width"]
+        assert guides["height"] == conds[0]["inputs"]["height"]
+        assert guides["vae"] == conds[0]["inputs"]["vae"]
+        assert hybrid_inputs["keyframes"] == [guides_id, 0]
+        assert api[guides["width"][0]]["inputs"]["value"] == 480 and api[guides["height"][0]]["inputs"]["value"] == 832
+    else:
+        assert "keyframes" not in hybrid_inputs
+        assert not any(n["class_type"] == "H3HybridKeyframes" for n in api.values())
+    custom = {"H3HybridWindows", "VideoColorStabilize", "H3HybridKeyframes"}
     color_id = next(k for k, n in api.items() if n["class_type"] == "VideoColorStabilize")
     color_inputs = api[color_id]["inputs"]
     create = next(n["inputs"] for n in api.values() if n["class_type"] == "CreateVideo")
@@ -84,7 +102,7 @@ async def validate(mode, end_guide=False):
     for name in set(types)-custom-frontend:
         cls = builder.nodes.NODE_CLASS_MAPPINGS[name]
         assert cls.__module__ == "nodes" or cls.__module__.startswith("comfy_extras."), (name, cls.__module__)
-    report = {"mode": mode, "recurring_end_guide": end_guide, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-len(custom),
+    report = {"mode": mode, "recurring_end_guide": end_guide, "keyframes": keyframes, "comfy_prompt_valid": True, "nodes": len(types), "native_nodes": len(api)-len(custom & set(types)),
               "frontend_notes": types.count("MarkdownNote"),
               "custom_node_types": sorted(custom), "links": len(graph["links"]),
               "node_and_group_overlap": False, "gpu_render": "not run"}
@@ -95,6 +113,8 @@ async def main():
     for mode in ("ref2va", "fl2va"):
         await validate(mode)
     await validate("fl2va", end_guide=True)
+    await validate("fl2va", keyframes=True)
+    await validate("ref2va", keyframes=True)
 
 
 if __name__ == "__main__":

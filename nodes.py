@@ -25,6 +25,7 @@ from comfy_api.latest import io
 from comfy_extras.nodes_minimax_h3 import video_latent_t
 
 from .segment import SolverSegment
+from .keyframes import KEYFRAMES_TYPE, attach_keyframes
 from .windows import (JointWindows, WINDOW_KEY, audio_index_at, frame_at, pin_prefix,
                       plan_windows, select_conditioning, slice_av, tail_context_rows, window_options, write_new)
 
@@ -511,6 +512,8 @@ class H3HybridWindows(io.ComfyNode):
                                tooltip="full preserves the entire warmup overlap. tail_custom pins only context_frames at its end. The full overlap still reaches the model; accepted output stays fixed."),
                 io.Int.Input("context_frames", default=5, min=0, max=3600, optional=True,
                              tooltip="Used with overlap_pin=tail_custom. Video frames held at the end of the warmup overlap; 0 releases video carry. Rounds up to whole latent rows, capped by overlap. Audio carry and accepted output stay protected."),
+                KEYFRAMES_TYPE.Input("keyframes", optional=True,
+                                     tooltip="From H3 Hybrid Keyframes: stills pinned at frame numbers of the whole run. Each is placed into the window(s) that draw its frame, fitted to the canvas and encoded here; the report says where every one landed. Same conditioning rows as core's Add Guide, scoped per window in both stages."),
             ],
             outputs=[io.Model.Output(display_name="sequential_model"),
                      io.Model.Output(display_name="joint_model"),
@@ -524,7 +527,7 @@ class H3HybridWindows(io.ComfyNode):
     def execute(cls, model, window_frames, overlap_frames, prompts=None, total_steps=8,
                 cond_set=None, latent=None, denoise_mask=None, audio_denoise_mask=None,
                 denoise_mask_mode="max", accepted_prefix_frames=0, start_window=0,
-                noise_mode="global", overlap_pin="full", context_frames=5):
+                noise_mode="global", overlap_pin="full", context_frames=5, keyframes=None):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
         bound, count = bind_conditioning(cond_set, prompts)
@@ -535,6 +538,9 @@ class H3HybridWindows(io.ComfyNode):
         prepared = prepare_source(run, latent, denoise_mask, audio_denoise_mask,
                                   denoise_mask_mode, accepted_prefix_frames)
         report = run_report(run, count, prepared)
+        guide_lines = attach_keyframes(keyframes, bound, plan, count, prepared, run.accepted_v)
+        if guide_lines:
+            report += "\n" + "\n".join(guide_lines)
         sequential = model.clone()
         add_outermost_wrapper(sequential, WrappersMP.OUTER_SAMPLE, "hybrid_sequential", SequentialWindows(run))
         joint = model.clone()
