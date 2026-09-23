@@ -286,6 +286,16 @@ is corrected before video encoding, avoiding a separate recompression pass.
 
 ## Installation
 
+### Native PDD + DMD latent upscale
+
+Separate [Ref2V and FL2V upscale flows](docs/native-latent-upscale.md) use seven
+native PDD Euler/simple steps, a clean latent upscale, and two DMD joint steps.
+The hybrid upscaler nodes and handoff helpers are included in this repository.
+Install the [external 3D latent upscaler and model files](docs/native-latent-upscale.md#install-the-node-dependencies)
+listed in the guide; the workflow folder also includes an exact node dependency manifest.
+
+### Install HybridWindows
+
 From your ComfyUI `custom_nodes` directory:
 
 ```bash

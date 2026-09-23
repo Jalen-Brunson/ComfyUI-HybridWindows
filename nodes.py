@@ -104,6 +104,9 @@ class HybridRun:
         self.stash = None
         self.overlap_pin = "full"
         self.context_frames = 5
+        self.audio_carry = "full"
+        self.audio_carry_strength = 1.0
+        self.audio_release = None
 
     def splice_accepted(self, packed, shapes):
         """Accepted rows come from the input, not from the sampler."""
@@ -177,7 +180,10 @@ class SequentialWindows:
         noise_parts = comfy.utils.unpack_latents(noise, shapes)
         mask_parts = (comfy.utils.unpack_latents(denoise_mask, shapes)
                       if denoise_mask is not None else None)
-        if run.overlap_pin == "tail_custom" and mask_parts is not None:
+        if run.audio_carry == "regenerate" and mask_parts is not None:
+            if torch.any(mask_parts[1][:, :, :, run.accepted_a:] != 1):
+                raise ValueError("Audio-carry diagnostic cannot release source-protected fresh audio.")
+        if run.overlap_pin != "full" and mask_parts is not None:
             if torch.any(mask_parts[0][:, :, run.accepted_v:] != 1):
                 raise ValueError("Partial video pinning needs full-frame regeneration outside the accepted prefix.")
         output = [torch.empty_like(x, dtype=torch.float32) for x in clean]
@@ -198,12 +204,38 @@ class SequentialWindows:
                         else [torch.ones_like(x) for x in source])
                 carry_v, carry_a = max(0, previous[0]-span[0]), max(0, previous[1]-span[2])
                 original_head = None
-                mask[0][:, :, :carry_v] = 0
-                if run.overlap_pin == "tail_custom" and carry_v:
+                if run.overlap_pin != "full" and carry_v:
                     original_head = source[0][:, :, :carry_v].clone()
-                    held = tail_context_rows(span[0], previous[0], run.context_frames)
-                    mask[0][:, :, :carry_v - held] = 1
-                mask[1][:, :, :, :carry_a] = 0
+                mask[0][:, :, :carry_v] = 0
+                if run.overlap_pin == "tapered" and carry_v:
+                    # Temporary conditioning only; capture restores the original overlap.
+                    held = max(1, carry_v // 2)
+                    released = carry_v - held
+                    if released:
+                        ramp = torch.arange(1, released + 1, device=mask[0].device,
+                                            dtype=mask[0].dtype) / released
+                        mask[0][:, :, held:carry_v] = ramp.reshape(1, 1, -1, 1, 1)
+                if run.overlap_pin in ("tail_5", "tail_17", "tail_custom") and carry_v:
+                    tail_rows = (tail_context_rows(span[0], previous[0], run.context_frames)
+                                 if run.overlap_pin == "tail_custom"
+                                 else 2 if run.overlap_pin == "tail_5" else 5)
+                    mask[0][:, :, :max(0, carry_v - tail_rows)] = 1
+                # Soften only temporary audio carry. Restore the original head
+                # after sampling; source-pinned audio remains protected.
+                head_value = 1.0 - run.audio_carry_strength
+                original_head_a = None
+                if carry_a:
+                    head = mask[1][:, :, :, :carry_a]
+                    accepted_carry_a = min(carry_a, max(0, run.accepted_a - span[2]))
+                    keep = head.clone()
+                    keep[:, :, :, :accepted_carry_a] = 1.0
+                    mask[1][:, :, :, :carry_a] = torch.minimum(keep, torch.full_like(head, head_value))
+                    if head_value > 0:
+                        original_head_a = source[1][:, :, :, :carry_a].clone()
+                if run.audio_carry == "regenerate" and carry_a:
+                    source[1][:, :, :, :carry_a] = 0
+                    mask[1][:, :, :, :carry_a] = 1
+                    run.audio_release = (span[2], span[2] + carry_a)
                 source_packed, sub_shapes = comfy.utils.pack_latents(source)
                 noise_packed, window_seed = self._window_noise(
                     source, span, noise_parts, seed, index, latent_image)
@@ -241,9 +273,12 @@ class SequentialWindows:
                     # Native process_latent_out also removes H3's carried-audio scale.
                     last_prediction = guider.inner_model.process_latent_out(x0).to(
                         device=latent_image.device, dtype=torch.float32).clone()
-                    if original_head is not None:
+                    if original_head is not None or original_head_a is not None:
                         prediction = comfy.utils.unpack_latents(last_prediction, sub_shapes)
-                        prediction[0][:, :, :carry_v] = original_head.to(prediction[0])
+                        if original_head is not None:
+                            prediction[0][:, :, :carry_v] = original_head.to(prediction[0])
+                        if original_head_a is not None:
+                            prediction[1][:, :, :, :carry_a] = original_head_a.to(prediction[1])
                         last_prediction = comfy.utils.pack_latents(prediction)[0]
                     if callback is not None:
                         # The sampler node's callback (progress bar, previews, the
@@ -267,6 +302,13 @@ class SequentialWindows:
                               span, previous)
                     write_new(noises, comfy.utils.unpack_latents(noise_packed, sub_shapes),
                               span, previous)
+                    if run.audio_carry == "regenerate" and carry_a:
+                        # Keep scratch audio's actual noisy state for the joint finish.
+                        a0, a1 = run.audio_release
+                        state_a = comfy.utils.unpack_latents(segment.final_state, sub_shapes)[1]
+                        noise_a = comfy.utils.unpack_latents(noise_packed, sub_shapes)[1]
+                        states[1][:, :, :, a0:a1] = state_a[:, :, :, :carry_a].to(states[1])
+                        noises[1][:, :, :, a0:a1] = noise_a[:, :, :, :carry_a].to(noises[1])
                 splice(clean, comfy.utils.unpack_latents(last_prediction, sub_shapes))
                 previous = (span[1], span[3])
         finally:
@@ -339,6 +381,14 @@ class JointStage:
             clean = latent_image
             if run.source is not None:
                 clean = comfy.utils.pack_latents([x.to(latent_image) for x in run.source])[0]
+            if run.audio_release is not None:
+                a0, a1 = run.audio_release
+                clean_parts = [x.clone() for x in comfy.utils.unpack_latents(clean, latent_shapes)]
+                clean_parts[1][:, :, :, a0:a1] = 0
+                clean = comfy.utils.pack_latents(clean_parts)[0]
+                mask_parts = [x.clone() for x in comfy.utils.unpack_latents(denoise_mask, latent_shapes)]
+                mask_parts[1][:, :, :, a0:a1] = 1
+                denoise_mask = comfy.utils.pack_latents(mask_parts)[0]
             out = executor(stash.noise.to(device=latent_image.device, dtype=latent_image.dtype),
                            clean, SolverSegment(sampler, initial_state=raw), sigmas, denoise_mask,
                            callback, disable_pbar, stash.seed, latent_shapes=latent_shapes)
@@ -455,7 +505,13 @@ def run_report(run, count, prepared):
                      "stages, its windows skip the warmup, and the output takes them from the input.")
     lines.append("Noise: " + ("per window, seed + %d + window index." % run.start_window
                               if run.noise_mode == "per_window" else "one draw sliced per window."))
-    lines.append(f"Video overlap pin: {run.overlap_pin}.")
+    strength = run.audio_carry_strength
+    lines.append(f"Video overlap pin: {run.overlap_pin}; audio carry: {run.audio_carry} at strength "
+                 f"{strength:.2f}" + (" (hard pin: the model may restart the audio reference at the first "
+                                      "free row, one overlap late)." if strength >= 1.0 else
+                                      f" (head re-noised {100 * (1 - strength):.0f}% as temporary "
+                                      "conditioning, like MMH3LoopingSampler's overlap_strength_audio; "
+                                      "original head restored, ownership unchanged)."))
     if run.overlap_pin == "tail_custom":
         if prepared is None:
             spans = [(i * run.plan.stride, i * run.plan.stride + run.plan.length)
@@ -508,10 +564,14 @@ class H3HybridWindows(io.ComfyNode):
                              tooltip="Global index of this run's first window, for per-window seeds. Wire the resume index shift."),
                 io.Combo.Input("noise_mode", options=NOISE_MODES, default="global", optional=True,
                                tooltip="per_window draws seed + start_window + index per window, matching the single-node hybrid sampler; global slices one draw."),
-                io.Combo.Input("overlap_pin", options=["full", "tail_custom"], default="full", optional=True,
-                               tooltip="full preserves the entire warmup overlap. tail_custom pins only context_frames at its end. The full overlap still reaches the model; accepted output stays fixed."),
+                io.Combo.Input("overlap_pin", options=["full", "tapered", "tail_5", "tail_17", "tail_custom"], default="full", optional=True,
+                               tooltip="Full-frame regeneration: tail_custom holds context_frames at the end of the temporary video overlap. tail_5/tail_17 hold the last 2/5 latent rows. Accepted output stays fixed."),
+                io.Combo.Input("audio_carry", options=["full", "regenerate"], default="full", optional=True,
+                               tooltip="Diagnostic for one accepted plus one fresh window: regenerate temporary overlap audio through both stages. Accepted output audio is restored."),
                 io.Int.Input("context_frames", default=5, min=0, max=3600, optional=True,
-                             tooltip="Used with overlap_pin=tail_custom. Video frames held at the end of the warmup overlap; 0 releases video carry. Rounds up to whole latent rows, capped by overlap. Audio carry and accepted output stay protected."),
+                             tooltip="Used with overlap_pin=tail_custom. Video frames held at the end of the warmup overlap; 0 releases all video carry. Rounds up to whole latent rows, capped by overlap. Report shows the effective count. Audio and accepted output stay protected."),
+                io.Float.Input("audio_carry_strength", default=1.0, min=0.0, max=1.0, step=0.05, optional=True,
+                               tooltip="How hard the warmup pins the carried AUDIO head of each fresh window. 1.0 = hard pin (legacy): measured 2026-09-15 to make the model restart the windowed <Audio N> reference at the first free row, so speech lands exactly one overlap (1.62 s) late in about half the fresh windows of a resume run. 0.9 = MMH3LoopingSampler's overlap_strength_audio (locked within 30 ms in the same probe): the head is re-noised 10% as temporary conditioning only -- the original head is restored after the window and the previous window keeps ownership, so output bytes do not change. Source-pinned audio (v2v) stays pinned."),
                 KEYFRAMES_TYPE.Input("keyframes", optional=True,
                                      tooltip="From H3 Hybrid Keyframes: stills pinned at frame numbers of the whole run. Each is placed into the window(s) that draw its frame, fitted to the canvas and encoded here; the report says where every one landed. Same conditioning rows as core's Add Guide, scoped per window in both stages."),
             ],
@@ -527,16 +587,23 @@ class H3HybridWindows(io.ComfyNode):
     def execute(cls, model, window_frames, overlap_frames, prompts=None, total_steps=8,
                 cond_set=None, latent=None, denoise_mask=None, audio_denoise_mask=None,
                 denoise_mask_mode="max", accepted_prefix_frames=0, start_window=0,
-                noise_mode="global", overlap_pin="full", context_frames=5, keyframes=None):
+                noise_mode="global", overlap_pin="full", audio_carry="full",
+                context_frames=5, audio_carry_strength=1.0, keyframes=None):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
+        if not 0.0 <= float(audio_carry_strength) <= 1.0:
+            raise ValueError("audio_carry_strength must be between 0 (free head) and 1 (hard pin).")
         bound, count = bind_conditioning(cond_set, prompts)
         plan = plan_windows(window_frames, overlap_frames, count)
         run = HybridRun(plan, total_steps, noise_mode, start_window)
         run.overlap_pin = overlap_pin
         run.context_frames = int(context_frames)
+        run.audio_carry = audio_carry
+        run.audio_carry_strength = float(audio_carry_strength)
         prepared = prepare_source(run, latent, denoise_mask, audio_denoise_mask,
                                   denoise_mask_mode, accepted_prefix_frames)
+        if audio_carry == "regenerate" and (plan.count != 2 or run.accepted_v != plan.length):
+            raise ValueError("Audio-carry diagnostic requires exactly one accepted window and one fresh window.")
         report = run_report(run, count, prepared)
         guide_lines = attach_keyframes(keyframes, bound, plan, count, prepared, run.accepted_v)
         if guide_lines:
