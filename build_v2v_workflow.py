@@ -16,7 +16,7 @@ NAME = "V2V Hybrid Sampling with inpainting option"
 
 
 
-async def build(source_video="input/source.mp4", mask_video_path="input/mask.webm", control_video="input/control.mp4", *, enable_mask=False, enable_control2=False, enable_blur=True, reference_mode=0):
+async def build(source_video="", mask_video_path="input/mask.webm", control_video="input/control.mp4", *, enable_mask=False, enable_control2=False, enable_blur=True, reference_mode=0):
     server.PromptServer(asyncio.get_running_loop())
     nodes.NODE_CLASS_MAPPINGS.update(nodes_preview_any.NODE_CLASS_MAPPINGS)
     for module in (nodes_audio, nodes_minimax_h3, nodes_video, nodes_custom_sampler,
