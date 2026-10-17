@@ -1,0 +1,64 @@
+{
+  "workflows": [
+    "Ref2V Hybrid Native - PDD + DMD latent upscale.json",
+    "FL2V Hybrid Native - PDD + DMD latent upscale.json"
+  ],
+  "dependencies": [
+    {
+      "name": "ComfyUI",
+      "repository": "https://github.com/comfyanonymous/ComfyUI",
+      "tested_commit": "0f74f7fb9f83a78bf46188fd4fd53e6bc44c1ae8",
+      "nodes": [
+        "BasicGuider",
+        "BasicScheduler",
+        "CLIPLoader",
+        "ComfyMathExpression",
+        "CreateVideo",
+        "DisableNoise",
+        "EmptyMiniMaxH3LatentAV",
+        "KSamplerSelect",
+        "LoadImage",
+        "LoraLoaderModelOnly",
+        "ManualSigmas",
+        "MiniMaxH3ImageToVideo",
+        "MiniMaxH3ReferenceToVideo",
+        "MiniMaxH3SigmaShift",
+        "PreviewAny",
+        "PrimitiveFloat",
+        "PrimitiveInt",
+        "PrimitiveStringMultiline",
+        "RandomNoise",
+        "SamplerCustomAdvanced",
+        "SaveVideo",
+        "SplitSigmas",
+        "UNETLoader",
+        "VAEDecode",
+        "VAEDecodeAudio",
+        "VAELoader"
+      ]
+    },
+    {
+      "name": "ComfyUI-HybridWindows",
+      "repository": "https://github.com/Jalen-Brunson/ComfyUI-HybridWindows",
+      "version": "this checkout",
+      "nodes": [
+        "H3HybridWindows",
+        "H3HybridCleanLatentUpscale"
+      ],
+      "included_helpers": [
+        "H3HybridLatentUpscale",
+        "H3HybridWarmupPrior"
+      ]
+    },
+    {
+      "name": "Comfyui_Minimax_h3_latent_Upscaler",
+      "repository": "https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler",
+      "tested_commit": "d7c01b9011f2e8439493f6c02c29995a27df276f",
+      "install_directory": "custom_nodes/Comfyui_Minimax_h3_latent_Upscaler",
+      "nodes": [
+        "MinimaxH3LatentUpscaler3D"
+      ],
+      "usage": "Called internally by H3HybridCleanLatentUpscale; required even though no standalone node appears in the workflow."
+    }
+  ]
+}

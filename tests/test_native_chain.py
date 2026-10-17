@@ -1,6 +1,7 @@
 """Exercise stock KSampler Advanced/CFGGuider/Euler with a tiny CPU H3 stand-in."""
 
 import importlib.util
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -8,7 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parents[1]))
+sys.path.insert(0, os.environ.get("COMFYUI_PATH", str(ROOT.parents[1])))
 sys.argv = [sys.argv[0], "--cpu"]
 import comfy.options
 comfy.options.enable_args_parsing()
@@ -352,6 +353,108 @@ def masked_latent(frames, keep_video=0, keep_audio=0):
 class NativeSourceTests(unittest.TestCase):
     """The optional inputs: a source master, its pins, resume and per-window noise."""
 
+    def test_audio_release_preserves_prefix_and_reaches_joint_finish(self):
+        source = masked_latent(107)
+        src_v, src_a = [x.clone() for x in source["samples"].unbind()]
+        results, joint_audio = [], []
+        for mode in ("full", "regenerate"):
+            m = model()
+            seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+                m, 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                latent=source, accepted_prefix_frames=73, noise_mode="per_window", audio_carry=mode)
+            result = custom_sample(seq, joint, prepared, cond)
+            video, audio = result["samples"].unbind()
+            nv = video_latent_t(73)
+            na = windows.audio_index_at(nv, src_v.shape[2], src_a.shape[3])
+            torch.testing.assert_close(video[:, :, :nv], src_v[:, :, :nv], rtol=0, atol=0)
+            torch.testing.assert_close(audio[:, :, :, :na], src_a[:, :, :, :na], rtol=0, atol=0)
+            results.append(video[:, :, nv:])
+            call = next(c for c in m.model.seen if len(c["sigmas"]) == 3 and c["prompt"] == 1)
+            joint_audio.append(comfy.utils.unpack_latents(call["x"], call["shapes"])[1])
+            self.assertIn(f"audio carry: {mode}", report)
+        self.assertFalse(torch.allclose(*results))
+        self.assertFalse(torch.allclose(joint_audio[0][:, :, :, :65], joint_audio[1][:, :, :, :65]))
+        torch.testing.assert_close(source["samples"].unbind()[0], src_v, rtol=0, atol=0)
+        torch.testing.assert_close(source["samples"].unbind()[1], src_a, rtol=0, atol=0)
+
+    def test_audio_release_requires_one_fresh_resume_window(self):
+        with self.assertRaisesRegex(ValueError, "one accepted window"):
+            hybrid.H3HybridWindows.execute(model(), 39, 5, {"positive_0": prompt()},
+                                          latent=masked_latent(39), audio_carry="regenerate")
+
+    def test_audio_release_refuses_fresh_source_audio_pins(self):
+        source = masked_latent(107, keep_audio=140)
+        seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+            model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+            latent=source, accepted_prefix_frames=73, audio_carry="regenerate")
+        with self.assertRaisesRegex(ValueError, "source-protected fresh audio"):
+            custom_sample(seq, joint, prepared, cond)
+
+    def test_audio_carry_strength_softens_only_the_temporary_head(self):
+        # 1.0 = the legacy hard pin, byte-identical to a call without the argument;
+        # 0.9 re-noises the carried audio head 10 % in the WARMUP only (the mask the
+        # model sees), keeps the joint stage on the master's own pins, leaves the
+        # source-owned rows of the output untouched, and changes the fresh audio
+        # (the conditioning differed).
+        source = masked_latent(107)
+        original = [x.clone() for x in source["samples"].unbind()]
+        outputs = {}
+        for strength in (None, 1.0, 0.9):
+            m = model()
+            extra = {} if strength is None else {"audio_carry_strength": strength}
+            seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+                m, 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                latent=source, accepted_prefix_frames=73, noise_mode="per_window",
+                total_steps=10, **extra)
+            result = custom_sample(seq, joint, prepared, cond, steps=10)
+            video, audio = result["samples"].unbind()
+            nv = video_latent_t(73)
+            na = windows.audio_index_at(nv, original[0].shape[2], original[1].shape[3])
+            torch.testing.assert_close(video[:, :, :nv], original[0][:, :, :nv], rtol=0, atol=0)
+            torch.testing.assert_close(audio[:, :, :, :na], original[1][:, :, :, :na], rtol=0, atol=0)
+            warm = next(c for c in m.model.seen if c["prompt"] == 1 and len(c["sigmas"]) == 7)
+            head = warm["masks"]["audio_denoise_mask"][..., :65]
+            # core hands the model the audio mask quantized to 1/64 steps (0.1 -> 0.1016)
+            torch.testing.assert_close(head, torch.full_like(head, 1.0 - (strength or 1.0)),
+                                       rtol=0, atol=0.01)
+            self.assertTrue(torch.all(warm["masks"]["audio_denoise_mask"][..., 65:] == 1))
+            joint_call = next(c for c in m.model.seen if c["prompt"] == 1 and len(c["sigmas"]) == 5)
+            self.assertTrue(torch.all(joint_call["masks"]["audio_denoise_mask"][..., :65] == 0))
+            self.assertIn(f"at strength {strength or 1.0:.2f}", report)
+            outputs[strength] = (video, audio)
+        for got, want in zip(outputs[None], outputs[1.0]):
+            torch.testing.assert_close(got, want, rtol=0, atol=0)
+        self.assertFalse(torch.allclose(outputs[1.0][1][:, :, :, na:], outputs[0.9][1][:, :, :, na:]))
+        for got, want in zip(source["samples"].unbind(), original):
+            torch.testing.assert_close(got, want, rtol=0, atol=0)
+        with self.assertRaisesRegex(ValueError, "audio_carry_strength"):
+            hybrid.H3HybridWindows.execute(model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                                          latent=masked_latent(107), accepted_prefix_frames=73,
+                                          audio_carry_strength=1.5)
+
+    def test_taper_changes_fresh_video_but_preserves_accepted_av(self):
+        source = masked_latent(107)
+        original = [x.clone() for x in source["samples"].unbind()]
+        results = []
+        for mode in ("full", "tapered", "tail_5", "tail_17"):
+            m = model()
+            seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+                m, 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                latent=source, accepted_prefix_frames=73, noise_mode="per_window",
+                overlap_pin=mode)
+            result = custom_sample(seq, joint, prepared, cond)
+            video, audio = result["samples"].unbind()
+            nv = video_latent_t(73)
+            na = windows.audio_index_at(nv, original[0].shape[2], original[1].shape[3])
+            torch.testing.assert_close(video[:, :, :nv], original[0][:, :, :nv], rtol=0, atol=0)
+            torch.testing.assert_close(audio[:, :, :, :na], original[1][:, :, :, :na], rtol=0, atol=0)
+            self.assertIn(f"Video overlap pin: {mode}", report)
+            results.append(video[:, :, nv:])
+        for result in results[1:]:
+            self.assertFalse(torch.allclose(results[0], result))
+        for actual, expected in zip(source["samples"].unbind(), original):
+            torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
     def test_custom_tail_rounds_on_the_actual_overlap_grid(self):
         # A regular 39-frame overlap ends in rows representing 1 then 4 frames.
         for frames, rows in ((0, 0), (1, 1), (4, 1), (5, 2), (6, 3),
@@ -362,7 +465,6 @@ class NativeSourceTests(unittest.TestCase):
         self.assertEqual(hybrid.tail_context_rows(8, 22, 47), 14)
         self.assertEqual(hybrid.tail_context_rows(21, 22, 5), 1)
         self.assertEqual(hybrid.tail_context_rows(22, 22, 5), 0)
-
 
     def test_custom_tail_masks_and_accepted_output_through_both_stages(self):
         source = masked_latent(107)
@@ -394,7 +496,7 @@ class NativeSourceTests(unittest.TestCase):
                 self.assertIn(f"requested {frames} frames; effective {effective} frames", report)
                 results[frames] = result["samples"].unbind()
         self.assertFalse(torch.allclose(results[5][0][:, :, nv:], results[9][0][:, :, nv:]))
-        for frames, mode in ((39, "full"),):
+        for frames, mode in ((5, "tail_5"), (17, "tail_17"), (39, "full")):
             seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
                 model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
                 latent=source, accepted_prefix_frames=73, noise_mode="per_window",
@@ -407,16 +509,29 @@ class NativeSourceTests(unittest.TestCase):
         for got, want in zip(source["samples"].unbind(), original):
             torch.testing.assert_close(got, want, rtol=0, atol=0)
 
+    def test_custom_tail_5_matches_legacy_with_multiple_fresh_windows(self):
+        for total, accepted in ((209, 0), (192, 73)):
+            source = masked_latent(total)
+            results = []
+            groups = {f"positive_{i}": prompt(i) for i in range(5)}
+            for mode in ("tail_5", "tail_custom"):
+                seq, joint, cond, _, prepared, report = hybrid.H3HybridWindows.execute(
+                    model(), 73, 39, groups, latent=source, accepted_prefix_frames=accepted,
+                    noise_mode="per_window", total_steps=10, overlap_pin=mode, context_frames=5)
+                results.append(custom_sample(seq, joint, prepared, cond, steps=10)["samples"].unbind())
+                if mode == "tail_custom":
+                    self.assertIn("requested 5 frames; effective 5 frames", report)
+            for got, want in zip(*results):
+                torch.testing.assert_close(got, want, rtol=0, atol=0)
 
-    def test_custom_tail_refuses_source_protection_outside_accepted_prefix(self):
+    def test_taper_refuses_source_protection_outside_accepted_prefix(self):
         source = masked_latent(107, keep_video=25)
-        for mode in ("tail_custom",):
+        for mode in ("tapered", "tail_custom"):
             seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
                 model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
                 latent=source, accepted_prefix_frames=73, overlap_pin=mode)
             with self.assertRaisesRegex(ValueError, "full-frame regeneration"):
                 custom_sample(seq, joint, prepared, cond)
-
 
     def test_custom_sampler_chain_matches_ksampler_advanced_chain(self):
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]

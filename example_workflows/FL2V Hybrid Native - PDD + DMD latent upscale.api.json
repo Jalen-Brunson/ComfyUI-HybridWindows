@@ -1,0 +1,818 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "FL2VA base"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PDD shifts: video 12 / audio 3"
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "H3 text encoder"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "6": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 480
+    },
+    "_meta": {
+      "title": "Warmup width"
+    }
+  },
+  "7": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 832
+    },
+    "_meta": {
+      "title": "Warmup height"
+    }
+  },
+  "8": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 243
+    },
+    "_meta": {
+      "title": "Frames per window (17k + 5)"
+    }
+  },
+  "9": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 39
+    },
+    "_meta": {
+      "title": "Overlap frames"
+    }
+  },
+  "10": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 0.8
+    },
+    "_meta": {
+      "title": "Final megapixels"
+    }
+  },
+  "11": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "3*a - 2*b",
+      "values.a": [
+        "8",
+        0
+      ],
+      "values.b": [
+        "9",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Timeline: 3 windows minus 2 overlaps"
+    }
+  },
+  "12": {
+    "class_type": "EmptyMiniMaxH3LatentAV",
+    "inputs": {
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "7",
+        0
+      ],
+      "length": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Low-resolution video + audio timeline"
+    }
+  },
+  "13": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "hybrid_windows/fl2va_stock_first.png"
+    },
+    "_meta": {
+      "title": "FIRST frame"
+    }
+  },
+  "14": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "hybrid_windows/fl2va_stock_last.png"
+    },
+    "_meta": {
+      "title": "LAST frame (final window)"
+    }
+  },
+  "15": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "One continuous portrait shot of a man seated at a white desk in a bright office. He wears the same black long-sleeved button-up shirt, with short black hair swept to one side and a clean-shaven face. His hands rest together on the desk. He looks toward the camera, blinking naturally with a subtle relaxed smile. The camera slowly shifts from a slight angle to a frontal view. Soft daylight, steady exposure, natural skin texture and color. No cuts, no sudden motion."
+    },
+    "_meta": {
+      "title": "Window 1 prompt"
+    }
+  },
+  "16": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "15",
+        0
+      ],
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "7",
+        0
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "first_frame": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 1: native FL2V"
+    }
+  },
+  "17": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera is now stationary, preserving the established distance and focal length. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk. His hands rest together. He looks toward the lens with a calm expression, natural blinking and subtle breathing, then gives a very small relaxed smile. Keep the same soft daylight, exposure, face size and background throughout."
+    },
+    "_meta": {
+      "title": "Window 2 prompt"
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "17",
+        0
+      ],
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "7",
+        0
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 2: native FL2V"
+    }
+  },
+  "19": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "Continue the same uninterrupted portrait shot in the established frontal composition. The camera remains stationary at the same distance and focal length throughout the shot. The same clean-shaven man with short side-swept black hair and a black long-sleeved button-up shirt remains seated at the white desk, hands together. He maintains a calm gaze toward the lens, blinking naturally and breathing softly, and settles into the last-frame guide pose as the take ends. Keep the same face size, background, soft daylight and exposure."
+    },
+    "_meta": {
+      "title": "Window 3 prompt"
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "19",
+        0
+      ],
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "7",
+        0
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "last_frame": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 3: native FL2V"
+    }
+  },
+  "21": {
+    "class_type": "H3HybridWindows",
+    "inputs": {
+      "window_frames": [
+        "8",
+        0
+      ],
+      "overlap_frames": [
+        "9",
+        0
+      ],
+      "total_steps": 9,
+      "denoise_mask_mode": "max",
+      "accepted_prefix_frames": 0,
+      "start_window": 0,
+      "noise_mode": "per_window",
+      "overlap_pin": "tail_custom",
+      "audio_carry": "full",
+      "context_frames": 5,
+      "audio_carry_strength": 0.9,
+      "model": [
+        "2",
+        0
+      ],
+      "latent": [
+        "12",
+        0
+      ],
+      "prompts.positive_0": [
+        "16",
+        0
+      ],
+      "prompts.positive_1": [
+        "18",
+        0
+      ],
+      "prompts.positive_2": [
+        "20",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Hybrid Windows: 7 sequential + 2 joint steps"
+    }
+  },
+  "22": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "21",
+        5
+      ]
+    },
+    "_meta": {
+      "title": "Window plan"
+    }
+  },
+  "23": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "minimax/MiniMax-H3-FL2VA-Acc-8Step_comfy.safetensors",
+      "strength_model": 1,
+      "model": [
+        "21",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Native PDD: first sampler only"
+    }
+  },
+  "24": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1.0,
+      "model": [
+        "23",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Native simple: full 8-step PDD schedule"
+    }
+  },
+  "25": {
+    "class_type": "SplitSigmas",
+    "inputs": {
+      "step": 7,
+      "sigmas": [
+        "24",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "First 7 steps; stop at sigma 0.631578922"
+    }
+  },
+  "26": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 123
+    },
+    "_meta": {
+      "title": "Warmup seed"
+    }
+  },
+  "27": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "_meta": {
+      "title": "Euler (both samplers)"
+    }
+  },
+  "28": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "23",
+        0
+      ],
+      "conditioning": [
+        "21",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "PDD sequential guider (CFG 1)"
+    }
+  },
+  "29": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "26",
+        0
+      ],
+      "guider": [
+        "28",
+        0
+      ],
+      "sampler": [
+        "27",
+        0
+      ],
+      "sigmas": [
+        "25",
+        0
+      ],
+      "latent_image": [
+        "21",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "1. Native PDD / Euler simple / 7 steps"
+    }
+  },
+  "30": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "minimax/minimax_h3_taomate_fl2va_3step_ema_comfyui.safetensors",
+      "strength_model": 0.8,
+      "model": [
+        "21",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "DMD speed-up: second sampler only"
+    }
+  },
+  "31": {
+    "class_type": "H3HybridCleanLatentUpscale",
+    "inputs": {
+      "model_name": "minimax_h3_latent_upscaler_3d_fp32.pth",
+      "megapixels": [
+        "10",
+        0
+      ],
+      "precision": "fp32",
+      "enable_temporal_chunking": false,
+      "keep_upscaler_loaded": true,
+      "joint_model": [
+        "30",
+        0
+      ],
+      "warmup": [
+        "29",
+        0
+      ],
+      "denoised": [
+        "29",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Clean latent upscale (reference settings)"
+    }
+  },
+  "32": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "31",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Upscale dimensions and sigma handoff"
+    }
+  },
+  "33": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "max(1, round(round(sqrt(a*1048576*c/b)*b/c/32)*32/16))*16",
+      "values.a": [
+        "10",
+        0
+      ],
+      "values.b": [
+        "6",
+        0
+      ],
+      "values.c": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Final width: same rounding as latent upscaler"
+    }
+  },
+  "34": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "max(1, round(round(sqrt(a*1048576*c/b)/32)*32/16))*16",
+      "values.a": [
+        "10",
+        0
+      ],
+      "values.b": [
+        "6",
+        0
+      ],
+      "values.c": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Final height: same rounding as latent upscaler"
+    }
+  },
+  "35": {
+    "class_type": "H3HybridWindows",
+    "inputs": {
+      "window_frames": [
+        "8",
+        0
+      ],
+      "overlap_frames": [
+        "9",
+        0
+      ],
+      "total_steps": 9,
+      "denoise_mask_mode": "max",
+      "accepted_prefix_frames": 0,
+      "start_window": 0,
+      "noise_mode": "per_window",
+      "overlap_pin": "tail_custom",
+      "audio_carry": "full",
+      "context_frames": 5,
+      "audio_carry_strength": 0.9,
+      "model": [
+        "2",
+        0
+      ],
+      "prompts.positive_0": [
+        "36",
+        0
+      ],
+      "prompts.positive_1": [
+        "37",
+        0
+      ],
+      "prompts.positive_2": [
+        "38",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Bind high-resolution FL2V guides to the same windows"
+    }
+  },
+  "36": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "15",
+        0
+      ],
+      "width": [
+        "33",
+        1
+      ],
+      "height": [
+        "34",
+        1
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "first_frame": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 1: guides for high-resolution finish"
+    }
+  },
+  "37": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "17",
+        0
+      ],
+      "width": [
+        "33",
+        1
+      ],
+      "height": [
+        "34",
+        1
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 2: guides for high-resolution finish"
+    }
+  },
+  "38": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "prompt": [
+        "19",
+        0
+      ],
+      "width": [
+        "33",
+        1
+      ],
+      "height": [
+        "34",
+        1
+      ],
+      "length": [
+        "8",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "last_frame": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Window 3: guides for high-resolution finish"
+    }
+  },
+  "39": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "31",
+        0
+      ],
+      "conditioning": [
+        "35",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "DMD joint guider (CFG 1)"
+    }
+  },
+  "40": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "0.631578922, 0.3158, 0.0000"
+    },
+    "_meta": {
+      "title": "Finish sigmas from faster IO (2 Euler updates)"
+    }
+  },
+  "41": {
+    "class_type": "DisableNoise",
+    "inputs": {},
+    "_meta": {
+      "title": "No extra noise after the upscale handoff"
+    }
+  },
+  "42": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "41",
+        0
+      ],
+      "guider": [
+        "39",
+        0
+      ],
+      "sampler": [
+        "27",
+        0
+      ],
+      "sigmas": [
+        "40",
+        0
+      ],
+      "latent_image": [
+        "31",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "2. High-resolution DMD joint finish"
+    }
+  },
+  "43": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "42",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode finished video"
+    }
+  },
+  "44": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "42",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode finished audio"
+    }
+  },
+  "45": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "fps": 24.0,
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": [
+        "43",
+        0
+      ],
+      "audio": [
+        "44",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Video + audio / 24 fps"
+    }
+  },
+  "46": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "filename_prefix": "video/HybridNative_FL2VA_PDD_DMD_Upscale",
+      "format": "mp4",
+      "format.codec": "h264",
+      "format.codec.encoding": "re-encode",
+      "format.codec.encoding.crf": 16.0,
+      "codec": "auto",
+      "video": [
+        "45",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Save FL2V latent upscale"
+    }
+  }
+}

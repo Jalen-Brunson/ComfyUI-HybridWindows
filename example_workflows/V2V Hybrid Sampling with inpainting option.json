@@ -45,10 +45,10 @@
         "cnr_id": "comfy-core"
       },
       "widgets_values": [
-        "input/source.mp4"
+        ""
       ],
       "widgets_values_named": {
-        "value": "input/source.mp4"
+        "value": ""
       }
     },
     {
