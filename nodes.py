@@ -363,7 +363,7 @@ def prepare_joint(executor, model, noise_shape, conds, **kwargs):
     return executor(model, [noise_shape[0], 1, video_size+audio_size], conds, **kwargs)
 
 
-def bind_conditioning(cond_set, prompts):
+def bind_conditioning(cond_set, prompts, window_count=0):
     """One conditioning per window, tagged so both stages select it."""
     groups = [prompts[name] for name in sorted(prompts or {},
                                                key=lambda name: int(name.rsplit("_", 1)[1]))]
@@ -376,6 +376,7 @@ def bind_conditioning(cond_set, prompts):
                              "prompt per window.")
     if not groups:
         raise ValueError("Connect one conditioning per window: a `cond_set`, or the prompt sockets.")
+    groups += groups[-1:] * max(0, window_count - len(groups))
     bound = []
     for index, group in enumerate(groups):
         if not group:
@@ -494,7 +495,7 @@ class H3HybridWindows(io.ComfyNode):
                 io.Int.Input("total_steps", default=8, min=1, max=10000, optional=True,
                              tooltip="Match both samplers' total steps. Allows a full sequential split (8+0 with the supplied PDD LoRA)."),
                 MMH3CondSet.Input("cond_set", optional=True,
-                                  tooltip="One conditioning per window from MMH3 Reference (Multi-Prompt), instead of the prompt sockets."),
+                                  tooltip="Conditioning from MMH3 Reference (Multi-Prompt), instead of the prompt sockets. If the connected latent needs more windows, the last prompt repeats."),
                 io.Latent.Input("latent", optional=True,
                                 tooltip="The master to sample: a source encode, or a continuation master on resume. Sample this node's `latent` output, not the raw master."),
                 io.Mask.Input("denoise_mask", optional=True,
@@ -533,7 +534,14 @@ class H3HybridWindows(io.ComfyNode):
                 guide_video=None, guide_vae=None, guide_audio=None, guide_audio_vae=None):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
-        bound, count = bind_conditioning(cond_set, prompts)
+        window_count = 0
+        if latent is not None:
+            samples = latent.get("samples")
+            parts = samples.unbind() if getattr(samples, "is_nested", False) else []
+            if len(parts) == 2:
+                geometry = plan_windows(window_frames, overlap_frames, 1)
+                window_count = max(1, 1 + math.ceil((parts[0].shape[2] - geometry.length) / geometry.stride))
+        bound, count = bind_conditioning(cond_set, prompts, window_count)
         plan = plan_windows(window_frames, overlap_frames, count)
         run = HybridRun(plan, total_steps, noise_mode, start_window)
         run.overlap_pin = overlap_pin

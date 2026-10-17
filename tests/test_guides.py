@@ -164,6 +164,64 @@ class GuideTests(unittest.TestCase):
         self.assertTrue(all(len(call["payload"]["keyframes"]) == 1 for call in m.model.seen))
         self.assertNotIn("minimax_keyframes", cond[0][1])
 
+    def test_short_prompt_lists_match_manual_repeat_in_both_samplers(self):
+        from mmh3tools.nodes_looping_sampler import MMH3LoopingSampler
+        native.native_nodes.NODE_CLASS_MAPPINGS["MMH3LoopingSampler"] = MMH3LoopingSampler
+        single = importlib.import_module("hybrid_windows_test.sampler")
+        for standalone in (False, True):
+            for with_guides in (False, True):
+                for prompt_count, total, accepted in ((1, 107, 0), (2, 90, 39)):
+                    with self.subTest(standalone=standalone, guides=with_guides, prompts=prompt_count):
+                        original = [native.image_prompt(i, first=True) for i in range(prompt_count)]
+                        outputs = []
+                        for conds in (original, original + [original[-1]] * (3 - prompt_count)):
+                            m, vae = native.model(), VideoVAE()
+                            source = EmptyMiniMaxH3LatentAV.execute(32, 32, total)[0]
+                            kwargs = {"guide_video": frames(total), "guide_vae": vae} if with_guides else {}
+                            kwargs.update(accepted_prefix_frames=accepted, start_window=5 if accepted else 0)
+                            if standalone:
+                                sigmas = native.comfy.samplers.calculate_sigmas(m.get_model_object("model_sampling"), "simple", 8)
+                                out = single.MMH3HybridWindowSampler.execute(
+                                    m, native.custom.Noise_RandomNoise(123), native.custom.KSamplerSelect.execute("euler")[0],
+                                    sigmas, {"conds": conds}, source, 39, 5, 6, "cpu", "max", **kwargs)[0]
+                            else:
+                                # Exercise sockets and cond_set, which share the same fallback.
+                                conditioning = ({"prompts": {f"positive_{i}": c for i, c in enumerate(conds)}}
+                                                if prompt_count == 1 else {"cond_set": {"conds": conds}})
+                                seq, joint, bound, _, prepared, _ = native.hybrid.H3HybridWindows.execute(
+                                    m, 39, 5, latent=source, **conditioning, **kwargs)
+                                first = native.sample(seq, prepared, bound, end=6, leftover="enable")
+                                out = native.sample(joint, first, bound, start=6, add_noise="disable")
+                            outputs.append(out)
+                            expected_prompts = [0, 0, 0] if prompt_count == 1 else [0, 1, 1]
+                            warm = expected_prompts[1:] if accepted else expected_prompts
+                            self.assertEqual([int(call["prompt"]) for call in m.model.seen],
+                                             [i for i in warm for _ in range(6)] + expected_prompts * 2)
+                            if with_guides:
+                                ranges = [(0, 38), (34, 72), (total - 39, total - 1)]
+                                self.assertEqual([(a, b) for _, a, b in vae.seen], ranges * (1 if standalone else 2))
+                        for got, want in zip(outputs[0]["samples"].unbind(), outputs[1]["samples"].unbind()):
+                            torch.testing.assert_close(got, want, rtol=0, atol=0)
+                        self.assertEqual(len(original), prompt_count)
+                        self.assertTrue(all(len(c[0][1]["minimax_keyframes"]) == 1 for c in original))
+
+    def test_empty_or_surplus_conditioning_still_fails_before_guide_encoding(self):
+        from mmh3tools.nodes_looping_sampler import MMH3LoopingSampler
+        native.native_nodes.NODE_CLASS_MAPPINGS["MMH3LoopingSampler"] = MMH3LoopingSampler
+        single = importlib.import_module("hybrid_windows_test.sampler")
+        for conds in ([], [native.prompt(i) for i in range(4)]):
+            m, vae = native.model(), VideoVAE()
+            source = EmptyMiniMaxH3LatentAV.execute(32, 32, 107)[0]
+            with self.assertRaises(ValueError):
+                native.hybrid.H3HybridWindows.execute(
+                    m, 39, 5, cond_set={"conds": conds}, latent=source, guide_video=frames(), guide_vae=vae)
+            sigmas = native.comfy.samplers.calculate_sigmas(m.get_model_object("model_sampling"), "simple", 8)
+            with self.assertRaises(ValueError):
+                single.MMH3HybridWindowSampler.execute(
+                    m, native.custom.Noise_RandomNoise(123), native.custom.KSamplerSelect.execute("euler")[0],
+                    sigmas, {"conds": conds}, source, 39, 5, 6, "cpu", "max", guide_video=frames(), guide_vae=vae)
+            self.assertEqual(vae.seen, [])
+
     def test_standalone_matches_native_chain_with_guides(self):
         sys.path.insert(0, str(native.ROOT.parent / "ComfyUI-MMH3Tools"))
         from mmh3tools.nodes_looping_sampler import MMH3LoopingSampler

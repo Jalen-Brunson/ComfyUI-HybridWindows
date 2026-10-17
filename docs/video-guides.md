@@ -16,6 +16,17 @@ The standalone **H3 Hybrid Window Sampler** exposes the same inputs and shares
 its encoded guides between the sequential and joint phases at its fixed resolution.
 It also preserves guides already present in each window's conditioning set.
 
+## Prompt counts
+
+When the input latent needs more windows than the supplied prompts, both hybrid
+samplers repeat the final conditioning for the remaining windows. For example,
+`A | B` over four windows becomes `A | B | B | B`. A single prompt covers the
+entire input. Guides still use each window's own source frames.
+
+On **H3 Hybrid Windows**, connect the source to `latent` so its length determines
+the required windows. Without that input, the prompt count still sets the output
+length. Empty conditioning and surplus prompts remain errors.
+
 ## Timing and audio
 
 - Supply frames at 24 fps, already trimmed to the current run, **including its

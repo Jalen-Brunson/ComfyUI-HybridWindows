@@ -53,7 +53,8 @@ class MMH3HybridWindowSampler(io.ComfyNode):
             inputs=[
                 io.Model.Input("model"), io.Noise.Input("noise"),
                 io.Sampler.Input("sampler"), io.Sigmas.Input("sigmas"),
-                MMH3CondSet.Input("cond_set"), io.Latent.Input("latent"),
+                MMH3CondSet.Input("cond_set", tooltip="Conditioning in window order. The final prompt repeats when the latent needs more windows."),
+                io.Latent.Input("latent"),
                 io.Int.Input("window_frames", default=243, min=5, max=100000, step=17),
                 io.Int.Input("overlap_frames", default=39, min=0, max=100000, step=17),
                 io.Int.Input("sequential_steps", default=6, min=1, max=10000,
@@ -118,17 +119,19 @@ class MMH3HybridWindowSampler(io.ComfyNode):
             latents_to_frames(video.shape[2]), window_frames, overlap_frames, "standard_static")
         if total_t != video.shape[2] or any(w.index_list[0] % 5 for w in windows):
             raise ValueError("Hybrid sampling needs H3-aligned latent lengths and window starts.")
-        conds = cond_set["conds"]
+        conds = list(cond_set["conds"])
+        if not conds:
+            raise ValueError("Connect at least one conditioning set to the hybrid sampler.")
+        conds += conds[-1:] * max(0, len(windows) - len(conds))
+        bound = bind_window_conditioning({**cond_set, "conds": conds}, windows)
         if guide_video is not None or guide_audio is not None:
             spans = [(w.index_list[0], w.index_list[-1] + 1,
                       _audio_index_at(w.index_list[0], total_t, audio.shape[3]),
                       _audio_index_at(w.index_list[-1] + 1, total_t, audio.shape[3])) for w in windows]
             guides = AlignedGuides(guide_video, guide_vae, guide_audio, guide_audio_vae).encode([video, audio], spans)
-            if len(conds) != len(windows):
-                raise ValueError("Match the guide window count to the conditioning set.")
             conds = [[[tokens, append_guide(metadata, guide)] for tokens, metadata in cond]
                      for cond, guide in zip(conds, guides)]
-        bound = bind_window_conditioning({**cond_set, "conds": conds}, windows)
+            bound = bind_window_conditioning({**cond_set, "conds": conds}, windows)
         prepared = prepare_masks(latent, denoise_mask, audio_denoise_mask, denoise_mask_mode)
         in_v, in_a = _split_mask(prepared)
         accepted_f = int(accepted_prefix_frames)

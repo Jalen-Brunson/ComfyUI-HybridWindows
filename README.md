@@ -211,8 +211,11 @@ With none of these connected the node behaves exactly as the examples show. They
 exist so a production graph -- v2v inpainting with an accepted-prefix resume --
 can run on this chain instead of the single-node sampler.
 
-- **`cond_set`** takes one conditioning per window from MMH3 Reference
+- **`cond_set`** takes conditioning in window order from MMH3 Reference
   (Multi-Prompt), instead of the `positive_N` sockets. Connect one or the other.
+  Both hybrid samplers repeat the final prompt when the input latent needs more
+  windows than the supplied conditioning. On this node, connect `latent` to
+  determine that window count.
 - **`latent`** is the master to sample: a source encode for v2v, or a
   continuation master on resume. The node composes the masks and the accepted
   prefix into one per-row noise mask, so **sample the node's `latent` output**,
