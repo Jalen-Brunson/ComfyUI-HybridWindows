@@ -73,8 +73,9 @@ nobody can determine.
 
 ## Limits
 
-- Native chain only. The single-node **H3 Hybrid Window Sampler** still refuses
-  conditioning that carries keyframe guides.
+- The `keyframes` collector input belongs to the native chain. The single-node
+  **H3 Hybrid Window Sampler** also accepts window-local guides already in its
+  conditioning set, or aligned video/audio through its [guide inputs](video-guides.md).
 - A keyframe is conditioning, not pasted pixels: the model is guided toward the still
   at that moment. **FL2VA** is the checkpoint trained on frame anchors; on **Ref2VA**
   guides coexist with references, and mid-video anchors there are untested.

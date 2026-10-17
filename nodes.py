@@ -26,6 +26,7 @@ from comfy_extras.nodes_minimax_h3 import video_latent_t
 
 from .segment import SolverSegment
 from .keyframes import KEYFRAMES_TYPE, attach_keyframes
+from .guides import AlignedGuides, GuideStage, guide_inputs
 from .windows import (JointWindows, WINDOW_KEY, audio_index_at, frame_at, pin_prefix,
                       plan_windows, select_conditioning, slice_av, tail_context_rows, window_options, write_new)
 
@@ -514,6 +515,7 @@ class H3HybridWindows(io.ComfyNode):
                              tooltip="Used with overlap_pin=tail_custom. Video frames held at the end of the warmup overlap; 0 releases video carry. Rounds up to whole latent rows, capped by overlap. Audio carry and accepted output stay protected."),
                 KEYFRAMES_TYPE.Input("keyframes", optional=True,
                                      tooltip="From H3 Hybrid Keyframes: stills pinned at frame numbers of the whole run. Each is placed into the window(s) that draw its frame, fitted to the canvas and encoded here; the report says where every one landed. Same conditioning rows as core's Add Guide, scoped per window in both stages."),
+                *guide_inputs(),
             ],
             outputs=[io.Model.Output(display_name="sequential_model"),
                      io.Model.Output(display_name="joint_model"),
@@ -527,7 +529,8 @@ class H3HybridWindows(io.ComfyNode):
     def execute(cls, model, window_frames, overlap_frames, prompts=None, total_steps=8,
                 cond_set=None, latent=None, denoise_mask=None, audio_denoise_mask=None,
                 denoise_mask_mode="max", accepted_prefix_frames=0, start_window=0,
-                noise_mode="global", overlap_pin="full", context_frames=5, keyframes=None):
+                noise_mode="global", overlap_pin="full", context_frames=5, keyframes=None,
+                guide_video=None, guide_vae=None, guide_audio=None, guide_audio_vae=None):
         if "context_handler" in model.model_options:
             raise ValueError("Connect a model without another context-window adapter.")
         bound, count = bind_conditioning(cond_set, prompts)
@@ -547,5 +550,10 @@ class H3HybridWindows(io.ComfyNode):
         joint.model_options["context_handler"] = JointWindows(plan)
         add_outermost_wrapper(joint, WrappersMP.OUTER_SAMPLE, "hybrid_joint", JointStage(run))
         joint.add_wrapper_with_key(WrappersMP.PREPARE_SAMPLING, "hybrid_joint_memory", prepare_joint)
+        if guide_video is not None or guide_audio is not None:
+            guides = AlignedGuides(guide_video, guide_vae, guide_audio, guide_audio_vae)
+            for stage in (sequential, joint):
+                add_outermost_wrapper(stage, WrappersMP.OUTER_SAMPLE, "hybrid_guides", GuideStage(plan, guides))
+            report += "\nAligned guides: encoded per window at each sampling stage's actual resolution; source offsets are local to this run."
         logging.info("[Hybrid Windows] %s", report)
         return io.NodeOutput(sequential, joint, bound, plan.total_frames, prepared, report)

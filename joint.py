@@ -32,8 +32,6 @@ def bind_window_conditioning(cond_set, windows):
         if not cond:
             raise ValueError(f"Window {i + 1} has no conditioning.")
         for tokens, metadata in cond:
-            if metadata.get("minimax_keyframes"):
-                raise ValueError("Joint sampler does not support keyframe guides yet.")
             bound.append([tokens, {**metadata, _WINDOW_KEY: i}])
     return bound
 

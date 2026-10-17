@@ -5,6 +5,7 @@ import logging
 
 from .dependencies import _mmh3_module
 from .windows import tail_context_rows
+from .guides import AlignedGuides, append_guide, guide_inputs
 
 import torch
 import comfy.utils
@@ -71,6 +72,7 @@ class MMH3HybridWindowSampler(io.ComfyNode):
                                tooltip="full preserves the entire warmup overlap. tail_custom pins only context_frames at its end. The full overlap still reaches the model; accepted output stays fixed."),
                 io.Int.Input("context_frames", default=5, min=0, max=3600, optional=True,
                              tooltip="Used with overlap_pin=tail_custom. Pinned video frames at the end of the warmup overlap; 0 releases video carry. Rounds up to whole latent rows and caps at the overlap. Audio carry and joint windows stay unchanged."),
+                *guide_inputs(),
             ],
             outputs=[io.Latent.Output(display_name="latent"), io.String.Output(display_name="report")],
         )
@@ -81,7 +83,8 @@ class MMH3HybridWindowSampler(io.ComfyNode):
                 accumulator_device="gpu", denoise_mask_mode="max",
                 denoise_mask=None, audio_denoise_mask=None,
                 accepted_prefix_frames=0, start_window=0, feather_latents=0,
-                overlap_pin="full", context_frames=5):
+                overlap_pin="full", context_frames=5,
+                guide_video=None, guide_vae=None, guide_audio=None, guide_audio_vae=None):
         common = _mmh3_module("common")
         frame_at_latent = common.frame_at_latent
         frames_to_latents = common.frames_to_latents
@@ -97,7 +100,6 @@ class MMH3HybridWindowSampler(io.ComfyNode):
         _chunk_noise = nodes_looping_sampler._chunk_noise
         _sliced_mask = nodes_looping_sampler._sliced_mask
         _split_mask = nodes_looping_sampler._split_mask
-        _strip_guide_keys = nodes_looping_sampler._strip_guide_keys
         nodes_windows = _mmh3_module("nodes_windows")
         _audio_index_at = nodes_windows._audio_index_at
         _plan = nodes_windows._plan
@@ -116,7 +118,17 @@ class MMH3HybridWindowSampler(io.ComfyNode):
             latents_to_frames(video.shape[2]), window_frames, overlap_frames, "standard_static")
         if total_t != video.shape[2] or any(w.index_list[0] % 5 for w in windows):
             raise ValueError("Hybrid sampling needs H3-aligned latent lengths and window starts.")
-        bound = bind_window_conditioning(cond_set, windows)
+        conds = cond_set["conds"]
+        if guide_video is not None or guide_audio is not None:
+            spans = [(w.index_list[0], w.index_list[-1] + 1,
+                      _audio_index_at(w.index_list[0], total_t, audio.shape[3]),
+                      _audio_index_at(w.index_list[-1] + 1, total_t, audio.shape[3])) for w in windows]
+            guides = AlignedGuides(guide_video, guide_vae, guide_audio, guide_audio_vae).encode([video, audio], spans)
+            if len(conds) != len(windows):
+                raise ValueError("Match the guide window count to the conditioning set.")
+            conds = [[[tokens, append_guide(metadata, guide)] for tokens, metadata in cond]
+                     for cond, guide in zip(conds, guides)]
+        bound = bind_window_conditioning({**cond_set, "conds": conds}, windows)
         prepared = prepare_masks(latent, denoise_mask, audio_denoise_mask, denoise_mask_mode)
         in_v, in_a = _split_mask(prepared)
         accepted_f = int(accepted_prefix_frames)
@@ -195,7 +207,7 @@ class MMH3HybridWindowSampler(io.ComfyNode):
                 previous_v, previous_a = v1, a1
                 logging.info("[MMH3HybridWindowSampler] accepted window %d: sequential pass skipped", int(start_window) + i + 1)
                 continue
-            positive = _strip_guide_keys(cond_set["conds"][i], f"hybrid window {i}")
+            positive = conds[i]
             chunk_guider = _chunk_guider(guider, positive, frame_at_latent(v0))
             logging.info("[MMH3HybridWindowSampler] sequential window %d/%d, steps 0..%d",
                          i + 1, len(windows), sequential_steps)
