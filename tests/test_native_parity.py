@@ -37,15 +37,17 @@ except Exception as error:  # pragma: no cover - depends on the sibling pack
 hybrid, windows = native.hybrid, native.windows
 
 
-def master(frames, keep_video=0):
+def master(frames, keep_video=0, keep_tail=0):
     latent = native.EmptyMiniMaxH3LatentAV.execute(32, 32, frames)[0]
     video, audio = latent["samples"].unbind()
     video = video + torch.linspace(0, 1, video.shape[2]).reshape(1, 1, -1, 1, 1)
     audio = audio + .5
     out = {"samples": comfy.nested_tensor.NestedTensor([video, audio])}
-    if keep_video:
+    if keep_video or keep_tail:
         mask = windows.ones_mask(video, audio)
         mask[0][:, :, :keep_video] = 0
+        if keep_tail:
+            mask[0][:, :, -keep_tail:] = 0
         out["noise_mask"] = comfy.nested_tensor.NestedTensor(mask)
     return out
 
@@ -55,8 +57,8 @@ class ParityTests(unittest.TestCase):
     WINDOW, OVERLAP, SPLIT, STEPS, SEED = 39, 5, 6, 8, 123
 
     def both(self, frames, count, keep_video=0, accepted=0, start_window=0,
-             window=39, overlap=5, split=6, overlap_pin="full", context_frames=5):
-        source = master(frames, keep_video)
+             window=39, overlap=5, split=6, overlap_pin="full", context_frames=5, keep_tail=0):
+        source = master(frames, keep_video, keep_tail)
         conds = [native.prompt(i) for i in range(count)]
         cond_set = {"conds": conds, "prompts": [str(i) for i in range(count)]}
 
@@ -151,10 +153,21 @@ class ParityTests(unittest.TestCase):
                         start_window=2 if accepted else 0, overlap_pin="tail_custom", context_frames=5)
                     self.assert_same(reference, result)
 
-    def test_partial_context_refuses_source_pins_outside_accepted_prefix(self):
-        with self.assertRaisesRegex(ValueError, "full-frame regeneration"):
-            self.both(107, 2, window=73, overlap=39, keep_video=25, accepted=73,
-                      overlap_pin="tail_custom", context_frames=5)
+    def test_partial_context_keeps_source_pins_outside_accepted_prefix(self):
+        # Was refused by both samplers; released carry rows now return to the
+        # master's own pins, and the two implementations still agree.
+        cases = ((107, 2, dict(keep_video=25, accepted=73, context_frames=5)),
+                 (209, 5, dict(keep_tail=7, context_frames=0)),   # a kept end inside the last carry
+                 (209, 5, dict(keep_tail=7, context_frames=5)))
+        for frames, count, options in cases:
+            with self.subTest(frames=frames, **options):
+                _, _, reference, result = self.both(frames, count, window=73, overlap=39,
+                                                    overlap_pin="tail_custom", **options)
+                self.assert_same(reference, result)
+                source = master(frames, options.get("keep_video", 0), options.get("keep_tail", 0))
+                src_v, out_v = source["samples"].unbind()[0], result["samples"].unbind()[0]
+                pinned = source["noise_mask"].unbind()[0][0, 0, :, 0, 0] == 0
+                torch.testing.assert_close(out_v[:, :, pinned], src_v[:, :, pinned], rtol=2e-6, atol=1e-6)
 
     def test_single_node_feather_preserves_source_and_audio_masks(self):
         source = master(107)

@@ -140,8 +140,6 @@ class MMH3HybridWindowSampler(io.ComfyNode):
             raise ValueError("accepted_prefix_frames must be 0 or 5+17k frames within this input.")
         if int(start_window) < 0:
             raise ValueError("start_window must be a nonnegative global window index.")
-        if overlap_pin == "tail_custom" and in_v is not None and torch.any(in_v[:, :, accepted_v:] != 1):
-            raise ValueError("Partial video pinning needs full-frame regeneration outside the accepted prefix.")
         accepted_a = _audio_index_at(accepted_v, total_t, audio.shape[3])
         if accepted_v:
             prepared["noise_mask"] = _carry_mask(
@@ -190,7 +188,14 @@ class MMH3HybridWindowSampler(io.ComfyNode):
                             video_mask[:, :, carried:carried + count], ramp.reshape(1, 1, -1, 1, 1))
                 if overlap_pin == "tail_custom":
                     held = tail_context_rows(v0, previous_v, int(context_frames))
-                    mask.unbind()[0][:, :, :carried - held] = 1
+                    free = carried - held
+                    video_mask = mask.unbind()[0]
+                    # Restore source pins when releasing carry. Accepted rows
+                    # may regenerate temporarily; their output stays fixed.
+                    floor = (torch.ones_like(video_mask[:, :, :free]) if in_v is None else
+                             in_v[:, :, v0:v0 + free].to(video_mask).clone())
+                    floor[:, :, :max(0, accepted_v - v0)] = 1
+                    video_mask[:, :, :free] = floor
                     if v1 > accepted_v:
                         context_counts.add(frame_at_latent(previous_v) - frame_at_latent(previous_v - held))
             elif in_v is not None or in_a is not None:

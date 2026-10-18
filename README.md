@@ -416,9 +416,9 @@ directly to Hybrid Windows. FL2VA uses prompts, a starting image and generated
 overlap carry, with an optional recurring ending guide.
 These examples use unmasked AV latents. For source masks or accepted-prefix
 resume, connect the source latent to Hybrid Windows and sample its prepared
-`latent` output. Partial context currently requires full-frame regeneration
-outside an accepted prefix; use `overlap_pin = full` when protecting fresh source
-video with an inpaint mask. Native image guides use frame positions within their
+`latent` output. Partial context preserves the source inpaint mask when releasing
+temporary overlap: protected pixels stay pinned and accepted output stays fixed.
+Native image guides use frame positions within their
 connected window. When adding windows, keep the first-frame
 connection only on the first window. In the recurring-end variant, also
 connect the ending guide to each added encoder. Set every conditioning node's

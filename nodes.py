@@ -184,9 +184,6 @@ class SequentialWindows:
         if run.audio_carry == "regenerate" and mask_parts is not None:
             if torch.any(mask_parts[1][:, :, :, run.accepted_a:] != 1):
                 raise ValueError("Audio-carry diagnostic cannot release source-protected fresh audio.")
-        if run.overlap_pin != "full" and mask_parts is not None:
-            if torch.any(mask_parts[0][:, :, run.accepted_v:] != 1):
-                raise ValueError("Partial video pinning needs full-frame regeneration outside the accepted prefix.")
         output = [torch.empty_like(x, dtype=torch.float32) for x in clean]
         stash_state = run.active and not finished
         if stash_state:
@@ -207,6 +204,10 @@ class SequentialWindows:
                 original_head = None
                 if run.overlap_pin != "full" and carry_v:
                     original_head = source[0][:, :, :carry_v].clone()
+                    # Released carry restores the source mask. Accepted rows may
+                    # regenerate temporarily; write_new keeps their output fixed.
+                    floor_v = mask[0][:, :, :carry_v].clone()
+                    floor_v[:, :, :min(carry_v, max(0, run.accepted_v - span[0]))] = 1
                 mask[0][:, :, :carry_v] = 0
                 if run.overlap_pin == "tapered" and carry_v:
                     # Temporary conditioning only; capture restores the original overlap.
@@ -215,12 +216,14 @@ class SequentialWindows:
                     if released:
                         ramp = torch.arange(1, released + 1, device=mask[0].device,
                                             dtype=mask[0].dtype) / released
-                        mask[0][:, :, held:carry_v] = ramp.reshape(1, 1, -1, 1, 1)
+                        mask[0][:, :, held:carry_v] = torch.minimum(
+                            ramp.reshape(1, 1, -1, 1, 1), floor_v[:, :, held:carry_v])
                 if run.overlap_pin in ("tail_5", "tail_17", "tail_custom") and carry_v:
                     tail_rows = (tail_context_rows(span[0], previous[0], run.context_frames)
                                  if run.overlap_pin == "tail_custom"
                                  else 2 if run.overlap_pin == "tail_5" else 5)
-                    mask[0][:, :, :max(0, carry_v - tail_rows)] = 1
+                    free = max(0, carry_v - tail_rows)
+                    mask[0][:, :, :free] = floor_v[:, :, :free]
                 # Soften only temporary audio carry. Restore the original head
                 # after sampling; source-pinned audio remains protected.
                 head_value = 1.0 - run.audio_carry_strength
@@ -567,7 +570,7 @@ class H3HybridWindows(io.ComfyNode):
                 io.Combo.Input("noise_mode", options=NOISE_MODES, default="global", optional=True,
                                tooltip="per_window draws seed + start_window + index per window, matching the single-node hybrid sampler; global slices one draw."),
                 io.Combo.Input("overlap_pin", options=["full", "tapered", "tail_5", "tail_17", "tail_custom"], default="full", optional=True,
-                               tooltip="Full-frame regeneration: tail_custom holds context_frames at the end of the temporary video overlap. tail_5/tail_17 hold the last 2/5 latent rows. Accepted output stays fixed."),
+                               tooltip="tail_custom holds context_frames at the end of the temporary video overlap. tail_5/tail_17 hold the last 2/5 latent rows. Released rows retain the source preservation mask. Accepted output stays fixed."),
                 io.Combo.Input("audio_carry", options=["full", "regenerate"], default="full", optional=True,
                                tooltip="Diagnostic for one accepted plus one fresh window: regenerate temporary overlap audio through both stages. Accepted output audio is restored."),
                 io.Int.Input("context_frames", default=5, min=0, max=3600, optional=True,

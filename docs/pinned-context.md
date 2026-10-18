@@ -45,10 +45,10 @@ include **5, 9, 13, 17, 22 and 39**; **6 rounds up to 9**. The sampler report sh
 the effective count. A shortened final window can have a larger overlap, so use
 `full` when the intent is to pin all of it regardless of its length.
 
-Partial pinning currently requires full-frame video regeneration outside any
-accepted prefix. An inpaint mask protecting fresh source video requires `full`.
-Reference images, RefMods and source/control video conditioning are compatible
-with partial pinning when they do not impose such a preservation mask.
+Partial pinning also supports inpainting masks. Releasing temporary overlap
+restores the source mask: protected pixels stay pinned, while editable pixels
+can regenerate. Tapered overlap never exceeds the source mask's regeneration
+strength. Accepted output remains fixed in both sampling stages.
 
 ## Validation and limits
 

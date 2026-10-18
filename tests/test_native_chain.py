@@ -524,14 +524,65 @@ class NativeSourceTests(unittest.TestCase):
             for got, want in zip(*results):
                 torch.testing.assert_close(got, want, rtol=0, atol=0)
 
-    def test_taper_refuses_source_protection_outside_accepted_prefix(self):
+    def test_partial_pins_keep_source_protection_outside_accepted_prefix(self):
+        # Was refused ("full-frame regeneration"); the master's own pins now
+        # simply survive the temporary carry release.
         source = masked_latent(107, keep_video=25)
+        src_v = source["samples"].unbind()[0]
         for mode in ("tapered", "tail_custom"):
-            seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
-                model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
-                latent=source, accepted_prefix_frames=73, overlap_pin=mode)
-            with self.assertRaisesRegex(ValueError, "full-frame regeneration"):
-                custom_sample(seq, joint, prepared, cond)
+            with self.subTest(mode=mode):
+                seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+                    model(), 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                    latent=source, accepted_prefix_frames=73, overlap_pin=mode)
+                video = custom_sample(seq, joint, prepared, cond)["samples"].unbind()[0]
+                torch.testing.assert_close(video[:, :, :25], src_v[:, :, :25], rtol=2e-6, atol=1e-6)
+                self.assertFalse(torch.allclose(video[:, :, 25:], src_v[:, :, 25:]))
+
+    def test_released_carry_rows_keep_the_masters_own_pins(self):
+        # An in-between fill: the kept end reaches into the last window's carry.
+        # Context 0 releases the whole carry, yet the pinned rows stay pinned.
+        latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]
+        video, audio = latent["samples"].unbind()
+        video = video + torch.linspace(0, 1, video.shape[2]).reshape(1, 1, -1, 1, 1)
+        mask = windows.ones_mask(video, audio)
+        mask[0][:, :, 15:] = 0
+        source = {"samples": comfy.nested_tensor.NestedTensor([video, audio]),
+                  "noise_mask": comfy.nested_tensor.NestedTensor(mask)}
+        m = model()
+        seq, joint, cond, total, prepared, _ = hybrid.H3HybridWindows.execute(
+            m, 39, 22, {f"positive_{i}": prompt(i) for i in range(3)}, latent=source,
+            overlap_pin="tail_custom", context_frames=0)
+        self.assertEqual(total, 73)
+        result = custom_sample(seq, joint, prepared, cond)["samples"].unbind()[0]
+        torch.testing.assert_close(result[:, :, 15:], video[:, :, 15:], rtol=2e-6, atol=1e-6)
+        # Window 3 spans rows 10-22; its carry is rows 10-16, all released but 15-16.
+        warm = next(c for c in m.model.seen if c["prompt"] == 2 and len(c["sigmas"]) == 7)
+        held = warm["masks"]["denoise_mask"][0, 0, :, 0, 0]
+        self.assertEqual(held.tolist(), [1.0] * 5 + [0.0] * 7)
+
+    def test_partial_overlap_respects_spatial_and_soft_source_masks(self):
+        latent = EmptyMiniMaxH3LatentAV.execute(64, 32, 107)[0]
+        video, audio = latent["samples"].unbind()
+        video = video + .5
+        mask = windows.ones_mask(video, audio)
+        mask[0][..., :2] = 0
+        mask[0][..., 2:] = .5
+        source = {"samples": comfy.nested_tensor.NestedTensor([video, audio]),
+                  "noise_mask": comfy.nested_tensor.NestedTensor(mask)}
+        for mode in ("tapered", "tail_5", "tail_17", "tail_custom"):
+            with self.subTest(mode=mode):
+                m = model()
+                seq, joint, cond, _, prepared, _ = hybrid.H3HybridWindows.execute(
+                    m, 73, 39, {"positive_0": prompt(0), "positive_1": prompt(1)},
+                    latent=source, overlap_pin=mode, context_frames=0)
+                result = custom_sample(seq, joint, prepared, cond)["samples"].unbind()[0]
+                torch.testing.assert_close(result[..., :2], video[..., :2], rtol=2e-6, atol=1e-6)
+                self.assertFalse(torch.allclose(result[..., 2:], video[..., 2:]))
+                warm = next(c for c in m.model.seen if c["prompt"] == 1 and len(c["sigmas"]) == 7)
+                denoise = warm["masks"]["denoise_mask"]
+                self.assertTrue(torch.all(denoise[..., 0] == 0))
+                self.assertLessEqual(float(denoise.max()), .5)
+        self.assertTrue(torch.all(source["noise_mask"].unbind()[0][..., 2:] == .5))
 
     def test_custom_sampler_chain_matches_ksampler_advanced_chain(self):
         latent = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]
