@@ -1,0 +1,24 @@
+{
+  "1": {
+    "class_type": "H3HybridKeyframeCalculator",
+    "inputs": {
+      "total_frames": 175,
+      "window_frames": 56,
+      "overlap_frames": 5,
+      "placement": "custom",
+      "placement.frame_indices": "0, 51, 102, 153"
+    },
+    "_meta": {
+      "title": "H3 Hybrid Keyframe Calculator"
+    }
+  },
+  "2": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": ["1", 2]
+    },
+    "_meta": {
+      "title": "Window ranges and keyframe placement"
+    }
+  }
+}

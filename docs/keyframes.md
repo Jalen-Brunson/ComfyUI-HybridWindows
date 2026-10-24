@@ -18,6 +18,42 @@ last stills at `0, -1` with the encoders' own first/last inputs empty, and
 `H3 Hybrid R2V Keyframes - native KSampler Advanced.json` pins the reference portrait at
 `0, -1` beside its `<Picture 1>` role, on a portrait canvas so the photo is not cropped.
 
+## Keyframe calculator
+
+**H3 Hybrid Keyframe Calculator** (`H3HybridKeyframeCalculator`, under
+`sampling/hybrid`) calculates a frame list and reports its placement without a model,
+VAE or images. Set `total_frames` to the full run length and match `window_frames`
+and `overlap_frames` to **H3 Hybrid Windows**. It uses the sampler's window planner,
+including H3 frame-count alignment and the final window sliding back to fit the run.
+Connect **report** to ComfyUI's **Preview as Text** and run to read the result.
+The standalone [calculator example](../example_workflows/H3%20Hybrid%20Keyframe%20Calculator.api.json)
+already connects these two nodes and reproduces the 175-frame case below.
+
+Choose a placement mode:
+
+- **evenly spaced**: enter the number of stills. Two or more include frames `0`
+  and the last frame; one uses `0`. Four stills over 175 frames give `0, 58, 116, 174`.
+- **window starts**: one still at each actual window start. A 175-frame run with
+  56-frame windows and 5-frame overlap gives `0, 51, 102, 119`. This mode does not
+  add a separate ending keyframe.
+- **custom**: check your own list, including negative indices such as `-1` for
+  the last frame. Output numbers are resolved to absolute frames in image order.
+
+Connect its **frame_indices** output to **H3 Hybrid Keyframes → frame_indices**
+(convert that widget to an input if needed). Connect one image per listed frame.
+Its **total_frames** output is the H3-aligned length and can drive **Empty MiniMax
+H3 AV Latent → length**; connect that latent to **H3 Hybrid Windows → latent** so
+the actual run matches the calculator. Use the same window/overlap controls for
+the calculator and Hybrid Windows. The **report** gives every window range, the
+actual overlaps, each keyframe's local index, and adjacent keyframes that never
+appear together in a window. Even spacing controls timing; it does not ensure
+that each pair shares a window or guarantee smooth motion.
+
+For the custom list `0, 51, 102, 153` on that 175-frame run, window 4 covers
+`119..174`. Global frame 153 is window 3's local frame 51 and window 4's local
+frame 34. The report explains the 34-frame backward shift and shows that **209
+total frames** would fit four regularly spaced full windows.
+
 ## What Hybrid Windows does with them
 
 Core's **Add Guide for MiniMax H3** anchors one image per node at an index that counts
