@@ -18,6 +18,7 @@ import execution
 import folder_paths
 from comfy_extras.nodes_math import MathExpressionNode
 from comfy.ldm.minimax.model import PackedLayout
+from comfy_api.latest import io
 
 
 async def main():
@@ -57,6 +58,12 @@ async def main():
         # Check the UI widget/link graph serializes to the API graph being validated.
         for node_id, node in prompt.items():
             ui = ns[int(node_id)]
+            if node['class_type'] in ('H3HybridLatentUpscale', 'H3HybridCleanLatentUpscale'):
+                schema = native.native_nodes.NODE_CLASS_MAPPINGS[node['class_type']].GET_SCHEMA()
+                widgets = [i.id for i in schema.inputs if isinstance(i, io.WidgetInput)]
+                assert widgets[:len(ui['widgets_values'])] == list(ui['widgets_values_named'])
+                mode = next(i for i in schema.inputs if i.id == 'mode')
+                assert mode.optional and mode.default == 'megapixels'
             expected = dict(ui['widgets_values_named'])
             for socket in ui['inputs']:
                 if socket.get('link') is not None:
@@ -103,7 +110,7 @@ async def main():
         high_w, high_h = [MathExpressionNode.execute(e, {'a': mp, 'b': width, 'c': height})[1]
                           for e in dimension_exprs]
         video = native.torch.zeros(1, 24, 1, height // 16, width // 16)
-        expected = clean.up.target_size(video, mp)
+        expected = clean.up.target_size(video, {'mode': 'megapixels', 'megapixels': mp})
         assert (high_h // 16, high_w // 16) == expected
         guide = native.torch.zeros(1, 24, 1, high_h // 16, high_w // 16)
         layout = PackedLayout(10, 12, high_h // 16, high_w // 16, 65,

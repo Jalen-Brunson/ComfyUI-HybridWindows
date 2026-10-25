@@ -15,12 +15,14 @@ MP = 64 * 64 / (1024 * 1024)
 
 class LearnedStandIn:
     unloads = []
+    modes = []
 
     @classmethod
     def execute(cls, latent, model_name, mode, align, chunking, unload, device, precision):
         cls.unloads.append(unload)
+        cls.modes.append(mode.copy())
         video = latent['samples']
-        size = up.target_size(video, mode['megapixels'], align)
+        size = up.target_size(video, mode, align)
         return ({'samples': up.resize_video(video, size) + .03125},)
 
 
@@ -82,12 +84,15 @@ class UpscaleTests(unittest.TestCase):
         video[:, :, :12] = pv[:, :, 10:22]
         audio[..., :65] = pa[..., 57:122]
         _, joint, cond, first = self.warmup(39, 1, source=source)
-        upgraded, latent, _ = self.upscale(joint, first, prior=prior)
-        result = native.sample(upgraded, latent, cond, start=6, add_noise='disable')
-        rv, ra = result['samples'].unbind()
         hv, ha = prior['samples'].unbind()
-        torch.testing.assert_close(rv[:, :, :12], hv[:, :, 10:22], rtol=0, atol=0)
-        torch.testing.assert_close(ra[..., :65], ha[..., 57:122], rtol=0, atol=0)
+        for sizing in ({}, {'mode': 'scale by multiplier', 'scale': 2.0},
+                       {'mode': 'target dimensions', 'width': 72, 'height': 64}):
+            with self.subTest(sizing=sizing):
+                upgraded, latent, _ = self.upscale(joint, first, prior=prior, **sizing)
+                result = native.sample(upgraded, latent, cond, start=6, add_noise='disable')
+                rv, ra = result['samples'].unbind()
+                torch.testing.assert_close(rv[:, :, :12], hv[:, :, 10:22], rtol=0, atol=0)
+                torch.testing.assert_close(ra[..., :65], ha[..., 57:122], rtol=0, atol=0)
         self.assertEqual(low_prior['h3_meta'], prior['h3_meta'])
         self.assertEqual(hv.shape[-1], 4)
         self.assertEqual(pv.shape[-1], 2)
@@ -116,15 +121,49 @@ class UpscaleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'original saved master'):
             self.upscale(joint, first)
         prior = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]
-        with self.assertRaisesRegex(ValueError, 'Saved master is'):
-            self.upscale(joint, first, prior=prior)
+        for sizing in ({}, {'mode': 'scale by multiplier', 'scale': 2.0},
+                       {'mode': 'target dimensions', 'width': 96, 'height': 64}):
+            with self.subTest(sizing=sizing), self.assertRaisesRegex(ValueError, 'Saved master is'):
+                self.upscale(joint, first, prior=prior, **sizing)
+
+    def test_custom_sizing_keeps_masks_audio_and_native_handoff(self):
+        for sizing, size, label in (
+            ({'mode': 'scale by multiplier', 'scale': 2.5}, (4, 4), '2.5x scale'),
+            ({'mode': 'target dimensions', 'width': 104, 'height': 72}, (4, 6), '104x72 target pixels'),
+        ):
+            with self.subTest(sizing=sizing):
+                source = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]
+                video, audio = source['samples'].unbind()
+                video.fill_(.6)
+                audio.fill_(.8)
+                vm = torch.ones_like(video)
+                vm[..., 0] = 0
+                source['noise_mask'] = NestedTensor([vm, torch.zeros_like(audio)])
+                _, joint, cond, first = self.warmup(source=source)
+                LearnedStandIn.modes.clear()
+                upgraded, latent, report = self.upscale(joint, first, **sizing)
+                self.assertEqual(tuple(latent['samples'].unbind()[0].shape[-2:]), size)
+                self.assertEqual(tuple(latent['noise_mask'].unbind()[0].shape[-2:]), size)
+                self.assertEqual(len(LearnedStandIn.modes), 2)
+                for mode in LearnedStandIn.modes:
+                    self.assertEqual({key: mode[key] for key in sizing}, sizing)
+                self.assertIn(label, report)
+                result = native.sample(upgraded, latent, cond, start=6, add_noise='disable')
+                rv, ra = result['samples'].unbind()
+                self.assertEqual(tuple(rv.shape), (*video.shape[:3], *size))
+                torch.testing.assert_close(rv[..., :size[1] // 2], torch.full_like(rv[..., :size[1] // 2], .63125), rtol=0, atol=3e-7)
+                torch.testing.assert_close(ra, audio, rtol=0, atol=3e-7)
 
     def test_same_resolution_is_the_existing_handoff(self):
-        _, joint, cond, first = self.warmup()
-        upgraded, latent, _ = up.H3HybridLatentUpscale.execute(joint, first, 'unused', 32 * 32 / (1024 * 1024))
-        self.assertIs(upgraded, joint)
-        self.assertIs(latent, first)
-        native.sample(upgraded, latent, cond, start=6, add_noise='disable')
+        for sizing in ({}, {'mode': 'scale by multiplier', 'scale': 1.0},
+                       {'mode': 'target dimensions', 'width': 32, 'height': 32}):
+            with self.subTest(sizing=sizing):
+                _, joint, cond, first = self.warmup()
+                upgraded, latent, _ = up.H3HybridLatentUpscale.execute(
+                    joint, first, 'unused', 32 * 32 / (1024 * 1024), **sizing)
+                self.assertIs(upgraded, joint)
+                self.assertIs(latent, first)
+                native.sample(upgraded, latent, cond, start=6, add_noise='disable')
 
     def test_keep_loaded_toggle_drives_the_companion_unload(self):
         _, joint, _, first = self.warmup()

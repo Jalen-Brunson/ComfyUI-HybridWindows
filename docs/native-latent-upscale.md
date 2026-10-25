@@ -86,6 +86,13 @@ Change **Final megapixels** to set output size. The defaults produce
 and binds them to the same window indices. The joint model still comes from
 the original warmup through the upscaler.
 
+The hybrid upscaler also offers `scale by multiplier` (`scale`) and `target
+dimensions` (pixel `width` and `height`), matching the original upscaler. Targets
+round to multiples of 32 pixels. Existing workflows default to `megapixels` and
+need no edits. If you switch the FL2V flow to another mode, also set the lower
+group's **Final width** and **Final height** to the aligned output dimensions;
+its existing guide-size expressions use **Final megapixels**.
+
 Queue the entire graph together. Both the warmup output and denoised output
 must reach the upscaler; the final sampler uses its model and latent outputs.
 The upscaler retains audio state and reconstructs video noise at the handoff

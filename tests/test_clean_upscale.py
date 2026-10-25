@@ -72,10 +72,31 @@ class CleanUpscaleTests(unittest.TestCase):
         source['samples'].unbind()[0][:, :, :12] = pv[:, :, 10:22]
         source['samples'].unbind()[1][..., :65] = pa[..., 57:122]
         _, joint, cond, warm, tail = self.warmup(source=source, accepted=39, start=1)
-        upgraded, latent, _ = self.upscale(joint, warm, prior=prior)
-        result = self.finish(upgraded, latent, cond, tail)
-        torch.testing.assert_close(result['samples'].unbind()[0][:, :, :12], prior['samples'].unbind()[0][:, :, 10:22], rtol=0, atol=0)
-        torch.testing.assert_close(result['samples'].unbind()[1][..., :65], prior['samples'].unbind()[1][..., 57:122], rtol=0, atol=0)
+        for sizing in ({}, {'mode': 'scale by multiplier', 'scale': 2.0},
+                       {'mode': 'target dimensions', 'width': 72, 'height': 64}):
+            with self.subTest(sizing=sizing):
+                upgraded, latent, _ = self.upscale(joint, warm, prior=prior, **sizing)
+                result = self.finish(upgraded, latent, cond, tail)
+                torch.testing.assert_close(result['samples'].unbind()[0][:, :, :12], prior['samples'].unbind()[0][:, :, 10:22], rtol=0, atol=0)
+                torch.testing.assert_close(result['samples'].unbind()[1][..., :65], prior['samples'].unbind()[1][..., 57:122], rtol=0, atol=0)
+
+    def test_custom_sizing_matches_native_clean_renoise(self):
+        for sizing, size in (
+            ({'mode': 'scale by multiplier', 'scale': 2.5}, (4, 4)),
+            ({'mode': 'target dimensions', 'width': 104, 'height': 72}, (4, 6)),
+        ):
+            with self.subTest(sizing=sizing):
+                model, joint, cond, warm, tail = self.warmup()
+                upgraded, latent, _ = self.upscale(joint, warm, **sizing)
+                video, audio = latent['samples'].unbind()
+                expected_clean = up.resize_video(warm[1]['samples'].unbind()[0], size) + .03125
+                injected = native.custom.AddNoise.execute(
+                    model, native.custom.Noise_RandomNoise(124), tail, {'samples': expected_clean})[0]
+                torch.testing.assert_close(video, injected['samples'] / (1 - tail[0]), rtol=1e-6, atol=1e-6)
+                torch.testing.assert_close(audio, warm[0]['samples'].unbind()[1], rtol=0, atol=0)
+                result = self.finish(upgraded, latent, cond, tail)
+                self.assertEqual(tuple(result['samples'].unbind()[0].shape[-2:]), size)
+                self.assertTrue(torch.isfinite(result['samples'].unbind()[0]).all())
 
     def test_source_masks_still_preserve_clean_source_and_audio(self):
         source = EmptyMiniMaxH3LatentAV.execute(32, 32, 73)[0]

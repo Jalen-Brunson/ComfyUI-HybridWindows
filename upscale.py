@@ -33,11 +33,18 @@ def resize_video(video, size, mode="nearest-exact"):
     return flat.reshape(batch, frames, channels, *size).permute(0, 2, 1, 3, 4).contiguous()
 
 
-def target_size(video, megapixels, align=32):
+def target_size(video, mode, align=32):
     height, width = video.shape[-2:]
-    # Match the companion upscaler's 1024 squared pixels per MP and alignment.
-    target_h = math.sqrt(megapixels * 1024 * 1024 * height / width)
-    target_w = target_h * width / height
+    if mode["mode"] == "scale by multiplier":
+        target_h, target_w = height * 16 * mode["scale"], width * 16 * mode["scale"]
+    elif mode["mode"] == "target dimensions":
+        target_h, target_w = mode["height"], mode["width"]
+    elif mode["mode"] == "megapixels":
+        # Match the companion upscaler's 1024 squared pixels per MP and alignment.
+        target_h = math.sqrt(mode["megapixels"] * 1024 * 1024 / (width / height))
+        target_w = target_h * (width / height)
+    else:
+        raise ValueError(f"Unsupported upscale mode: {mode['mode']}")
     return tuple(max(1, round(round(v / align) * align / 16)) for v in (target_h, target_w))
 
 
@@ -193,19 +200,28 @@ class H3HybridLatentUpscale(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         return io.Schema(
-            node_id="H3HybridLatentUpscale", display_name="H3 Hybrid Latent Upscale - Target Megapixels",
+            node_id="H3HybridLatentUpscale", display_name="H3 Hybrid Latent Upscale",
             category="sampling/hybrid", is_experimental=True,
             description="Learned video latent upscale between sequential warmup and joint finishing. Keeps the handoff sigma, audio, masks and original accepted prefix. Joint sampling must use this node's model and latent with Disable Noise.",
             inputs=[io.Model.Input("joint_model"), io.Latent.Input("warmup"),
                     io.Combo.Input("model_name", options=folder_paths.get_filename_list("latent_upscale_models")),
                     io.Float.Input("megapixels", default=2.4, min=0.01, max=16., step=0.05,
-                                   tooltip="Target area uses the companion upscaler's 1024 squared pixels per MP. Aspect ratio follows warmup; dimensions align to 32 pixels. Keep this setting fixed when resuming."),
+                                   tooltip="Used in megapixels mode. Target area uses 1024 squared pixels per MP. Aspect ratio follows warmup; dimensions align to 32 pixels."),
                     io.Combo.Input("precision", options=["fp16", "bf16", "fp32"], default="fp16"),
                     io.Boolean.Input("enable_temporal_chunking", default=True),
                     io.Boolean.Input("keep_upscaler_loaded", default=False,
                                      tooltip="Keep the learned upscaler resident in VRAM instead of offloading it to CPU after every pass. Saves the host-to-device reupload on each call and between runs; leave it off when VRAM is tight."),
                     io.Latent.Input("prior", optional=True, lazy=True,
-                                    tooltip="Original high-resolution saved master, before the low-resolution warmup copy. Required when resuming accepted frames.")],
+                                    tooltip="Original high-resolution saved master, before the low-resolution warmup copy. Required when resuming accepted frames."),
+                    io.Combo.Input("mode", options=["megapixels", "scale by multiplier", "target dimensions"],
+                                   default="megapixels", optional=True,
+                                   tooltip="How to compute the target size, matching the original latent upscaler. Dimensions align to 32 pixels; keep the output resolution fixed when resuming."),
+                    io.Float.Input("scale", default=2.0, min=1.0, max=4.0, step=0.05, optional=True,
+                                   tooltip="Used in scale by multiplier mode. Multiplies warmup width and height."),
+                    io.Int.Input("width", default=1280, min=64, max=8192, step=8, optional=True,
+                                 tooltip="Target pixel width in target dimensions mode, rounded to a multiple of 32."),
+                    io.Int.Input("height", default=704, min=64, max=8192, step=8, optional=True,
+                                 tooltip="Target pixel height in target dimensions mode, rounded to a multiple of 32.")],
             outputs=[io.Model.Output("joint_model"), io.Latent.Output("latent"), io.String.Output("report")])
 
     @classmethod
@@ -214,13 +230,16 @@ class H3HybridLatentUpscale(io.ComfyNode):
 
     @classmethod
     def execute(cls, joint_model, warmup, model_name, megapixels=2.4, precision="fp16",
-                enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None):
+                enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None,
+                mode="megapixels", scale=2.0, width=1280, height=704):
         return cls._execute(joint_model, warmup, model_name, megapixels, precision,
-                            enable_temporal_chunking, keep_upscaler_loaded, prior)
+                            enable_temporal_chunking, keep_upscaler_loaded, prior,
+                            mode=mode, scale=scale, width=width, height=height)
 
     @classmethod
     def _execute(cls, joint_model, warmup, model_name, megapixels, precision,
-                 enable_temporal_chunking, keep_upscaler_loaded, prior, denoised=None):
+                 enable_temporal_chunking, keep_upscaler_loaded, prior, denoised=None,
+                 mode="megapixels", scale=2.0, width=1280, height=704):
         original = joint_run(joint_model)
         stash = original.stash
         base = joint_model.model
@@ -230,14 +249,15 @@ class H3HybridLatentUpscale(io.ComfyNode):
         if not 0 < stash.sigma_end < 1:
             raise ValueError("Leave at least one joint finishing step after sequential warmup.")
         video, audio = warmup["samples"].unbind()
-        size = target_size(video, megapixels)
+        upscale_mode = {"mode": mode, "megapixels": megapixels, "scale": scale, "width": width, "height": height}
+        size = target_size(video, upscale_mode)
         prior_video = prior_audio = None
         if original.accepted_v:
             if prior is None:
                 raise ValueError("Connect the original saved master to prior to preserve accepted high-resolution frames.")
             pv, pa = prior["samples"].unbind()
             if tuple(pv.shape[-2:]) != size:
-                raise ValueError(f"Saved master is {pv.shape[-1] * 16}x{pv.shape[-2] * 16}; target is {size[1] * 16}x{size[0] * 16}. Restore its target megapixels or start a fresh run.")
+                raise ValueError(f"Saved master is {pv.shape[-1] * 16}x{pv.shape[-2] * 16}; target is {size[1] * 16}x{size[0] * 16}. Restore its target resolution or start a fresh run.")
             start = (original.start_window - prior.get("h3_meta", {}).get("start_chunk", 0)) * original.plan.stride
             groups, remainder = divmod(start, 5)
             audio_start = round((17 * groups + sum((1, 4, 4, 4, 4)[:remainder])) * 40 / 24)
@@ -254,7 +274,7 @@ class H3HybridLatentUpscale(io.ComfyNode):
 
         def upscale(value):
             return upscaler.execute(
-                {"samples": value}, model_name, {"mode": "megapixels", "megapixels": megapixels},
+                {"samples": value}, model_name, upscale_mode,
                 32, enable_temporal_chunking, not keep_upscaler_loaded,
                 "cuda" if torch.cuda.is_available() else "cpu", precision)[0]["samples"].float()
 
@@ -316,9 +336,11 @@ class H3HybridLatentUpscale(io.ComfyNode):
                         "Captured audio state and the remaining schedule are retained. ")
         quality_report = ("Learned upscaling of a partial latent is experimental; use the joint output for decoding and saving."
                           if denoised is None else
-                          "Use this model and latent with Disable Noise for joint finishing; keep target MP fixed on resume.")
+                          "Use this model and latent with Disable Noise for joint finishing; keep target resolution fixed on resume.")
+        size_report = {"megapixels": f"{megapixels:g} target MP", "scale by multiplier": f"{scale:g}x scale",
+                       "target dimensions": f"{width}x{height} target pixels"}[mode]
         report = (f"Hybrid handoff: {video.shape[-1] * 16}x{video.shape[-2] * 16} -> {size[1] * 16}x{size[0] * 16} "
-                  f"({megapixels:g} target MP), sigma {stash.sigma_end:.9f}.\n"
+                  f"({size_report}), sigma {stash.sigma_end:.9f}.\n"
                   f"{noise_report}Accepted video rows restored from the original master: {original.accepted_v}.\n"
                   f"{quality_report}")
         return io.NodeOutput(patched, output, report)
@@ -329,7 +351,7 @@ class H3HybridCleanLatentUpscale(H3HybridLatentUpscale):
     def define_schema(cls):
         schema = super().define_schema()
         schema.node_id = "H3HybridCleanLatentUpscale"
-        schema.display_name = "H3 Hybrid Clean Latent Upscale - Target Megapixels"
+        schema.display_name = "H3 Hybrid Clean Latent Upscale"
         schema.description = ("Upscale the warmup's denoised video estimate and rebuild video noise at the captured "
                               "handoff sigma. Retains audio and the original accepted prefix for native joint finishing.")
         schema.inputs.insert(2, io.Latent.Input("denoised", tooltip="Connect denoised_output (slot 1) of the same warmup sampler."))
@@ -337,6 +359,8 @@ class H3HybridCleanLatentUpscale(H3HybridLatentUpscale):
 
     @classmethod
     def execute(cls, joint_model, warmup, denoised, model_name, megapixels=2.4, precision="fp16",
-                enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None):
+                enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None,
+                mode="megapixels", scale=2.0, width=1280, height=704):
         return cls._execute(joint_model, warmup, model_name, megapixels, precision,
-                            enable_temporal_chunking, keep_upscaler_loaded, prior, denoised)
+                            enable_temporal_chunking, keep_upscaler_loaded, prior, denoised,
+                            mode=mode, scale=scale, width=width, height=height)

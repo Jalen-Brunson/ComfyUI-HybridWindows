@@ -298,6 +298,13 @@ The hybrid upscaler nodes and handoff helpers are included in this repository.
 Install the [external 3D latent upscaler and model files](docs/native-latent-upscale.md#install-the-node-dependencies)
 listed in the guide; the workflow folder also includes an exact node dependency manifest.
 
+**H3 Hybrid Latent Upscale** and **H3 Hybrid Clean Latent Upscale** support the
+original learned upscaler's three sizing modes: `megapixels` (the default),
+`scale by multiplier` using `scale`, and `target dimensions` using pixel `width`
+and `height`. Only the selected mode's sizing values apply. Dimensions round to
+multiples of 32 pixels. Existing workflows retain their megapixel setting; when
+resuming, the output resolution must match the saved master.
+
 ### Install HybridWindows
 
 From your ComfyUI `custom_nodes` directory:
