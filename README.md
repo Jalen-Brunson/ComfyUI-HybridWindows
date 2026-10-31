@@ -305,6 +305,23 @@ and `height`. Only the selected mode's sizing values apply. Dimensions round to
 multiples of 32 pixels. Existing workflows retain their megapixel setting; when
 resuming, the output resolution must match the saved master.
 
+For native H3 upscaling, connect **Load Latent Upscale Model** (with H3 3D-conv
+weights) to the optional `upscale_model` input on either hybrid upscaler. This
+uses ComfyUI's [native H3 implementation](https://github.com/Comfy-Org/ComfyUI/pull/17412):
+clip-wide GroupNorm statistics, 16-latent-frame processing slabs, optimized
+Comfy Kitchen kernels, and standard model memory management. It requires
+ComfyUI with PR #17412 (merged 2026-10-28). Full-clip activation buffers still
+grow with duration; native is not guaranteed to use less VRAM on long videos.
+
+With `upscale_model` connected, its loader and ComfyUI control precision and
+residency; `model_name`, `precision`, `enable_temporal_chunking` and
+`keep_upscaler_loaded` apply only to the legacy backend. Without that connection,
+existing workflows continue to use the companion upscaler and those controls.
+Both paths retain the hybrid sizing modes, handoff sigma, audio, resized masks,
+accepted master frames, and clean-upscale noise reconstruction. The native
+backend changes temporal boundary handling and uses the aligned output size
+for its scale embedding, so results can differ from legacy chunked output.
+
 ### Install HybridWindows
 
 From your ComfyUI `custom_nodes` directory:

@@ -204,13 +204,16 @@ class H3HybridLatentUpscale(io.ComfyNode):
             category="sampling/hybrid", is_experimental=True,
             description="Learned video latent upscale between sequential warmup and joint finishing. Keeps the handoff sigma, audio, masks and original accepted prefix. Joint sampling must use this node's model and latent with Disable Noise.",
             inputs=[io.Model.Input("joint_model"), io.Latent.Input("warmup"),
-                    io.Combo.Input("model_name", options=folder_paths.get_filename_list("latent_upscale_models")),
+                    io.Combo.Input("model_name", options=folder_paths.get_filename_list("latent_upscale_models"),
+                                   tooltip="Legacy model selection. Connect upscale_model from Load Latent Upscale Model to use the native H3 upscaler instead."),
                     io.Float.Input("megapixels", default=2.4, min=0.01, max=16., step=0.05,
                                    tooltip="Used in megapixels mode. Target area uses 1024 squared pixels per MP. Aspect ratio follows warmup; dimensions align to 32 pixels."),
-                    io.Combo.Input("precision", options=["fp16", "bf16", "fp32"], default="fp16"),
-                    io.Boolean.Input("enable_temporal_chunking", default=True),
+                    io.Combo.Input("precision", options=["fp16", "bf16", "fp32"], default="fp16",
+                                   tooltip="Legacy backend only. A connected native upscale_model uses ComfyUI's dtype selection."),
+                    io.Boolean.Input("enable_temporal_chunking", default=True,
+                                     tooltip="Legacy backend only. Native always uses 16-latent-frame slabs with clip-wide normalization; full-clip buffers still grow with duration."),
                     io.Boolean.Input("keep_upscaler_loaded", default=False,
-                                     tooltip="Keep the learned upscaler resident in VRAM instead of offloading it to CPU after every pass. Saves the host-to-device reupload on each call and between runs; leave it off when VRAM is tight."),
+                                     tooltip="Legacy backend only: retain the upscaler in VRAM between passes. Native model residency and offloading are managed by ComfyUI."),
                     io.Latent.Input("prior", optional=True, lazy=True,
                                     tooltip="Original high-resolution saved master, before the low-resolution warmup copy. Required when resuming accepted frames."),
                     io.Combo.Input("mode", options=["megapixels", "scale by multiplier", "target dimensions"],
@@ -221,7 +224,9 @@ class H3HybridLatentUpscale(io.ComfyNode):
                     io.Int.Input("width", default=1280, min=64, max=8192, step=8, optional=True,
                                  tooltip="Target pixel width in target dimensions mode, rounded to a multiple of 32."),
                     io.Int.Input("height", default=704, min=64, max=8192, step=8, optional=True,
-                                 tooltip="Target pixel height in target dimensions mode, rounded to a multiple of 32.")],
+                                 tooltip="Target pixel height in target dimensions mode, rounded to a multiple of 32."),
+                    io.LatentUpscaleModel.Input("upscale_model", optional=True,
+                                                tooltip="Connect Load Latent Upscale Model with H3 3D-conv weights to use the native upscaler. Overrides model_name, precision, temporal chunking and keep-loaded controls. Leave disconnected for the legacy backend.")],
             outputs=[io.Model.Output("joint_model"), io.Latent.Output("latent"), io.String.Output("report")])
 
     @classmethod
@@ -231,15 +236,15 @@ class H3HybridLatentUpscale(io.ComfyNode):
     @classmethod
     def execute(cls, joint_model, warmup, model_name, megapixels=2.4, precision="fp16",
                 enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None,
-                mode="megapixels", scale=2.0, width=1280, height=704):
+                mode="megapixels", scale=2.0, width=1280, height=704, upscale_model=None):
         return cls._execute(joint_model, warmup, model_name, megapixels, precision,
                             enable_temporal_chunking, keep_upscaler_loaded, prior,
-                            mode=mode, scale=scale, width=width, height=height)
+                            mode=mode, scale=scale, width=width, height=height, upscale_model=upscale_model)
 
     @classmethod
     def _execute(cls, joint_model, warmup, model_name, megapixels, precision,
                  enable_temporal_chunking, keep_upscaler_loaded, prior, denoised=None,
-                 mode="megapixels", scale=2.0, width=1280, height=704):
+                 mode="megapixels", scale=2.0, width=1280, height=704, upscale_model=None):
         original = joint_run(joint_model)
         stash = original.stash
         base = joint_model.model
@@ -268,11 +273,21 @@ class H3HybridLatentUpscale(io.ComfyNode):
         if size == tuple(video.shape[-2:]):
             return io.NodeOutput(joint_model, warmup, "Target matches warmup; the original hybrid handoff is unchanged.")
 
-        upscaler = nodes.NODE_CLASS_MAPPINGS.get("MinimaxH3LatentUpscaler3D")
-        if upscaler is None:
-            raise RuntimeError("Install Comfyui_Minimax_h3_latent_Upscaler and restart ComfyUI.")
+        if upscale_model is not None:
+            upscaler = nodes.NODE_CLASS_MAPPINGS.get("MiniMaxH3LatentUpscaleWithModel")
+            if upscaler is None:
+                raise RuntimeError("Update ComfyUI for native MiniMax H3 latent upscaling and restart.")
+            backend_report = "Native H3 upscaler: clip-wide normalization; ComfyUI manages precision and VRAM."
+        else:
+            upscaler = nodes.NODE_CLASS_MAPPINGS.get("MinimaxH3LatentUpscaler3D")
+            if upscaler is None:
+                raise RuntimeError("Connect a native upscale_model, or install Comfyui_Minimax_h3_latent_Upscaler and restart.")
+            backend_report = "Legacy H3 upscaler."
 
         def upscale(value):
+            if upscale_model is not None:
+                return upscaler.execute(
+                    upscale_model, {"samples": value}, size[1] * 16, size[0] * 16)[0]["samples"].float()
             return upscaler.execute(
                 {"samples": value}, model_name, upscale_mode,
                 32, enable_temporal_chunking, not keep_upscaler_loaded,
@@ -342,7 +357,7 @@ class H3HybridLatentUpscale(io.ComfyNode):
         report = (f"Hybrid handoff: {video.shape[-1] * 16}x{video.shape[-2] * 16} -> {size[1] * 16}x{size[0] * 16} "
                   f"({size_report}), sigma {stash.sigma_end:.9f}.\n"
                   f"{noise_report}Accepted video rows restored from the original master: {original.accepted_v}.\n"
-                  f"{quality_report}")
+                  f"{backend_report}\n{quality_report}")
         return io.NodeOutput(patched, output, report)
 
 
@@ -360,7 +375,7 @@ class H3HybridCleanLatentUpscale(H3HybridLatentUpscale):
     @classmethod
     def execute(cls, joint_model, warmup, denoised, model_name, megapixels=2.4, precision="fp16",
                 enable_temporal_chunking=True, keep_upscaler_loaded=False, prior=None,
-                mode="megapixels", scale=2.0, width=1280, height=704):
+                mode="megapixels", scale=2.0, width=1280, height=704, upscale_model=None):
         return cls._execute(joint_model, warmup, model_name, megapixels, precision,
                             enable_temporal_chunking, keep_upscaler_loaded, prior, denoised,
-                            mode=mode, scale=scale, width=width, height=height)
+                            mode=mode, scale=scale, width=width, height=height, upscale_model=upscale_model)
